@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package google.example;
+
+message Result {
+  int32 an_int = 1;
+  string a_string = 2;
+  Detail a_detail = 3;
+}
+
+message Detail {
+    bool useful = 1;
+    MoreDetail even_more = 2;
+    repeated MoreDetail lots_more = 3;
+}
+
+message MoreDetail {
+  string very_detailed = 1;
+}

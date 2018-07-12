@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package google.example;
+
+import "google/example/test_types.proto";
+import "google/longrunning/test_longrunning.proto";
+
+service TestService {
+  rpc Test (TestRequest) returns (TestResponse);
+  rpc TestFlat (TestRequest) returns (TestResponse);
+  rpc TestFlatWithoutOriginal (TestRequest) returns (TestResponse);
+
+  rpc StreamTest (stream TestRequest) returns (stream TestResponse);
+  rpc StreamClientTest (stream TestRequest) returns (TestResponse);
+  rpc StreamServerTest (TestRequest) returns (stream TestResponse);
+
+  rpc OperationTest (TestRequest) returns (google.longrunning.Operation);
+
+  rpc NestedFlat (TestRequest) returns (TestResponse);
+  rpc NestedFlatPrimitive (TestRequest) returns (TestResponse);
+}
+
+message TestRequest {
+  string query = 1;
+  Detail main_detail = 2;
+  repeated Detail more_details = 3;
+}
+
+message TestResponse {
+  Result result = 1;
+}
