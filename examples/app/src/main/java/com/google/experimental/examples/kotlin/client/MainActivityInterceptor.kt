@@ -15,7 +15,7 @@ import com.google.kgax.grpc.enqueue
 private const val TAG = "Demo"
 
 /**
- * Kotlin example calling the language API.
+ * Kotlin example calling the language API and a gRPC interceptor.
  */
 class MainActivityInterceptor : AppCompatActivity() {
 

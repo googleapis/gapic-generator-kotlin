@@ -18,7 +18,9 @@ package com.google.experimental.examples.kotlin.client
 
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.widget.TextView
 import com.google.api.MonitoredResource
 import com.google.experimental.examples.kotlin.R
@@ -69,12 +71,10 @@ class MainActivityPaging : AppCompatActivity() {
         }
 
         // write the entries
-        client.writeLogEntries(log, resource, mapOf(), entries).enqueue(OnMainThread) {
-
+        client.writeLogEntries(log, resource, mapOf(), entries).enqueue {
             // the server may respond with an empty set if we immediately try to read the logs
             // that we just wrote - so we wait for a few seconds before proceeding
             Handler().postDelayed({
-
                 // now, read those entries back
                 val pager = client.listLogEntries(
                         listOf(project), "logName=$log", "timestamp desc", 10)
