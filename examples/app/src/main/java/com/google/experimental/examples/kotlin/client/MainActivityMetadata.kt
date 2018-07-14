@@ -64,5 +64,4 @@ class MainActivityMetadata : AppCompatActivity() {
 
         client.shutdownChannel()
     }
-
 }

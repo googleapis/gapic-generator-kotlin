@@ -73,5 +73,4 @@ class MainActivityLRO : AppCompatActivity() {
 
         client.shutdownChannel()
     }
-
 }

@@ -46,5 +46,4 @@ class MainActivityPagingTest {
                     .check(matches(withText(containsString("log number: 40"))))
         }
     }
-
 }

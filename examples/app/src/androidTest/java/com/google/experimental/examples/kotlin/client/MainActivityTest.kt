@@ -43,5 +43,4 @@ class MainActivityTest {
         onView(withId(R.id.text_view))
                 .check(matches(withText(containsString("type: PERSON"))))
     }
-
 }

@@ -47,7 +47,6 @@ class MainActivityStreaming : AppCompatActivity() {
     }
 
     private var permissionToRecord = false
-    private var audioThread: HandlerThread? = null
     private var audioEmitter: AudioEmitter? = null
 
     private val client by lazy {
@@ -63,10 +62,6 @@ class MainActivityStreaming : AppCompatActivity() {
         // get permissions
         ActivityCompat.requestPermissions(
                 this, PERMISSIONS, REQUEST_RECORD_AUDIO_PERMISSION)
-
-        // thread for audio processing
-        audioThread = HandlerThread("AudioThread")
-        audioThread!!.start()
     }
 
     override fun onResume() {
@@ -76,7 +71,7 @@ class MainActivityStreaming : AppCompatActivity() {
 
         // kick-off recording process, if we're allowed
         if (permissionToRecord) {
-            audioEmitter = AudioEmitter(audioThread!!.looper)
+            audioEmitter = AudioEmitter()
 
             // start streaming the data to the server and collect responses
             val stream = client.streamingRecognize(
@@ -118,7 +113,6 @@ class MainActivityStreaming : AppCompatActivity() {
         super.onDestroy()
 
         // cleanup
-        audioThread?.quit()
         client.shutdownChannel()
     }
 

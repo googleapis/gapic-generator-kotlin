@@ -59,5 +59,4 @@ class MainActivityEnqueue : AppCompatActivity() {
 
         client.shutdownChannel()
     }
-
 }

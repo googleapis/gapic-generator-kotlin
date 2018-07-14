@@ -53,5 +53,4 @@ class MainActivityInterceptor : AppCompatActivity() {
 
         client.shutdownChannel()
     }
-
 }

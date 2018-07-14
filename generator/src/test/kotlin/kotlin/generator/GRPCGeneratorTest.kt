@@ -41,6 +41,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
 
         val imports = generate(opts).imports
         assertThat(imports).containsExactly(
+                ClassName(GrpcTypes.Support.SUPPORT_LIB_PACKAGE, "pager"),
                 ClassName(GrpcTypes.Support.SUPPORT_LIB_GRPC_PACKAGE, "decorate"),
                 ClassName(GrpcTypes.Support.SUPPORT_LIB_GRPC_PACKAGE, "prepare"))
     }

@@ -18,9 +18,7 @@ package com.google.experimental.examples.kotlin.client
 
 import android.os.Bundle
 import android.os.Handler
-import android.os.Looper
 import android.support.v7.app.AppCompatActivity
-import android.util.Log
 import android.widget.TextView
 import com.google.api.MonitoredResource
 import com.google.experimental.examples.kotlin.R
@@ -106,5 +104,4 @@ class MainActivityPaging : AppCompatActivity() {
         // clean up
         client.shutdownChannel()
     }
-
 }

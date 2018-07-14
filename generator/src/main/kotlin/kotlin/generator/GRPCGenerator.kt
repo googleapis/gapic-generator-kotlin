@@ -33,7 +33,6 @@ import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
 import mu.KotlinLogging
 import java.io.InputStream
@@ -247,6 +246,13 @@ internal class GRPCGenerator : AbstractGenerator() {
                 .addParameters(parameters)
 
         val extraParamDocs = mutableListOf<CodeBlock>()
+
+        // add request object to documentation
+        if (flatteningConfig == null) {
+            extraParamDocs.add(CodeBlock.of("@param %L the request object for the API call", PARAM_REQUEST))
+        }
+
+        // build method body
         when {
             method.isLongRunningOperation() -> {
                 val returnType = GrpcTypes.Support.LongRunningCall(getLongRunningResponseType(ctx, method))
@@ -422,7 +428,7 @@ internal class GRPCGenerator : AbstractGenerator() {
 
         // add any samples
         samples.forEach {
-            doc.add(createMethodDocSample(ctx, method, methodName, it, flatteningConfig))
+            //doc.add(createMethodDocSample(ctx, method, methodName, it, flatteningConfig))
         }
 
         // add parameter comments
@@ -433,33 +439,22 @@ internal class GRPCGenerator : AbstractGenerator() {
             val comment = fieldInfo.file.getParameterComments(fieldInfo)
             Pair(parameters[idx].name, cleanupComment(comment))
         }?.filter { it.second != null } ?: listOf()
-        if (paramComments.isNotEmpty()) {
-            doc.add("\n")
-        }
-        paramComments.forEach { doc.add("@param %L %L\n\n", it.first, it.second) }
+        paramComments.forEach { doc.add("\n@param %L %L\n", it.first, it.second) }
 
         // add any extra comments at the bottom (only used for the pageSize currently)
-        extras.forEach { doc.add("%L\n", it) }
+        extras.forEach { doc.add("\n%L\n", it) }
 
         // put it all together
         return doc.build()
     }
 
-    private fun createMethodDocSample(ctx: GeneratorContext,
-                                      method: DescriptorProtos.MethodDescriptorProto,
-                                      methodName: String,
-                                      sample: SampleMethod,
-                                      config: FlattenedMethod?): CodeBlock {
-        //val requestObject =
-        return CodeBlock.of("""
-                |
-                |```
-                |val client = %T.fromServiceAccount(%L)
-                |val response = client.%N(%L).get()
-                |```
-                |""".trimMargin(),
-                ctx.className, PLACEHOLDER_KEYFILE, methodName, "requestObject") // TODO: FIX ME
-    }
+    // TODO: Samples?
+//    private fun createMethodDocSample(ctx: GeneratorContext,
+//                                      method: DescriptorProtos.MethodDescriptorProto,
+//                                      methodName: String,
+//                                      sample: SampleMethod,
+//                                      config: FlattenedMethod?): CodeBlock {
+//    }
 
     // client factory methods for creating client instances via various means
     // (i.e. service accounts, access tokens, etc.)

@@ -45,5 +45,4 @@ class MainActivityMetadataTest {
         onView(withId(R.id.text_view))
                 .check(matches(withText(containsString("content-type"))))
     }
-
 }

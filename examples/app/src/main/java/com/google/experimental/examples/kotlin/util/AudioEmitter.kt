@@ -19,7 +19,6 @@ package com.google.experimental.examples.kotlin.util
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
-import android.os.Looper
 import android.util.Log
 import com.google.protobuf.ByteString
 import java.util.concurrent.Executors
@@ -30,10 +29,8 @@ private const val TAG = "Audio"
 
 /**
  * Create a new emitter
- *
- * @param looper looper for running in the background
  */
-internal class AudioEmitter(private val mLooper: Looper) {
+internal class AudioEmitter() {
 
     private var audioRecorder: AudioRecord? = null
     private var buffer: ByteArray? = null

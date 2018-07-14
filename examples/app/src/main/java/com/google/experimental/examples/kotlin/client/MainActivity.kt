@@ -56,8 +56,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private class ApiTestTask(
-            val client: LanguageServiceClient,
-            val callback: (AnalyzeEntitiesResponse) -> Unit
+        val client: LanguageServiceClient,
+        val callback: (AnalyzeEntitiesResponse) -> Unit
     ) : AsyncTask<Unit, Unit, CallResult<AnalyzeEntitiesResponse>>() {
         override fun doInBackground(vararg params: Unit): CallResult<AnalyzeEntitiesResponse> {
             return client.analyzeEntities(Document.newBuilder()
