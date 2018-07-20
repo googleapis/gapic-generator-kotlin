@@ -80,8 +80,9 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(method.body.asNormalizedString()).isEqualTo("""
                 |return ${longRunning("TestResponse")}(
                 |  stubs.operation,
-                |  stubs.future.operationTest(request),
-                |  ${messageType("TestResponse")}::class.java)
+                |  stubs.future.prepare(options).executeFuture {
+                |    it.operationTest(request)
+                |  }, ${messageType("TestResponse")}::class.java)
             """.asNormalizedString())
     }
 

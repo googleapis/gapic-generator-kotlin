@@ -527,8 +527,8 @@ internal class GRPCGenerator : AbstractGenerator() {
                 .addKdoc("""
                     |Create a [ManagedChannel] to use with %N.
                     |
-                    |Prefer to use [fromServiceAccount] or [fromCredentials] and
-                    |only use this method if you need to customize the channel.
+                    |Prefer to use [fromAccessToken], [fromServiceAccount], or [fromCredentials] unless
+                    |you need to customize the channel.
                     |""".trimMargin(), ctx.className.simpleName())
                 .addParameter(ParameterSpec.builder("host", String::class)
                         .defaultValue("%S", ctx.metadata.host)
