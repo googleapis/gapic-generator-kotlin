@@ -44,5 +44,4 @@ class AccessTokens(keyFile: InputStream, scopes: List<String>) {
         credentials.refresh()
         return credentials.accessToken
     }
-
 }
