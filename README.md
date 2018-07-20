@@ -100,6 +100,17 @@ cases, so we'll start there.
 
 Coming soon!
 
-## Library Structure
+## Contributing
 
-TODO: put a small, but complete sample here, or maybe a pointer to the showcase API.
+Contributions to this library are always welcome and highly encouraged.
+
+See the [CONTRIBUTING](CONTRIBUTING.md) documentation for more information on how to get started.
+
+## Versioning
+
+This library is currently a *preview* with no guarantees of stability or support. Please get involved and let us know
+if you find it useful and we'll work towards a stable version.
+
+## Disclaimer
+
+This is not an official Google product.
