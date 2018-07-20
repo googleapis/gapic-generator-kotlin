@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.google.api.experimental
+package com.google.api
 
-import com.google.api.experimental.kotlin.KotlinClientGenerator
+import com.google.api.kotlin.KotlinClientGenerator
 import com.google.devtools.common.options.Option
 import com.google.devtools.common.options.OptionsBase
 import com.google.devtools.common.options.OptionsParser
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest
 import mu.KotlinLogging
-import java.io.File
 import java.io.FileInputStream
 import java.nio.file.Paths
 

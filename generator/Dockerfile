@@ -1,4 +1,4 @@
-FROM openjdk:9
+FROM openjdk:8
 
 # copy generator
 COPY . /usr/src/generator

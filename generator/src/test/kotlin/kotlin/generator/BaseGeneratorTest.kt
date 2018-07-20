@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.google.api.experimental.kotlin.generator
+package com.google.api.kotlin.generator
 
-import com.google.api.experimental.kotlin.GeneratorResponse
-import com.google.api.experimental.kotlin.generator.config.BrandingOptions
-import com.google.api.experimental.kotlin.generator.config.ConfigurationMetadata
-import com.google.api.experimental.kotlin.generator.config.ProtobufTypeMapper
-import com.google.api.experimental.kotlin.generator.config.ServiceOptions
-import com.google.api.experimental.kotlin.generator.types.GrpcTypes
+import com.google.api.kotlin.GeneratorResponse
+import com.google.api.kotlin.generator.config.BrandingOptions
+import com.google.api.kotlin.generator.config.ConfigurationMetadata
+import com.google.api.kotlin.generator.config.ProtobufTypeMapper
+import com.google.api.kotlin.generator.config.ServiceOptions
+import com.google.api.kotlin.generator.types.GrpcTypes
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.compiler.PluginProtos
 import com.nhaarman.mockito_kotlin.any

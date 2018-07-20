@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.api.experimental.kotlin.generator.config
+package com.google.api.kotlin.generator.config
 
 import com.google.protobuf.DescriptorProtos
 import mu.KotlinLogging
@@ -25,7 +25,6 @@ import org.yaml.snakeyaml.constructor.Constructor
 import org.yaml.snakeyaml.representer.Representer
 import java.io.File
 import java.io.FileInputStream
-import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
 

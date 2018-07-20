@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.google.api.experimental.kotlin.generator
+package com.google.api.kotlin.generator
 
-import com.google.api.experimental.kotlin.Generator
-import com.google.api.experimental.kotlin.GeneratorContext
-import com.google.api.experimental.kotlin.generator.config.FlattenedMethod
-import com.google.api.experimental.kotlin.generator.config.PagedResponse
-import com.google.api.experimental.kotlin.generator.config.ProtobufTypeMapper
-import com.google.api.experimental.kotlin.generator.types.GrpcTypes
+import com.google.api.kotlin.Generator
+import com.google.api.kotlin.GeneratorContext
+import com.google.api.kotlin.generator.config.FlattenedMethod
+import com.google.api.kotlin.generator.config.PagedResponse
+import com.google.api.kotlin.generator.config.ProtobufTypeMapper
+import com.google.api.kotlin.generator.types.GrpcTypes
 import com.google.common.base.CaseFormat
 import com.google.protobuf.DescriptorProtos
 import com.squareup.kotlinpoet.AnnotationSpec

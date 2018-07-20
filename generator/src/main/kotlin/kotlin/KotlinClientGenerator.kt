@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.google.api.experimental.kotlin
+package com.google.api.kotlin
 
-import com.google.api.experimental.kotlin.generator.GRPCGenerator
-import com.google.api.experimental.kotlin.generator.RetrofitGenerator
-import com.google.api.experimental.kotlin.generator.config.ConfigurationMetadata
-import com.google.api.experimental.kotlin.generator.config.ProtobufTypeMapper
+import com.google.api.kotlin.generator.GRPCGenerator
+import com.google.api.kotlin.generator.RetrofitGenerator
+import com.google.api.kotlin.generator.config.ConfigurationMetadata
+import com.google.api.kotlin.generator.config.ProtobufTypeMapper
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.compiler.PluginProtos
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest

@@ -30,7 +30,7 @@ plugins {
     id "com.google.protobuf" version "0.8.5"
 }
 
-group 'com.google.api.experimental'
+group 'com.google.api'
 version '0.1.0'
 
 apply plugin: 'java'
@@ -82,9 +82,9 @@ protobuf {
     }
 }
 
-mainClassName = 'com.google.api.experimental.ClientPluginKt'
+mainClassName = 'com.google.api.ClientPluginKt'
 bootJar {
-    mainClassName = 'com.google.api.experimental.ClientPluginKt'
+    mainClassName = 'com.google.api.ClientPluginKt'
     classifier = 'core'
 
     launchScript()

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.google.api.experimental.kotlin.generator
+package com.google.api.kotlin.generator
 
-import com.google.api.experimental.kotlin.generator.config.FlattenedMethod
-import com.google.api.experimental.kotlin.generator.config.MethodOptions
-import com.google.api.experimental.kotlin.generator.config.ServiceOptions
-import com.google.api.experimental.kotlin.generator.types.GrpcTypes
+import com.google.api.kotlin.generator.config.FlattenedMethod
+import com.google.api.kotlin.generator.config.MethodOptions
+import com.google.api.kotlin.generator.config.ServiceOptions
+import com.google.api.kotlin.generator.types.GrpcTypes
 import com.google.common.truth.Truth.assertThat
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName

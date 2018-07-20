@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.api.experimental.kotlin.generator.types
+package com.google.api.kotlin.generator.types
 
 import com.squareup.kotlinpoet.ClassName
 

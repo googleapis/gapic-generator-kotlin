@@ -2,6 +2,10 @@
 
 Kgen is a protoc plugin for creating client libraries from protocol buffer definitions (version 3).
 
+## Examples
+
+You can find some examples, using Google Cloud APIs, in the [examples directory](examples/README.md).
+
 ## Getting Started
 
 You can use Kgen through the command line or with Gradle. Using Gradle is simplier in most
@@ -30,9 +34,10 @@ cases, so we'll start there.
           // ...
           
           // for http/2 gRPC based clients (recommended)
-          implementation 'com.google.api.experimental:kotlin-client-grpc:0.1.0-SNAPSHOT'
-          // if you prefer to use http/1 use this instead
-          // implementation 'com.google.api.experimental:kotlin-client-grpc:0.1.0-SNAPSHOT'
+          implementation 'com.google.kgax:kgax-grpc:0.1.0'
+          
+          // if you prefer to use http/1 use this instead (coming soon)
+          // implementation ...
       }
       
       // compile proto and generate your client library
@@ -50,7 +55,7 @@ cases, so we'll start there.
                   artifact = 'io.grpc:protoc-gen-grpc-java:1.10.0'
               }
               client {
-                  artifact = 'com.google.api.experimental:kotlin-client-generator:0.1.0-SNAPSHOT:core@jar'
+                  artifact = 'com.google.api:kotlin-client-generator:0.1.0:core@jar'
               }
           }
           // run the code generators
@@ -73,7 +78,7 @@ cases, so we'll start there.
                       client {
                           // TODO: these options will change
                           // for now we have to tell the plugin where the protos are
-                          option "${projectDir}/src/main/proto"
+                          option "source_directory=${projectDir}/src/main/proto"
                       }
                   }
               }

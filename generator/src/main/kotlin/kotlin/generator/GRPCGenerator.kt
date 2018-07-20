@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.google.api.experimental.kotlin.generator
+package com.google.api.kotlin.generator
 
-import com.google.api.experimental.kotlin.GeneratorContext
-import com.google.api.experimental.kotlin.GeneratorResponse
-import com.google.api.experimental.kotlin.generator.config.FlattenedMethod
-import com.google.api.experimental.kotlin.generator.config.MethodOptions
-import com.google.api.experimental.kotlin.generator.config.PagedResponse
-import com.google.api.experimental.kotlin.generator.config.SampleMethod
-import com.google.api.experimental.kotlin.generator.types.GrpcTypes
+import com.google.api.kotlin.GeneratorContext
+import com.google.api.kotlin.GeneratorResponse
+import com.google.api.kotlin.generator.config.FlattenedMethod
+import com.google.api.kotlin.generator.config.MethodOptions
+import com.google.api.kotlin.generator.config.PagedResponse
+import com.google.api.kotlin.generator.config.SampleMethod
+import com.google.api.kotlin.generator.types.GrpcTypes
 import com.google.protobuf.DescriptorProtos
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock

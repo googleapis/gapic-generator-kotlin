@@ -58,7 +58,6 @@ dependencies {
     implementation 'com.google.kgax:kgax-grpc:0.1.0'
 
     // TODO: provide a gRPC-fallback example
-    //       add a corresponding kgax package and these
     //implementation 'com.squareup.retrofit2:retrofit:2.4.0'
     //implementation 'com.squareup.retrofit2:converter-protobuf:2.4.0'
 
@@ -85,7 +84,7 @@ protobuf {
             artifact = 'io.grpc:protoc-gen-grpc-java:1.10.0'
         }
         client {
-            artifact = 'com.google.api.experimental:kotlin-client-generator:0.1.0:core@jar'
+            artifact = 'com.google.api:kotlin-client-generator:0.1.0:core@jar'
         }
     }
     generateProtoTasks {
