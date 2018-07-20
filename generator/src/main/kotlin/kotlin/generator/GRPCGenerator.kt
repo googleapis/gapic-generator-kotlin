@@ -42,7 +42,6 @@ private val log = KotlinLogging.logger {}
 // property, param names, etc. for the generated client
 private const val PROP_CHANNEL = "channel"
 private const val PROP_CALL_OPTS = "options"
-private const val PROP_CREDENTIALS = "credentials"
 private const val PROP_STUBS = "stubs"
 private const val PROP_STUBS_STREAM = "stream"
 private const val PROP_STUBS_FUTURE = "future"
@@ -114,7 +113,6 @@ internal class GRPCGenerator : AbstractGenerator() {
                 .addModifiers(KModifier.PRIVATE)
                 .addParameter(PROP_CHANNEL, GrpcTypes.ManagedChannel)
                 .addParameter(PROP_CALL_OPTS, GrpcTypes.Support.ClientCallOptions)
-                .addParameter(PROP_CREDENTIALS, GrpcTypes.Auth.GoogleCredentials)
                 .addParameter(ParameterSpec.builder(PROP_STUBS,
                         ClassName.bestGuess(STUBS_CLASS_TYPE).asNullable())
                         .defaultValue("null")
@@ -126,26 +124,22 @@ internal class GRPCGenerator : AbstractGenerator() {
         val grpcType = ctx.typeMap.getKotlinGrpcType(
                 ctx.proto, ctx.service, "Grpc")
 
-        val credentials = PropertySpec.builder(
-                PROP_CREDENTIALS, GrpcTypes.Auth.GoogleCredentials)
-                .initializer(PROP_CREDENTIALS)
-                .build()
-
         val stub = PropertySpec.builder(
                 PROP_STUBS, ClassName.bestGuess(STUBS_CLASS_TYPE))
                 .addModifiers(KModifier.PRIVATE)
                 .initializer(CodeBlock.builder()
                         .add("%N ?: %T(\n",
                                 PROP_STUBS, ClassName.bestGuess(STUBS_CLASS_TYPE))
-                        .add("%T.newStub(%N).decorate(%N),\n",
-                                grpcType, PROP_CHANNEL, PROP_CREDENTIALS)
-                        .add("%T.newFutureStub(%N).decorate(%N),\n",
-                                grpcType, PROP_CHANNEL, PROP_CREDENTIALS)
-                        .add("%T.newFutureStub(%N).decorate(%N))",
-                                GrpcTypes.OperationsGrpc, PROP_CHANNEL, PROP_CREDENTIALS)
+                        .add("%T.newStub(%N).decorate(),\n",
+                                grpcType, PROP_CHANNEL)
+                        .add("%T.newFutureStub(%N).decorate(),\n",
+                                grpcType, PROP_CHANNEL)
+                        .add("%T.newFutureStub(%N).decorate())",
+                                GrpcTypes.OperationsGrpc, PROP_CHANNEL)
                         .build())
                 .build()
-        return listOf(credentials, stub)
+
+        return listOf(stub)
     }
 
     private fun createMethods(ctx: GeneratorContext): List<FunSpec> {
@@ -173,15 +167,15 @@ internal class GRPCGenerator : AbstractGenerator() {
                         .returns(ctx.className)
                         .addParameter(ParameterSpec.builder("init",
                                 LambdaTypeName.get(
-                                        GrpcTypes.Support.ClientCallOptions,
+                                        GrpcTypes.Support.ClientCallOptionsBuilder,
                                         listOf(),
                                         Unit::class.asTypeName()))
                                 .build())
                         .addStatement("val options = %T(%N)",
-                                GrpcTypes.Support.ClientCallOptions, PROP_CALL_OPTS)
+                                GrpcTypes.Support.ClientCallOptionsBuilder, PROP_CALL_OPTS)
                         .addStatement("options.init()")
-                        .addStatement("return %T(%N, options, %N, %N)",
-                                ctx.className, PROP_CHANNEL, PROP_CREDENTIALS, PROP_STUBS)
+                        .addStatement("return %T(%N, options.build(), %N)",
+                                ctx.className, PROP_CHANNEL, PROP_STUBS)
                         .build()
         )
 
@@ -262,13 +256,15 @@ internal class GRPCGenerator : AbstractGenerator() {
                 m.addCode("""
                         |return %T(
                         |  %N.%N,
-                        |  %N.%N.%L(%L),
-                        |  %T::class.java)
+                        |  %N.%N.prepare(%N).executeFuture {
+                        |    it.%L(%L)
+                        |  }, %T::class.java)
                         |""".trimMargin(),
                         returnType,
                         PROP_STUBS, PROP_STUBS_OPERATION,
-                        PROP_STUBS, PROP_STUBS_FUTURE, methodName,
-                        requestObject, realResponseType)
+                        PROP_STUBS, PROP_STUBS_FUTURE, PROP_CALL_OPTS,
+                        methodName, requestObject,
+                        realResponseType)
             }
             paging != null -> {
                 val inputType = ctx.typeMap.getKotlinType(method.inputType)
@@ -459,6 +455,32 @@ internal class GRPCGenerator : AbstractGenerator() {
     // client factory methods for creating client instances via various means
     // (i.e. service accounts, access tokens, etc.)
     private fun createClientFactories(ctx: GeneratorContext): List<FunSpec> {
+        val fromAccessToken = FunSpec.builder("fromAccessToken")
+                .addKdoc("""
+                    |Create a %N with the provided access token.
+                    |
+                    |TODO: ADD INFO ABOUT REFRESHING
+                    |
+                    |If a [channel] is not provided one will be created automatically (recommended).
+                    |""".trimMargin(), ctx.className.simpleName())
+                .addAnnotation(JvmStatic::class)
+                .addAnnotation(JvmOverloads::class)
+                .addParameter("accessToken", GrpcTypes.Auth.AccessToken)
+                .addParameter(ParameterSpec.builder("scopes",
+                        ParameterizedTypeName.get(List::class, String::class))
+                        .defaultValue("listOf(%L)", ctx.metadata.scopesAsLiteral)
+                        .build())
+                .addParameter(ParameterSpec.builder(
+                        "channel", GrpcTypes.ManagedChannel.asNullable())
+                        .defaultValue("%L", "null")
+                        .build())
+                .returns(ctx.className)
+                .addStatement("val credentials = %T.create(accessToken).createScoped(scopes)",
+                        GrpcTypes.Auth.GoogleCredentials)
+                .addStatement("return %T(channel ?: createChannel(), %T(%T.from(credentials)))",
+                        ctx.className, GrpcTypes.Support.ClientCallOptions, GrpcTypes.Auth.MoreCallCredentials)
+                .build()
+
         val fromServiceAccount = FunSpec.builder("fromServiceAccount")
                 .addKdoc("""
                     |Create a %N with service account credentials from a JSON [keyFile].
@@ -477,26 +499,28 @@ internal class GRPCGenerator : AbstractGenerator() {
                         .defaultValue("%L", "null")
                         .build())
                 .returns(ctx.className)
-                .addStatement("return %T(channel ?: createChannel(), %T(), createCredentials(keyFile, scopes))",
-                        ctx.className, GrpcTypes.Support.ClientCallOptions)
+                .addStatement("val credentials = %T.fromStream(keyFile).createScoped(scopes)",
+                        GrpcTypes.Auth.GoogleCredentials)
+                .addStatement("return %T(channel ?: createChannel(), %T(%T.from(credentials)))",
+                        ctx.className, GrpcTypes.Support.ClientCallOptions, GrpcTypes.Auth.MoreCallCredentials)
                 .build()
 
         val fromCredentials = FunSpec.builder("fromCredentials")
                 .addKdoc("""
-                    |Create a %N with the provided [%N].
+                    |Create a %N with the provided credentials.
                     |
                     |If a [channel] is not provided one will be created automatically (recommended).
-                    |""".trimMargin(), ctx.className.simpleName(), PROP_CREDENTIALS)
+                    |""".trimMargin(), ctx.className.simpleName())
                 .addAnnotation(JvmStatic::class)
                 .addAnnotation(JvmOverloads::class)
-                .addParameter(PROP_CREDENTIALS, GrpcTypes.Auth.GoogleCredentials)
+                .addParameter("credentials", GrpcTypes.Auth.GoogleCredentials)
                 .addParameter(ParameterSpec.builder(
                         "channel", GrpcTypes.ManagedChannel.asNullable())
                         .defaultValue("%L", "null")
                         .build())
                 .returns(ctx.className)
-                .addStatement("return %T(channel ?: createChannel(), %T(), %N)",
-                        ctx.className, GrpcTypes.Support.ClientCallOptions, PROP_CREDENTIALS)
+                .addStatement("return %T(channel ?: createChannel(), %T(%T.from(credentials)))",
+                        ctx.className, GrpcTypes.Support.ClientCallOptions, GrpcTypes.Auth.MoreCallCredentials)
                 .build()
 
         val createChannel = FunSpec.builder("createChannel")
@@ -523,16 +547,7 @@ internal class GRPCGenerator : AbstractGenerator() {
                 .addStatement("return builder.build()")
                 .build()
 
-        val createCredentials = FunSpec.builder("createCredentials")
-                .addModifiers(KModifier.PRIVATE)
-                .addParameter("keyFile", InputStream::class)
-                .addParameter("scopes", ParameterizedTypeName.get(List::class, String::class))
-                .returns(GrpcTypes.Auth.GoogleCredentials)
-                .addStatement("return %T.fromStream(keyFile).createScoped(scopes)",
-                        GrpcTypes.Auth.GoogleCredentials)
-                .build()
-
-        return listOf(fromServiceAccount, fromCredentials, createChannel, createCredentials)
+        return listOf(fromAccessToken, fromServiceAccount, fromCredentials, createChannel)
     }
 
     // creates a nested type that will be used to hold the gRPC stubs used by the client

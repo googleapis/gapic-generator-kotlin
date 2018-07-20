@@ -29,7 +29,9 @@ internal interface GrpcTypes {
 
     interface Auth {
         companion object {
+            val MoreCallCredentials = ClassName("io.grpc.auth", "MoreCallCredentials")
             val GoogleCredentials = ClassName("com.google.auth.oauth2", "GoogleCredentials")
+            val AccessToken = ClassName("com.google.auth.oauth2", "AccessToken")
         }
     }
 
@@ -40,6 +42,7 @@ internal interface GrpcTypes {
 
             val GrpcClient = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "GrpcClient")
             val ClientCallOptions = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ClientCallOptions")
+            val ClientCallOptionsBuilder = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ClientCallOptions.Builder")
 
             fun FutureCall(type: ClassName) = ParameterizedTypeName.get(
                     ClassName(SUPPORT_LIB_GRPC_PACKAGE, "FutureCall"), type)
