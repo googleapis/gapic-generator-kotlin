@@ -25,18 +25,17 @@ import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
 import com.google.experimental.examples.kotlin.R
+import com.google.experimental.examples.kotlin.util.AccessTokens
 import com.google.kgax.grpc.CallResult
 
 /**
  * Kotlin example calling the language API.
+ *
+ * This example uses an [com.google.auth.oauth2.AccessToken], which is the preferred
+ * method for authentication on mobile devices. However, this example has been simplified
+ * so that no server is required. Refer to [AccessTokens] for more details.
  */
 class MainActivity : AppCompatActivity() {
-
-    private val client by lazy {
-        applicationContext.resources.openRawResource(R.raw.sa).use {
-            LanguageServiceClient.fromServiceAccount(it)
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,26 +43,31 @@ class MainActivity : AppCompatActivity() {
 
         val textView: TextView = findViewById(R.id.text_view)
 
-        ApiTestTask(client) {
-            textView.text = "The API says: $it"
-        }.execute()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-
-        client.shutdownChannel()
+        applicationContext.resources.openRawResource(R.raw.sa).use {
+            val tokenFactory = AccessTokens(it, LanguageServiceClient.ALL_SCOPES)
+            ApiTestTask(tokenFactory) {
+                textView.text = "The API says: $it"
+            }.execute()
+        }
     }
 
     private class ApiTestTask(
-        val client: LanguageServiceClient,
-        val callback: (AnalyzeEntitiesResponse) -> Unit
+            val tokens: AccessTokens,
+            val callback: (AnalyzeEntitiesResponse) -> Unit
     ) : AsyncTask<Unit, Unit, CallResult<AnalyzeEntitiesResponse>>() {
         override fun doInBackground(vararg params: Unit): CallResult<AnalyzeEntitiesResponse> {
-            return client.analyzeEntities(Document.newBuilder()
-                    .setContent("Hi there Joe")
-                    .setType(Document.Type.PLAIN_TEXT)
-                    .build(), EncodingType.UTF8).get()
+            // create a client with an access token
+            val client = LanguageServiceClient.fromAccessToken(tokens.fetchToken())
+
+            // call the API and shutdown the connection
+            try {
+                return client.analyzeEntities(Document.newBuilder()
+                        .setContent("Hi there Joe")
+                        .setType(Document.Type.PLAIN_TEXT)
+                        .build(), EncodingType.UTF8).get()
+            } finally {
+                client.shutdownChannel()
+            }
         }
 
         override fun onPostExecute(result: CallResult<AnalyzeEntitiesResponse>) {

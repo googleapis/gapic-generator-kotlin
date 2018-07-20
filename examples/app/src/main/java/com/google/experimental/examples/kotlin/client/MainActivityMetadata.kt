@@ -34,6 +34,8 @@ import com.google.kgax.grpc.enqueue
 class MainActivityMetadata : AppCompatActivity() {
 
     private val client by lazy {
+        // create a client using a service account for simplicity
+        // refer to see MainActivity for more details on how to authenticate
         applicationContext.resources.openRawResource(R.raw.sa).use {
             LanguageServiceClient.fromServiceAccount(it)
         }

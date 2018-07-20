@@ -46,6 +46,7 @@ private const val PROP_STUBS = "stubs"
 private const val PROP_STUBS_STREAM = "stream"
 private const val PROP_STUBS_FUTURE = "future"
 private const val PROP_STUBS_OPERATION = "operation"
+private const val CONST_ALL_SCOPES = "ALL_SCOPES"
 private const val PARAM_REQUEST = "request"
 private const val FUN_PREPARE = "prepare"
 private const val STUBS_CLASS_TYPE = "Stubs"
@@ -71,10 +72,7 @@ internal class GRPCGenerator : AbstractGenerator() {
         type.primaryConstructor(createPrimaryConstructor(ctx))
         type.addProperties(createProperties(ctx))
         type.addFunctions(createMethods(ctx))
-        type.addType(TypeSpec.companionObjectBuilder()
-                .addKdoc("Utilities for creating a fully configured %N.\n", ctx.className.simpleName())
-                .addFunctions(createClientFactories(ctx))
-                .build())
+        type.addType(createCompanion(ctx))
         type.addType(createStubHolderType(ctx))
 
         // add statics
@@ -452,6 +450,18 @@ internal class GRPCGenerator : AbstractGenerator() {
 //                                      config: FlattenedMethod?): CodeBlock {
 //    }
 
+    private fun createCompanion(ctx: GeneratorContext): TypeSpec {
+        return TypeSpec.companionObjectBuilder()
+                .addKdoc("Utilities for creating a fully configured %N.\n", ctx.className.simpleName())
+                .addProperty(PropertySpec.builder(
+                        CONST_ALL_SCOPES, ParameterizedTypeName.get(List::class, String::class))
+                        .addAnnotation(JvmStatic::class)
+                        .initializer("listOf(%L)", ctx.metadata.scopesAsLiteral)
+                        .build())
+                .addFunctions(createClientFactories(ctx))
+                .build()
+    }
+
     // client factory methods for creating client instances via various means
     // (i.e. service accounts, access tokens, etc.)
     private fun createClientFactories(ctx: GeneratorContext): List<FunSpec> {
@@ -468,7 +478,7 @@ internal class GRPCGenerator : AbstractGenerator() {
                 .addParameter("accessToken", GrpcTypes.Auth.AccessToken)
                 .addParameter(ParameterSpec.builder("scopes",
                         ParameterizedTypeName.get(List::class, String::class))
-                        .defaultValue("listOf(%L)", ctx.metadata.scopesAsLiteral)
+                        .defaultValue("%N", CONST_ALL_SCOPES)
                         .build())
                 .addParameter(ParameterSpec.builder(
                         "channel", GrpcTypes.ManagedChannel.asNullable())
@@ -492,7 +502,7 @@ internal class GRPCGenerator : AbstractGenerator() {
                 .addParameter("keyFile", InputStream::class)
                 .addParameter(ParameterSpec.builder("scopes",
                         ParameterizedTypeName.get(List::class, String::class))
-                        .defaultValue("listOf(%L)", ctx.metadata.scopesAsLiteral)
+                        .defaultValue("%N", CONST_ALL_SCOPES)
                         .build())
                 .addParameter(ParameterSpec.builder(
                         "channel", GrpcTypes.ManagedChannel.asNullable())
