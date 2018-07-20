@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.experimental.examples.kotlin.client
+package com.google.api.examples.kotlin.client
 
 import android.support.test.espresso.Espresso.onView
 import android.support.test.espresso.assertion.ViewAssertions.matches
@@ -31,18 +31,18 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-class MainActivityMetadataTest {
+class MainActivityLROTest {
 
     @Rule
     @JvmField
-    val rule: ActivityTestRule<MainActivityMetadata> =
-            ActivityTestRule(MainActivityMetadata::class.java)
+    val rule: ActivityTestRule<MainActivityLRO> =
+            ActivityTestRule(MainActivityLRO::class.java)
 
     @Test
-    fun returnsMetadata() {
+    fun returnsRecognizedResult() {
         awaitApiCall()
 
         onView(withId(R.id.text_view))
-                .check(matches(withText(containsString("content-type"))))
+                .check(matches(withText(containsString("Brooklyn Bridge"))))
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.experimental.examples.kotlin.client
+package com.google.api.examples.kotlin.client
 
 import android.support.test.espresso.Espresso.onView
 import android.support.test.espresso.assertion.ViewAssertions.matches
@@ -31,7 +31,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-class MainActivityInterceptorTest {
+class MainActivityTest {
 
     @Rule
     @JvmField
@@ -40,8 +40,6 @@ class MainActivityInterceptorTest {
 
     @Test
     fun returnsIdentifiedEntity() {
-        awaitApiCall()
-
         onView(withId(R.id.text_view))
                 .check(matches(withText(containsString("type: PERSON"))))
     }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.experimental.examples.kotlin.client
+package com.google.api.examples.kotlin.client
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
@@ -23,15 +23,16 @@ import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
 import com.google.experimental.examples.kotlin.R
-import com.google.experimental.examples.kotlin.util.OnMainThread
+import com.google.api.examples.kotlin.util.OnMainThread
 import com.google.kgax.grpc.enqueue
 
 /**
- * Kotlin example showcasing metadata using the client library.
+ * Kotlin example calling the language API.
  *
- * @author jbolinger
+ * This example is the same as [MainActivity] but it uses [enqueue] instead of the `get`
+ * methods to avoid using an AsyncTask.
  */
-class MainActivityMetadata : AppCompatActivity() {
+class MainActivityEnqueue : AppCompatActivity() {
 
     private val client by lazy {
         // create a client using a service account for simplicity
@@ -47,18 +48,12 @@ class MainActivityMetadata : AppCompatActivity() {
 
         val textView: TextView = findViewById(R.id.text_view)
 
-        // call the api
-        client.prepare {
-            withMetadata("foo", listOf("1", "2"))
-            withMetadata("bar", listOf("a", "b"))
-        }.analyzeEntities(Document.newBuilder()
+        val call = client.analyzeEntities(Document.newBuilder()
                 .setContent("Hi there Joe")
                 .setType(Document.Type.PLAIN_TEXT)
-                .build(), EncodingType.UTF8
-        ).enqueue(OnMainThread) {
-            textView.text = "The API says: ${it.body}\n\n" +
-                    "with metadata of: ${it.metadata.keys().joinToString(",")}"
-        }
+                .build(), EncodingType.UTF8)
+
+        call.enqueue(OnMainThread) { textView.text = "The API says: ${it.body}" }
     }
 
     override fun onDestroy() {

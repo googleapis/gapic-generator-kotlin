@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.experimental.examples.kotlin.client
+package com.google.api.examples.kotlin.client
 
 import android.support.test.espresso.Espresso.onView
 import android.support.test.espresso.assertion.ViewAssertions.matches
@@ -24,25 +24,26 @@ import android.support.test.filters.LargeTest
 import android.support.test.rule.ActivityTestRule
 import android.support.test.runner.AndroidJUnit4
 import com.google.experimental.examples.kotlin.R
-import org.hamcrest.Matchers.containsString
+import org.awaitility.Awaitility.await
+import org.hamcrest.CoreMatchers.containsString
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-class MainActivityEnqueueTest {
+class MainActivityPagingTest {
 
     @Rule
     @JvmField
-    val activityRule: ActivityTestRule<MainActivity> =
-            ActivityTestRule(MainActivity::class.java)
+    val rule: ActivityTestRule<MainActivityPaging> =
+            ActivityTestRule(MainActivityPaging::class.java)
 
     @Test
-    fun returnsIdentifiedEntity() {
-        awaitApiCall()
-
-        onView(withId(R.id.text_view))
-                .check(matches(withText(containsString("type: PERSON"))))
+    fun returnsPages() {
+        await().untilAsserted {
+            onView(withId(R.id.text_view))
+                    .check(matches(withText(containsString("log number: 40"))))
+        }
     }
 }

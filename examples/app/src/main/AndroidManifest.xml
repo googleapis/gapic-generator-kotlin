@@ -29,24 +29,24 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".client.MainActivity">
+        <activity android:name="com.google.api.examples.kotlin.client.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".client.MainActivityEnqueue">
+        <activity android:name="com.google.api.examples.kotlin.client.MainActivityEnqueue">
         </activity>
-        <activity android:name=".client.MainActivityLRO">
+        <activity android:name="com.google.api.examples.kotlin.client.MainActivityLRO">
         </activity>
-        <activity android:name=".client.MainActivityMetadata">
+        <activity android:name="com.google.api.examples.kotlin.client.MainActivityMetadata">
         </activity>
-        <activity android:name=".client.MainActivityStreaming">
+        <activity android:name="com.google.api.examples.kotlin.client.MainActivityStreaming">
         </activity>
-        <activity android:name=".client.MainActivityPaging">
+        <activity android:name="com.google.api.examples.kotlin.client.MainActivityPaging">
         </activity>
-        <activity android:name=".client.MainActivityInterceptor">
+        <activity android:name="com.google.api.examples.kotlin.client.MainActivityInterceptor">
         </activity>
     </application>
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.experimental.examples.kotlin.client
+package com.google.api.examples.kotlin.client
 
 import android.os.AsyncTask
 import android.os.Bundle
@@ -25,7 +25,7 @@ import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
 import com.google.experimental.examples.kotlin.R
-import com.google.experimental.examples.kotlin.util.AccessTokens
+import com.google.api.examples.kotlin.util.AccessTokens
 import com.google.kgax.grpc.CallResult
 
 /**

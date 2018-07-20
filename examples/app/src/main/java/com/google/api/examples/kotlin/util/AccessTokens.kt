@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.experimental.examples.kotlin.util
+package com.google.api.examples.kotlin.util
 
 import com.google.auth.oauth2.AccessToken
 import com.google.auth.oauth2.GoogleCredentials

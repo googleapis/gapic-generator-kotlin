@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.experimental.examples.kotlin.client
+package com.google.api.examples.kotlin.client
 
 import android.support.test.espresso.Espresso
 import android.support.test.espresso.assertion.ViewAssertions

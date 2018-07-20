@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.experimental.examples.kotlin.client
+package com.google.api.examples.kotlin.client
 
 import android.os.Bundle
 import android.os.Handler
@@ -22,7 +22,7 @@ import android.support.v7.app.AppCompatActivity
 import android.widget.TextView
 import com.google.api.MonitoredResource
 import com.google.experimental.examples.kotlin.R
-import com.google.experimental.examples.kotlin.util.OnMainThread
+import com.google.api.examples.kotlin.util.OnMainThread
 import com.google.kgax.ServiceAccount
 import com.google.kgax.grpc.enqueue
 import com.google.logging.v2.LogEntry

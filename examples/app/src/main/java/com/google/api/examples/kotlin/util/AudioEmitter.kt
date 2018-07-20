@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.experimental.examples.kotlin.util
+package com.google.api.examples.kotlin.util
 
 import android.media.AudioFormat
 import android.media.AudioRecord

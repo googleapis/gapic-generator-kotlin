@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.google.experimental.examples.kotlin.client
+package com.google.api.examples.kotlin.client
 
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.os.HandlerThread
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
@@ -29,8 +28,8 @@ import com.google.cloud.speech.v1.SpeechClient
 import com.google.cloud.speech.v1.StreamingRecognitionConfig
 import com.google.cloud.speech.v1.StreamingRecognizeRequest
 import com.google.experimental.examples.kotlin.R
-import com.google.experimental.examples.kotlin.util.AudioEmitter
-import com.google.experimental.examples.kotlin.util.OnMainThread
+import com.google.api.examples.kotlin.util.AudioEmitter
+import com.google.api.examples.kotlin.util.OnMainThread
 
 private const val TAG = "Demo"
 
