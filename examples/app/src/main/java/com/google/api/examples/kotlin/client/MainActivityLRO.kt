@@ -19,13 +19,12 @@ package com.google.api.examples.kotlin.client
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.TextView
+import com.google.api.examples.kotlin.util.OnMainThread
 import com.google.cloud.speech.v1.LongRunningRecognizeRequest
 import com.google.cloud.speech.v1.RecognitionAudio
 import com.google.cloud.speech.v1.RecognitionConfig
 import com.google.cloud.speech.v1.SpeechClient
 import com.google.common.io.ByteStreams
-import com.google.experimental.examples.kotlin.R
-import com.google.api.examples.kotlin.util.OnMainThread
 import com.google.protobuf.ByteString
 
 /**
@@ -50,20 +49,20 @@ class MainActivityLRO : AppCompatActivity() {
         val textView: TextView = findViewById(R.id.text_view)
 
         // get audio
-        val audio = applicationContext.resources.openRawResource(R.raw.audio).use {
+        val audioData = applicationContext.resources.openRawResource(R.raw.audio).use {
             ByteString.copyFrom(ByteStreams.toByteArray(it))
         }
 
-        val lro = client.longRunningRecognize(LongRunningRecognizeRequest.newBuilder()
-                .setAudio(RecognitionAudio.newBuilder()
-                        .setContent(audio)
-                        .build())
-                .setConfig(RecognitionConfig.newBuilder()
-                        .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
-                        .setSampleRateHertz(16000)
-                        .setLanguageCode("en-US")
-                        .build())
-                .build())
+        val lro = client.longRunningRecognize(LongRunningRecognizeRequest {
+            audio = RecognitionAudio {
+                content = audioData
+            }
+            config = RecognitionConfig {
+                encoding = RecognitionConfig.AudioEncoding.LINEAR16
+                sampleRateHertz = 16000
+                languageCode = "en-US"
+            }
+        })
 
         lro.enqueue(OnMainThread) {
             textView.text = "The API says: ${it.body}\n via operation: ${lro.operation?.name}"

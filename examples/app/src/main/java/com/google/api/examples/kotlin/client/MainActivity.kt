@@ -20,12 +20,11 @@ import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.TextView
+import com.google.api.examples.kotlin.util.AccessTokens
 import com.google.cloud.language.v1.AnalyzeEntitiesResponse
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
-import com.google.experimental.examples.kotlin.R
-import com.google.api.examples.kotlin.util.AccessTokens
 import com.google.kgax.grpc.CallResult
 
 /**
@@ -52,8 +51,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private class ApiTestTask(
-        val tokens: AccessTokens,
-        val callback: (AnalyzeEntitiesResponse) -> Unit
+            val tokens: AccessTokens,
+            val callback: (AnalyzeEntitiesResponse) -> Unit
     ) : AsyncTask<Unit, Unit, CallResult<AnalyzeEntitiesResponse>>() {
         override fun doInBackground(vararg params: Unit): CallResult<AnalyzeEntitiesResponse> {
             // create a client with an access token
@@ -61,10 +60,10 @@ class MainActivity : AppCompatActivity() {
 
             // call the API and shutdown the connection
             try {
-                return client.analyzeEntities(Document.newBuilder()
-                        .setContent("Hi there Joe")
-                        .setType(Document.Type.PLAIN_TEXT)
-                        .build(), EncodingType.UTF8).get()
+                return client.analyzeEntities(Document {
+                    content = "Hi there Joe"
+                    type = Document.Type.PLAIN_TEXT
+                }, EncodingType.UTF8).get()
             } finally {
                 client.shutdownChannel()
             }

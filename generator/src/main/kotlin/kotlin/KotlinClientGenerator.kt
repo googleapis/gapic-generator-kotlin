@@ -16,6 +16,7 @@
 
 package com.google.api.kotlin
 
+import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.api.kotlin.generator.RetrofitGenerator
 import com.google.api.kotlin.generator.config.ConfigurationMetadata
@@ -77,8 +78,13 @@ class KotlinClientGenerator(private val sourceDirectory: String = ".",
                     }
                 }
 
+        // generate builders
+        val builderFiles = BuilderGenerator().generate(typeMap).map { toFile(it) }
+
+        // put it all together
         return CodeGeneratorResponse.newBuilder()
                 .addAllFile(files)
+                .addAllFile(builderFiles)
                 .build()
     }
 
@@ -121,8 +127,11 @@ class KotlinClientGenerator(private val sourceDirectory: String = ".",
         imports.forEach { fileSpec.addStaticImport(it.packageName(), it.simpleName()) }
 
         // create file response
-        val file = fileSpec.build()
-        val fileDir = packageName
+        return toFile(fileSpec.build())
+    }
+
+    private fun toFile(file: FileSpec): PluginProtos.CodeGeneratorResponse.File {
+        val fileDir = file.packageName
                 .toLowerCase()
                 .split(".")
                 .joinToString("/")
@@ -139,7 +148,7 @@ class KotlinClientGenerator(private val sourceDirectory: String = ".",
  *
  * A concrete generator will be used based on user settings.
  */
-internal interface Generator {
+internal interface ClientGenerator {
 
     /**
      * Generate the client.

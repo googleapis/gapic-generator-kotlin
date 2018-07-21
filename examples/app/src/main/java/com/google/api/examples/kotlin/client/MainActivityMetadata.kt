@@ -19,11 +19,10 @@ package com.google.api.examples.kotlin.client
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.TextView
+import com.google.api.examples.kotlin.util.OnMainThread
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
-import com.google.experimental.examples.kotlin.R
-import com.google.api.examples.kotlin.util.OnMainThread
 import com.google.kgax.grpc.enqueue
 
 /**
@@ -51,11 +50,10 @@ class MainActivityMetadata : AppCompatActivity() {
         client.prepare {
             withMetadata("foo", listOf("1", "2"))
             withMetadata("bar", listOf("a", "b"))
-        }.analyzeEntities(Document.newBuilder()
-                .setContent("Hi there Joe")
-                .setType(Document.Type.PLAIN_TEXT)
-                .build(), EncodingType.UTF8
-        ).enqueue(OnMainThread) {
+        }.analyzeEntities(Document {
+            content = "Hi there Joe"
+            type = Document.Type.PLAIN_TEXT
+        }, EncodingType.UTF8).enqueue(OnMainThread) {
             textView.text = "The API says: ${it.body}\n\n" +
                     "with metadata of: ${it.metadata.keys().joinToString(",")}"
         }

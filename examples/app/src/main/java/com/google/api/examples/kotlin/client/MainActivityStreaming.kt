@@ -23,13 +23,12 @@ import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.widget.TextView
+import com.google.api.examples.kotlin.util.AudioEmitter
+import com.google.api.examples.kotlin.util.OnMainThread
 import com.google.cloud.speech.v1.RecognitionConfig
 import com.google.cloud.speech.v1.SpeechClient
 import com.google.cloud.speech.v1.StreamingRecognitionConfig
 import com.google.cloud.speech.v1.StreamingRecognizeRequest
-import com.google.experimental.examples.kotlin.R
-import com.google.api.examples.kotlin.util.AudioEmitter
-import com.google.api.examples.kotlin.util.OnMainThread
 
 private const val TAG = "Demo"
 
@@ -76,20 +75,21 @@ class MainActivityStreaming : AppCompatActivity() {
 
             // start streaming the data to the server and collect responses
             val stream = client.streamingRecognize(
-                    StreamingRecognitionConfig.newBuilder()
-                            .setConfig(RecognitionConfig.newBuilder()
-                                    .setLanguageCode("en-US")
-                                    .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
-                                    .setSampleRateHertz(16000))
-                            .setInterimResults(false)
-                            .setSingleUtterance(false)
-                            .build())
+                    StreamingRecognitionConfig {
+                        config = RecognitionConfig {
+                            languageCode = "en-US"
+                            encoding = RecognitionConfig.AudioEncoding.LINEAR16
+                            sampleRateHertz = 16000
+                            interimResults = false
+                            singleUtterance = false
+                        }
+                    })
 
             // monitor the input stream and send requests as audio data becomes available
             audioEmitter!!.start { bytes ->
-                stream.requests.send(StreamingRecognizeRequest.newBuilder()
-                        .setAudioContent(bytes)
-                        .build())
+                stream.requests.send(StreamingRecognizeRequest {
+                    audioContent = bytes
+                })
             }
 
             // handle incoming responses
@@ -117,7 +117,9 @@ class MainActivityStreaming : AppCompatActivity() {
         client.shutdownChannel()
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(requestCode: Int,
+                                            permissions: Array<String>,
+                                            grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         when (requestCode) {

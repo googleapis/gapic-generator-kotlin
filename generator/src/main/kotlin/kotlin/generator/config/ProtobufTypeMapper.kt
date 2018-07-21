@@ -42,6 +42,10 @@ internal class ProtobufTypeMapper private constructor() {
                           suffix: String) =
             getKotlinGrpcType(".${proto.`package`}.${service.name}", suffix)
 
+    /** Get all Kotlin types (excluding enums and map types) */
+    fun getAllKotlinTypes() = knownProtoTypes.keys
+            .filter { !(knownProtoTypes[it]?.options?.mapEntry ?: false) }
+            .map { typeMap[it] ?: throw IllegalStateException("unknown type: $it") }
 
     /** Checks if the message type is in this mapper */
     fun hasProtoTypeDescriptor(type: String) = knownProtoTypes.containsKey(type)

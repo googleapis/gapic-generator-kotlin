@@ -16,7 +16,7 @@
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.google.experimental.examples.kotlin">
+    package="com.google.api.examples.kotlin.client">
 
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
@@ -29,24 +29,24 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name="com.google.api.examples.kotlin.client.MainActivity">
+        <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name="com.google.api.examples.kotlin.client.MainActivityEnqueue">
+        <activity android:name=".MainActivityEnqueue">
         </activity>
-        <activity android:name="com.google.api.examples.kotlin.client.MainActivityLRO">
+        <activity android:name=".MainActivityLRO">
         </activity>
-        <activity android:name="com.google.api.examples.kotlin.client.MainActivityMetadata">
+        <activity android:name=".MainActivityMetadata">
         </activity>
-        <activity android:name="com.google.api.examples.kotlin.client.MainActivityStreaming">
+        <activity android:name=".MainActivityStreaming">
         </activity>
-        <activity android:name="com.google.api.examples.kotlin.client.MainActivityPaging">
+        <activity android:name=".MainActivityPaging">
         </activity>
-        <activity android:name="com.google.api.examples.kotlin.client.MainActivityInterceptor">
+        <activity android:name=".MainActivityInterceptor">
         </activity>
     </application>
 

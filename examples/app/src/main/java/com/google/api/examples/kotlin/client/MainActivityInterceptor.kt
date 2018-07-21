@@ -20,11 +20,10 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.widget.TextView
+import com.google.api.examples.kotlin.util.OnMainThread
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
-import com.google.experimental.examples.kotlin.R
-import com.google.api.examples.kotlin.util.OnMainThread
 import com.google.kgax.grpc.BasicInterceptor
 import com.google.kgax.grpc.enqueue
 
@@ -53,10 +52,10 @@ class MainActivityInterceptor : AppCompatActivity() {
 
         val textView: TextView = findViewById(R.id.text_view)
 
-        val document = Document.newBuilder()
-                .setContent("Hi there Joe")
-                .setType(Document.Type.PLAIN_TEXT)
-                .build()
+        val document = Document {
+            content = "Hi there Joe"
+            type = Document.Type.PLAIN_TEXT
+        }
 
         // make an API call
         client.analyzeEntities(document, EncodingType.UTF8)

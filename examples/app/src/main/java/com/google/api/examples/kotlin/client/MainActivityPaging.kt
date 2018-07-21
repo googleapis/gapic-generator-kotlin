@@ -21,7 +21,6 @@ import android.os.Handler
 import android.support.v7.app.AppCompatActivity
 import android.widget.TextView
 import com.google.api.MonitoredResource
-import com.google.experimental.examples.kotlin.R
 import com.google.api.examples.kotlin.util.OnMainThread
 import com.google.kgax.ServiceAccount
 import com.google.kgax.grpc.enqueue
@@ -59,19 +58,19 @@ class MainActivityPaging : AppCompatActivity() {
         // resources to use
         val project = "projects/$projectId"
         val log = "$project/logs/testLog-${Date().time}"
-        val resource = MonitoredResource.newBuilder().setType("global").build()
+        val globalResource = MonitoredResource { type = "global" }
 
         // ensure we have some logs to read
         val entries = List(40) {
-            LogEntry.newBuilder()
-                    .setResource(MonitoredResource.newBuilder().setType("global").build())
-                    .setLogName(log)
-                    .setTextPayload("log number: ${it + 1}")
-                    .build()
+            LogEntry {
+                resource = globalResource
+                logName = log
+                textPayload = "log number: ${it + 1}"
+            }
         }
 
         // write the entries
-        client.writeLogEntries(log, resource, mapOf(), entries).enqueue {
+        client.writeLogEntries(log, globalResource, mapOf(), entries).enqueue {
             // the server may respond with an empty set if we immediately try to read the logs
             // that we just wrote - so we wait for a few seconds before proceeding
             Handler().postDelayed({
