@@ -23,7 +23,6 @@ import android.support.test.espresso.matcher.ViewMatchers.withText
 import android.support.test.filters.LargeTest
 import android.support.test.rule.ActivityTestRule
 import android.support.test.runner.AndroidJUnit4
-import com.google.experimental.examples.kotlin.R
 import org.hamcrest.CoreMatchers.containsString
 import org.junit.Rule
 import org.junit.Test

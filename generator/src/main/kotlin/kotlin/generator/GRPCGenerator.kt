@@ -111,10 +111,6 @@ internal class GRPCGenerator : AbstractGenerator() {
                 .addModifiers(KModifier.PRIVATE)
                 .addParameter(PROP_CHANNEL, GrpcTypes.ManagedChannel)
                 .addParameter(PROP_CALL_OPTS, GrpcTypes.Support.ClientCallOptions)
-                .addParameter(ParameterSpec.builder(PROP_STUBS,
-                        ClassName.bestGuess(STUBS_CLASS_TYPE).asNullable())
-                        .defaultValue("null")
-                        .build())
                 .build()
     }
 
@@ -126,14 +122,14 @@ internal class GRPCGenerator : AbstractGenerator() {
                 PROP_STUBS, ClassName.bestGuess(STUBS_CLASS_TYPE))
                 .addModifiers(KModifier.PRIVATE)
                 .initializer(CodeBlock.builder()
-                        .add("%N ?: %T(\n",
-                                PROP_STUBS, ClassName.bestGuess(STUBS_CLASS_TYPE))
-                        .add("%T.newStub(%N).decorate(),\n",
-                                grpcType, PROP_CHANNEL)
-                        .add("%T.newFutureStub(%N).decorate(),\n",
-                                grpcType, PROP_CHANNEL)
-                        .add("%T.newFutureStub(%N).decorate())",
-                                GrpcTypes.OperationsGrpc, PROP_CHANNEL)
+                        .add("%T(\n",
+                                ClassName.bestGuess(STUBS_CLASS_TYPE))
+                        .add("%T.newStub(%N).decorate().prepare(%N),\n",
+                                grpcType, PROP_CHANNEL, PROP_CALL_OPTS)
+                        .add("%T.newFutureStub(%N).decorate().prepare(%N),\n",
+                                grpcType, PROP_CHANNEL, PROP_CALL_OPTS)
+                        .add("%T.newFutureStub(%N).decorate().prepare(%N))",
+                                GrpcTypes.OperationsGrpc, PROP_CHANNEL, PROP_CALL_OPTS)
                         .build())
                 .build()
 
@@ -172,8 +168,8 @@ internal class GRPCGenerator : AbstractGenerator() {
                         .addStatement("val options = %T(%N)",
                                 GrpcTypes.Support.ClientCallOptionsBuilder, PROP_CALL_OPTS)
                         .addStatement("options.init()")
-                        .addStatement("return %T(%N, options.build(), %N)",
-                                ctx.className, PROP_CHANNEL, PROP_STUBS)
+                        .addStatement("return %T(%N, options.build())",
+                                ctx.className, PROP_CHANNEL)
                         .build()
         )
 
@@ -254,13 +250,13 @@ internal class GRPCGenerator : AbstractGenerator() {
                 m.addCode("""
                         |return %T(
                         |  %N.%N,
-                        |  %N.%N.prepare(%N).executeFuture {
+                        |  %N.%N.executeFuture {
                         |    it.%L(%L)
                         |  }, %T::class.java)
                         |""".trimMargin(),
                         returnType,
                         PROP_STUBS, PROP_STUBS_OPERATION,
-                        PROP_STUBS, PROP_STUBS_FUTURE, PROP_CALL_OPTS,
+                        PROP_STUBS, PROP_STUBS_FUTURE,
                         methodName, requestObject,
                         realResponseType)
             }
@@ -287,7 +283,7 @@ internal class GRPCGenerator : AbstractGenerator() {
                 m.addCode("""
                         |return pager {
                         |    method = { request ->
-                        |        %N.%N.prepare(%N).executeFuture {
+                        |        %N.%N.executeFuture {
                         |            it.%L(request.toBuilder().%L(pageSize).build())
                         |        }.get()
                         |    }
@@ -302,7 +298,7 @@ internal class GRPCGenerator : AbstractGenerator() {
                         |    }
                         |}
                         |""".trimMargin(),
-                        PROP_STUBS, PROP_STUBS_FUTURE, PROP_CALL_OPTS,
+                        PROP_STUBS, PROP_STUBS_FUTURE,
                         methodName, pageSizeSetter,
                         requestObject,
                         pageTokenSetter,
@@ -311,11 +307,11 @@ internal class GRPCGenerator : AbstractGenerator() {
             else -> {
                 m.returns(GrpcTypes.Support.FutureCall(ctx.typeMap.getKotlinType(method.outputType)))
                 m.addCode("""
-                        |return %N.%N.prepare(%N).executeFuture {
+                        |return %N.%N.executeFuture {
                         |  it.%L(%L)
                         |}
                         |""".trimMargin(),
-                        PROP_STUBS, PROP_STUBS_FUTURE, PROP_CALL_OPTS,
+                        PROP_STUBS, PROP_STUBS_FUTURE,
                         methodName, requestObject)
             }
         }
@@ -345,26 +341,26 @@ internal class GRPCGenerator : AbstractGenerator() {
                 flattened.addParameters(parameters)
                 flattened.returns(GrpcTypes.Support.StreamingCall(normalInputType, normalOutputType))
                 flattened.addCode("""
-                    |val stream = %N.%N.prepare(%N).executeStreaming { it::%N }
+                    |val stream = %N.%N.executeStreaming { it::%N }
                     |stream.requests.send(%L)
                     |return stream
                     |""".trimMargin(),
-                        PROP_STUBS, PROP_STUBS_STREAM, PROP_CALL_OPTS, methodName, request)
+                        PROP_STUBS, PROP_STUBS_STREAM, methodName, request)
             } else if (method.hasClientStreaming()) { // client only
                 flattened.addKdoc(createMethodDoc(ctx, method, methodName, options.samples, it))
                 flattened.returns(GrpcTypes.Support.ClientStreamingCall(normalInputType, normalOutputType))
-                flattened.addCode("return %N.%N.prepare(%N).executeClientStreaming { it::%N }",
-                        PROP_STUBS, PROP_STUBS_STREAM, PROP_CALL_OPTS, methodName)
+                flattened.addCode("return %N.%N.executeClientStreaming { it::%N }",
+                        PROP_STUBS, PROP_STUBS_STREAM, methodName)
             } else if (method.hasServerStreaming()) { // server only
                 flattened.addKdoc(createMethodDoc(ctx, method, methodName, options.samples, it, parameters))
                 flattened.addParameters(parameters)
                 flattened.returns(GrpcTypes.Support.ServerStreamingCall(normalOutputType))
                 flattened.addCode("""
-                    |return %N.%N.prepare(%N).executeServerStreaming { stub, observer ->
+                    |return %N.%N.executeServerStreaming { stub, observer ->
                     |  stub.%N(%L, observer)
                     |}
                     |""".trimMargin(),
-                        PROP_STUBS, PROP_STUBS_STREAM, PROP_CALL_OPTS, methodName, request)
+                        PROP_STUBS, PROP_STUBS_STREAM, methodName, request)
             } else {
                 throw IllegalArgumentException("Unknown streaming type (not client or server)!")
             }
@@ -377,21 +373,21 @@ internal class GRPCGenerator : AbstractGenerator() {
                     .addKdoc(createMethodDoc(ctx, method, methodName, options.samples))
             if (method.hasClientStreaming() && method.hasServerStreaming()) {
                 normal.returns(GrpcTypes.Support.StreamingCall(normalInputType, normalOutputType))
-                normal.addCode("return %N.%N.prepare(%N).executeStreaming { it::%N }",
-                        PROP_STUBS, PROP_STUBS_STREAM, PROP_CALL_OPTS, methodName)
+                normal.addCode("return %N.%N.executeStreaming { it::%N }",
+                        PROP_STUBS, PROP_STUBS_STREAM, methodName)
             } else if (method.hasClientStreaming()) { // client only
                 normal.returns(GrpcTypes.Support.ClientStreamingCall(normalInputType, normalOutputType))
-                normal.addCode("return %N.%N.prepare(%N).executeClientStreaming { it::%N }",
-                        PROP_STUBS, PROP_STUBS_STREAM, PROP_CALL_OPTS, methodName)
+                normal.addCode("return %N.%N.executeClientStreaming { it::%N }",
+                        PROP_STUBS, PROP_STUBS_STREAM, methodName)
             } else if (method.hasServerStreaming()) { // server only
                 normal.addParameter(PARAM_REQUEST, normalInputType)
                 normal.returns(GrpcTypes.Support.ServerStreamingCall(normalOutputType))
                 normal.addCode("""
-                    |return %N.%N.prepare(%N).executeServerStreaming { stub, observer ->
+                    |return %N.%N.executeServerStreaming { stub, observer ->
                     |  stub.%N(%N, observer)
                     |}
                     |""".trimMargin(),
-                        PROP_STUBS, PROP_STUBS_STREAM, PROP_CALL_OPTS, methodName, PARAM_REQUEST)
+                        PROP_STUBS, PROP_STUBS_STREAM, methodName, PARAM_REQUEST)
             } else {
                 throw IllegalArgumentException("Unknown streaming type (not client or server)!")
             }
@@ -562,11 +558,11 @@ internal class GRPCGenerator : AbstractGenerator() {
 
     // creates a nested type that will be used to hold the gRPC stubs used by the client
     private fun createStubHolderType(ctx: GeneratorContext): TypeSpec {
-        val streamType = ctx.typeMap.getKotlinGrpcType(
-                ctx.proto, ctx.service, "Grpc.${ctx.service.name}Stub")
-        val futureType = ctx.typeMap.getKotlinGrpcType(
-                ctx.proto, ctx.service, "Grpc.${ctx.service.name}FutureStub")
-        val opType = GrpcTypes.OperationsFutureStub
+        val streamType = GrpcTypes.Support.ClientCall(ctx.typeMap.getKotlinGrpcType(
+                ctx.proto, ctx.service, "Grpc.${ctx.service.name}Stub"))
+        val futureType = GrpcTypes.Support.ClientCall(ctx.typeMap.getKotlinGrpcType(
+                ctx.proto, ctx.service, "Grpc.${ctx.service.name}FutureStub"))
+        val opType = GrpcTypes.Support.ClientCall(GrpcTypes.OperationsFutureStub)
 
         return TypeSpec.classBuilder(STUBS_CLASS_TYPE)
                 .addModifiers(KModifier.PRIVATE)

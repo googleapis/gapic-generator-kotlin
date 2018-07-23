@@ -20,7 +20,6 @@ import android.support.test.espresso.Espresso
 import android.support.test.espresso.assertion.ViewAssertions
 import android.support.test.espresso.matcher.ViewMatchers
 import android.support.test.espresso.matcher.ViewMatchers.withText
-import com.google.experimental.examples.kotlin.R
 import org.awaitility.Awaitility
 import org.hamcrest.Matchers.not
 

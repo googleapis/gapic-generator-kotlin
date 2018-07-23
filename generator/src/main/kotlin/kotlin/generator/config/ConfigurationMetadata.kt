@@ -39,8 +39,7 @@ internal class ConfigurationMetadata constructor(val host: String,
                                                  val scopes: List<String>,
                                                  val branding: BrandingOptions,
                                                  private val packageName: String,
-                                                 private val serviceOptions: Map<String, ServiceOptions>,
-                                                 val licenseTemplate: String?) {
+                                                 private val serviceOptions: Map<String, ServiceOptions>) {
 
     /** Get the options for the given service */
     operator fun get(serviceName: String) =
@@ -124,14 +123,10 @@ internal class ConfigurationMetadata constructor(val host: String,
                         ?.map { it.replace("\n".toRegex(), "").trim { it <= ' ' } }
                         ?.toSet() ?: setOf()
 
-                // TODO: not sure how this will be configured long term
-                // so just a placeholder for now
-                val license = this.javaClass.getResource("/license-templates/apache-2.0.txt").readText()
-
                 // put it all together
                 return ConfigurationMetadata(host, scopes.toList(),
                         BrandingOptions(name, summary),
-                        packageName, parseClient(clientFile), license)
+                        packageName, parseClient(clientFile))
             }
         }
 

@@ -114,23 +114,30 @@ class KotlinClientGenerator(private val sourceDirectory: String = ".",
         val (type, imports) = generator.generateServiceClient(ctx)
         val fileSpec = FileSpec.builder(packageName, className.simpleName())
 
-        // add license / copyright notice
-        ctx.metadata.licenseTemplate?.let {
-            // TODO: decide if/how to customize
-            fileSpec.addComment("%L", it
-                    .replaceFirst("[yyyy]", "${Calendar.getInstance().get(Calendar.YEAR)}")
-                    .replaceFirst("[name of copyright owner]", "Google LLC"))
-        }
-
         // add implementation
         fileSpec.addType(type)
         imports.forEach { fileSpec.addStaticImport(it.packageName(), it.simpleName()) }
 
         // create file response
-        return toFile(fileSpec.build())
+        return toFile(fileSpec)
     }
 
-    private fun toFile(file: FileSpec): PluginProtos.CodeGeneratorResponse.File {
+    private fun toFile(fileSpec: FileSpec.Builder,
+                       addLicense: Boolean = true
+    ): PluginProtos.CodeGeneratorResponse.File {
+        // add headers
+        if (addLicense) {
+            // TODO: not sure how this will be configured long term
+            val license = this.javaClass.getResource("/license-templates/apache-2.0.txt")?.readText()
+            license?.let {
+                fileSpec.addComment("%L", it
+                        .replaceFirst("[yyyy]", "${Calendar.getInstance().get(Calendar.YEAR)}")
+                        .replaceFirst("[name of copyright owner]", "Google LLC"))
+            }
+        }
+
+        // put it together and create file
+        val file = fileSpec.build()
         val fileDir = file.packageName
                 .toLowerCase()
                 .split(".")

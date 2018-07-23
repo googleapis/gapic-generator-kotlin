@@ -31,7 +31,7 @@ internal class BuilderGenerator {
 
     private val SKIP = listOf("Any", "Empty")
 
-    fun generate(types: ProtobufTypeMapper): List<FileSpec> {
+    fun generate(types: ProtobufTypeMapper): List<FileSpec.Builder> {
         // package name -> builder functions
         val packagesToBuilders = mutableMapOf<String, MutableList<FunSpec>>()
 
@@ -73,7 +73,7 @@ internal class BuilderGenerator {
         return packagesToBuilders.keys.map { packageName ->
             val file = FileSpec.builder(packageName, "KotlinBuilders")
             packagesToBuilders[packageName]?.forEach { file.addFunction(it) }
-            file.build()
+            file
         }
     }
 
