@@ -51,8 +51,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private class ApiTestTask(
-            val tokens: AccessTokens,
-            val callback: (AnalyzeEntitiesResponse) -> Unit
+        val tokens: AccessTokens,
+        val callback: (AnalyzeEntitiesResponse) -> Unit
     ) : AsyncTask<Unit, Unit, CallResult<AnalyzeEntitiesResponse>>() {
         override fun doInBackground(vararg params: Unit): CallResult<AnalyzeEntitiesResponse> {
             // create a client with an access token
