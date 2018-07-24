@@ -2,10 +2,12 @@ syntax = "proto3";
 
 package google.example;
 
+option java_multiple_files = true;
+
 message Result {
-  int32 an_int = 1;
-  string a_string = 2;
-  Detail a_detail = 3;
+    int32 an_int = 1;
+    string a_string = 2;
+    Detail a_detail = 3;
 }
 
 message Detail {
@@ -15,5 +17,16 @@ message Detail {
 }
 
 message MoreDetail {
-  string very_detailed = 1;
+    enum HowMuchMore {
+        Some = 0;
+        More = 1;
+        Lots = 2;
+    }
+    string very_detailed = 1;
+    HowMuchMore level = 2;
+}
+
+enum AnEnum {
+    ZERO = 0;
+    ONE = 1;
 }

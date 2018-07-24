@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.google.api.kotlin.generator
+package com.google.api.kotlin
 
-import com.google.api.kotlin.GeneratorResponse
+import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.api.kotlin.generator.config.BrandingOptions
 import com.google.api.kotlin.generator.config.ConfigurationMetadata
 import com.google.api.kotlin.generator.config.ProtobufTypeMapper
@@ -32,19 +32,19 @@ import com.squareup.kotlinpoet.CodeBlock
 
 /**
  * Base class for generator tests that includes common plumbing for reading the protos that are used
- * and mocking up the context.
+ * and mocking up the context (see test/resources directory for protos).
  */
 abstract class BaseGeneratorTest {
 
     // namespace of the test protos
     protected val namespace = "google.example"
 
-    // read the test protos
-    private val generatorRequest = PluginProtos.CodeGeneratorRequest.parseFrom(
+    // accessors for the test protos
+    protected val generatorRequest = PluginProtos.CodeGeneratorRequest.parseFrom(
             javaClass.getResourceAsStream("/generate.data"))
-    private val testProto = generatorRequest.protoFileList.find { it.name == "google/example/test.proto" }
+    protected val testProto = generatorRequest.protoFileList.find { it.name == "google/example/test.proto" }
             ?: throw RuntimeException("Missing test.proto")
-    private val testTypesProto = generatorRequest.protoFileList.find { it.name == "google/example/test_types.proto" }
+    protected val testTypesProto = generatorRequest.protoFileList.find { it.name == "google/example/test_types.proto" }
             ?: throw RuntimeException("Missing test_types.proto")
 
     // mock type mapper
@@ -61,9 +61,9 @@ abstract class BaseGeneratorTest {
             ".$namespace.Detail" to testTypesProto.messageTypeList.find { it.name == "Detail" },
             ".$namespace.MoreDetail" to testTypesProto.messageTypeList.find { it.name == "MoreDetail" })
 
-    // invoke the generator
-    internal fun generate(options: ServiceOptions): GeneratorResponse {
-        val mockedTypeMap: ProtobufTypeMapper = mock {
+    // a type map from the protos
+    internal fun getMockedTypeMap(): ProtobufTypeMapper {
+        return mock {
             on { getKotlinGrpcType(any(), any()) }.doReturn(ClassName(namespace, "TestStub"))
             on { getKotlinGrpcType(any(), any(), any()) }.doReturn(ClassName(namespace, "TestStub"))
             on { getKotlinType(any()) }.thenAnswer {
@@ -77,14 +77,22 @@ abstract class BaseGeneratorTest {
                 typesDeclaredIn[it.arguments[0]] ?: throw RuntimeException("unknown proto (forget to add it?)")
             }
         }
+    }
 
-        val mockedConfig: ConfigurationMetadata = mock {
+    internal fun getMockedConfig(options: ServiceOptions): ConfigurationMetadata {
+        return mock {
             on { host }.doReturn("my.host")
             on { scopes }.doReturn(listOf("scope_1", "scope_2"))
             on { branding }.doReturn(BrandingOptions("testing", "just a simple test"))
             on { get(any<String>()) }.doReturn(options)
             on { get(any<DescriptorProtos.ServiceDescriptorProto>()) }.doReturn(options)
         }
+    }
+
+    // invoke the generator
+    internal fun generate(options: ServiceOptions): GeneratorResponse {
+        val mockedTypeMap = getMockedTypeMap()
+        val mockedConfig: ConfigurationMetadata = getMockedConfig(options)
 
         return GRPCGenerator().generateServiceClient(mock {
             on { proto }.doReturn(generatorRequest.protoFileList.find { it.serviceCount > 0 }!!)
@@ -105,13 +113,13 @@ abstract class BaseGeneratorTest {
             GrpcTypes.Support.ClientStreamingCall(messageType(requestName), messageType(responseName))
     protected fun serverStream(responseName: String) =
             GrpcTypes.Support.ServerStreamingCall(messageType(responseName))
+}
 
-    // ignore indentation in tests
-    protected fun CodeBlock.asNormalizedString(): String {
-        return this.toString().asNormalizedString()
-    }
-    protected fun String.asNormalizedString(marginPrefix: String = "|"): String {
-        return this.trimMargin(marginPrefix).replace("(?m)^(\\s)+".toRegex(), "")
-    }
+// ignore indentation in tests
+fun CodeBlock.asNormalizedString(): String {
+    return this.toString().asNormalizedString()
+}
 
+fun String.asNormalizedString(marginPrefix: String = "|"): String {
+    return this.trimMargin(marginPrefix).replace("(?m)^(\\s)+".toRegex(), "")
 }

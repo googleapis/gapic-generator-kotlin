@@ -40,7 +40,7 @@ private const val PARAM_REQUEST = "request"
 private const val RETROFIT_INTERFACE_NAME = "RPC"
 
 /**
- * Generates a gRPC-pre client via Retrofit
+ * Generates a gRPC-fallback client via Retrofit (currently incomplete w/ a basic implementation)
  *
  * @author jbolinger
  */
@@ -92,8 +92,10 @@ internal class RetrofitGenerator : AbstractGenerator() {
         }
     }
 
-    private fun createUnaryMethods(method: DescriptorProtos.MethodDescriptorProto,
-                                   ctx: GeneratorContext): List<FunSpec> {
+    private fun createUnaryMethods(
+        method: DescriptorProtos.MethodDescriptorProto,
+        ctx: GeneratorContext
+    ): List<FunSpec> {
         // unchanged method
         val methodName = method.name.decapitalize()
         val normal = FunSpec.builder(methodName)
@@ -106,8 +108,10 @@ internal class RetrofitGenerator : AbstractGenerator() {
         return listOf(normal)
     }
 
-    private fun createStreamingMethods(method: DescriptorProtos.MethodDescriptorProto,
-                                       ctx: GeneratorContext): List<FunSpec> {
+    private fun createStreamingMethods(
+        method: DescriptorProtos.MethodDescriptorProto,
+        ctx: GeneratorContext
+    ): List<FunSpec> {
         log.debug { "skipping streaming method: ${method.name} (not supported by transport)" }
         return listOf()
     }
@@ -175,5 +179,4 @@ internal class RetrofitGenerator : AbstractGenerator() {
 
         return listOf(serviceAccount, main)
     }
-
 }

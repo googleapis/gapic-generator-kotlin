@@ -39,12 +39,18 @@ apply plugin: 'application'
 apply plugin: 'maven-publish'
 apply plugin: 'io.spring.dependency-management'
 apply plugin: 'com.google.protobuf'
+apply plugin: 'jacoco'
 
 sourceCompatibility = 1.8
 
 repositories {
     google()
     mavenCentral()
+    jcenter()
+}
+
+configurations {
+    ktlint
 }
 
 dependencies {
@@ -66,6 +72,8 @@ dependencies {
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
     testImplementation 'com.nhaarman:mockito-kotlin:1.6.0'
     testImplementation "com.google.truth:truth:0.41"
+
+    ktlint "com.github.shyiko:ktlint:0.24.0"
 }
 
 compileKotlin {
@@ -102,4 +110,41 @@ publishing {
             artifact bootJar
         }
     }
+}
+
+jacoco {
+    toolVersion = "0.8.1"
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
+    sourceDirectories = files([
+            "src/main/kotlin"
+    ])
+    afterEvaluate {
+        classDirectories = files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: 'com/google/protobuf/**')
+        })
+    }
+}
+
+check.dependsOn jacocoTestReport
+test.finalizedBy(project.tasks.jacocoTestReport)
+
+task ktlint(type: JavaExec, group: "verification") {
+    description = "Check Kotlin code style."
+    main = "com.github.shyiko.ktlint.Main"
+    classpath = configurations.ktlint
+    args "src/**/*.kt"
+}
+check.dependsOn ktlint
+
+task ktlintFormat(type: JavaExec, group: "formatting") {
+    description = "Fix Kotlin code style deviations."
+    main = "com.github.shyiko.ktlint.Main"
+    classpath = configurations.ktlint
+    args "-F", "src/**/*.kt"
 }

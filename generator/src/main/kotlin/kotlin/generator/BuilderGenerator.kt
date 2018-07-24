@@ -76,5 +76,4 @@ internal class BuilderGenerator {
             file
         }
     }
-
 }

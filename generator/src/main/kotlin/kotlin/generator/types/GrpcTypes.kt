@@ -77,5 +77,4 @@ internal interface GrpcTypes {
         val OperationsFutureStub = ClassName("com.google.longrunning", "OperationsGrpc.OperationsFutureStub")
         val ByteString = ClassName("com.google.protobuf", "ByteString")
     }
-
 }

@@ -17,9 +17,8 @@
 package com.google.api.kotlin
 
 import com.google.api.kotlin.generator.BuilderGenerator
-import com.google.api.kotlin.generator.GRPCGenerator
-import com.google.api.kotlin.generator.RetrofitGenerator
 import com.google.api.kotlin.generator.config.ConfigurationMetadata
+import com.google.api.kotlin.generator.config.ConfigurationMetadataFactory
 import com.google.api.kotlin.generator.config.ProtobufTypeMapper
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.compiler.PluginProtos
@@ -38,8 +37,11 @@ private val log = KotlinLogging.logger {}
  *
  * @author jbolinger
  */
-class KotlinClientGenerator(private val sourceDirectory: String = ".",
-                            private val fallback: Boolean = false) {
+internal class KotlinClientGenerator(
+    private val clientGenerator: ClientGenerator,
+    private val clientConfigFactory: ConfigurationMetadataFactory,
+    private val builderGenerator: BuilderGenerator? = null
+) {
 
     companion object {
         /** protos to ignore if found during processing */
@@ -55,8 +57,6 @@ class KotlinClientGenerator(private val sourceDirectory: String = ".",
      * @return response from this plugin to forward to the protobuf code generator
      */
     fun generate(request: CodeGeneratorRequest): CodeGeneratorResponse {
-        log.debug { "Generating from: '$sourceDirectory'" }
-
         // create type map
         val typeMap = ProtobufTypeMapper.fromProtos(request.protoFileList)
         log.debug { "Discovered type: $typeMap" }
@@ -70,7 +70,7 @@ class KotlinClientGenerator(private val sourceDirectory: String = ".",
                     it.serviceList.mapNotNull { service ->
                         try {
                             processProtoService(
-                                    it, service, ConfigurationMetadata.find(it, sourceDirectory), typeMap)
+                                    it, service, clientConfigFactory.find(it), typeMap)
                         } catch (e: Throwable) {
                             log.error(e) { "Failed to generate client for: ${it.name}" }
                             null
@@ -79,7 +79,9 @@ class KotlinClientGenerator(private val sourceDirectory: String = ".",
                 }
 
         // generate builders
-        val builderFiles = BuilderGenerator().generate(typeMap).map { toFile(it) }
+        val builderFiles = builderGenerator?.let {
+            g -> g.generate(typeMap).map { toFile(it) }
+        } ?: listOf()
 
         // put it all together
         return CodeGeneratorResponse.newBuilder()
@@ -89,10 +91,12 @@ class KotlinClientGenerator(private val sourceDirectory: String = ".",
     }
 
     /** Process the proto file and extract services to process */
-    private fun processProtoService(proto: DescriptorProtos.FileDescriptorProto,
-                                    service: DescriptorProtos.ServiceDescriptorProto,
-                                    metadata: ConfigurationMetadata,
-                                    typeMap: ProtobufTypeMapper): PluginProtos.CodeGeneratorResponse.File {
+    private fun processProtoService(
+        proto: DescriptorProtos.FileDescriptorProto,
+        service: DescriptorProtos.ServiceDescriptorProto,
+        metadata: ConfigurationMetadata,
+        typeMap: ProtobufTypeMapper
+    ): PluginProtos.CodeGeneratorResponse.File {
         log.debug { "processing proto: ${proto.name} -> service: ${service.name}" }
 
         // get package name
@@ -107,11 +111,7 @@ class KotlinClientGenerator(private val sourceDirectory: String = ".",
         val ctx = GeneratorContext(proto, service, metadata, className, typeMap)
 
         // generate
-        val generator = when {
-            fallback -> RetrofitGenerator()
-            else -> GRPCGenerator()
-        }
-        val (type, imports) = generator.generateServiceClient(ctx)
+        val (type, imports) = clientGenerator.generateServiceClient(ctx)
         val fileSpec = FileSpec.builder(packageName, className.simpleName())
 
         // add implementation
@@ -122,8 +122,9 @@ class KotlinClientGenerator(private val sourceDirectory: String = ".",
         return toFile(fileSpec)
     }
 
-    private fun toFile(fileSpec: FileSpec.Builder,
-                       addLicense: Boolean = true
+    private fun toFile(
+        fileSpec: FileSpec.Builder,
+        addLicense: Boolean = true
     ): PluginProtos.CodeGeneratorResponse.File {
         // add headers
         if (addLicense) {
@@ -147,7 +148,6 @@ class KotlinClientGenerator(private val sourceDirectory: String = ".",
                 .setContent(file.toString())
                 .build()
     }
-
 }
 
 /**
@@ -167,11 +167,13 @@ internal interface ClientGenerator {
 }
 
 /** Data model for client generation */
-internal data class GeneratorContext(val proto: DescriptorProtos.FileDescriptorProto,
-                                     val service: DescriptorProtos.ServiceDescriptorProto,
-                                     val metadata: ConfigurationMetadata,
-                                     val className: ClassName,
-                                     val typeMap: ProtobufTypeMapper)
+internal data class GeneratorContext(
+    val proto: DescriptorProtos.FileDescriptorProto,
+    val service: DescriptorProtos.ServiceDescriptorProto,
+    val metadata: ConfigurationMetadata,
+    val className: ClassName,
+    val typeMap: ProtobufTypeMapper
+)
 
 /** Type definition for the client */
 internal data class GeneratorResponse(val type: TypeSpec, val imports: List<ClassName> = listOf())

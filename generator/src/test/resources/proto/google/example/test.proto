@@ -5,6 +5,8 @@ package google.example;
 import "google/example/test_types.proto";
 import "google/longrunning/test_longrunning.proto";
 
+option java_multiple_files = true;
+
 service TestService {
   rpc Test (TestRequest) returns (TestResponse);
   rpc TestFlat (TestRequest) returns (TestResponse);

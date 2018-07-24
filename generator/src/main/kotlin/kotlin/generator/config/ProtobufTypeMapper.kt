@@ -31,15 +31,17 @@ internal class ProtobufTypeMapper private constructor() {
 
     /** Lookup the Kotlin type given the proto type. */
     fun getKotlinType(protoType: String) =
-            ClassName.bestGuess(typeMap[protoType] ?:
-            throw IllegalArgumentException("proto type: $protoType is not recognized"))
+            ClassName.bestGuess(typeMap[protoType]
+            ?: throw IllegalArgumentException("proto type: $protoType is not recognized"))
 
     /** Lookup the Kotlin type given a proto service */
     fun getKotlinGrpcType(protoService: String, suffix: String) =
-            ClassName.bestGuess("${serviceMap[protoService] ?: ""}${suffix}")
-    fun getKotlinGrpcType(proto: DescriptorProtos.FileDescriptorProto,
-                          service: DescriptorProtos.ServiceDescriptorProto,
-                          suffix: String) =
+            ClassName.bestGuess("${serviceMap[protoService] ?: ""}$suffix")
+    fun getKotlinGrpcType(
+        proto: DescriptorProtos.FileDescriptorProto,
+        service: DescriptorProtos.ServiceDescriptorProto,
+        suffix: String
+    ) =
             getKotlinGrpcType(".${proto.`package`}.${service.name}", suffix)
 
     /** Get all Kotlin types (excluding enums and map types) */
@@ -79,28 +81,28 @@ internal class ProtobufTypeMapper private constructor() {
                 else
                     proto.`package`
 
-                val enclosingClassName = if (proto.options.javaMultipleFiles)
+                val enclosingClassName = if (proto.options?.javaMultipleFiles != false)
                     null
                 else
                     getOuterClassname(proto)
 
                 fun addMsg(p: DescriptorProtos.DescriptorProto, parent: String) {
                     val key = "$protoPackage$parent.${p.name}"
-                    map.typeMap[key] = listOf("$javaPackage$parent.${p.name}", enclosingClassName)
+                    map.typeMap[key] = listOf("$javaPackage$parent", enclosingClassName, p.name)
                             .filterNotNull()
                             .joinToString(".")
                     map.knownProtoTypes[key] = p
                 }
                 fun addEnum(p: DescriptorProtos.EnumDescriptorProto, parent: String) {
                     val key = "$protoPackage$parent.${p.name}"
-                    map.typeMap[key] = listOf("$javaPackage$parent.${p.name}", enclosingClassName)
+                    map.typeMap[key] = listOf("$javaPackage$parent", enclosingClassName, p.name)
                             .filterNotNull()
                             .joinToString(".")
                     map.knownProtoEnums[key] = p
                 }
                 fun addService(p: DescriptorProtos.ServiceDescriptorProto, parent: String) {
                     map.serviceMap["$protoPackage$parent.${p.name}"] =
-                            listOf("$javaPackage$parent.${p.name}", enclosingClassName)
+                            listOf("$javaPackage$parent", enclosingClassName, p.name)
                                     .filterNotNull()
                                     .joinToString(".")
                 }
@@ -138,7 +140,5 @@ internal class ProtobufTypeMapper private constructor() {
 
             return fileName
         }
-
     }
-
 }

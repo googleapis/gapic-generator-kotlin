@@ -16,6 +16,8 @@
 
 package com.google.api.kotlin.generator
 
+import com.google.api.kotlin.BaseGeneratorTest
+import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.generator.config.FlattenedMethod
 import com.google.api.kotlin.generator.config.MethodOptions
 import com.google.api.kotlin.generator.config.ServiceOptions
@@ -338,5 +340,4 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
             """.asNormalizedString())
         }
     }
-
 }

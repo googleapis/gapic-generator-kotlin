@@ -17,6 +17,10 @@
 package com.google.api
 
 import com.google.api.kotlin.KotlinClientGenerator
+import com.google.api.kotlin.generator.BuilderGenerator
+import com.google.api.kotlin.generator.GRPCGenerator
+import com.google.api.kotlin.generator.RetrofitGenerator
+import com.google.api.kotlin.generator.config.ConfigurationMetadataFactory
 import com.google.devtools.common.options.Option
 import com.google.devtools.common.options.OptionsBase
 import com.google.devtools.common.options.OptionsParser
@@ -74,7 +78,10 @@ fun main(args: Array<String>) {
     log.debug { "Using source directory: $sourceDirectory" }
 
     // create & run generator
-    val generator = KotlinClientGenerator(sourceDirectory, options.fallback)
+    val generator = KotlinClientGenerator(when {
+        options.fallback -> RetrofitGenerator()
+        else -> GRPCGenerator()
+    }, ConfigurationMetadataFactory(sourceDirectory), BuilderGenerator())
     val result = generator.generate(request)
 
     // write result
@@ -109,7 +116,6 @@ fun main(args: Array<String>) {
     }
 }
 
-
 open class CommonOptions : OptionsBase() {
 
     @JvmField
@@ -136,7 +142,6 @@ open class CommonOptions : OptionsBase() {
             help = "Use gRPC fallback",
             defaultValue = "false")
     var fallback: Boolean = false
-
 }
 
 // CLI options
@@ -158,10 +163,7 @@ class CLIOptions : CommonOptions() {
             category = "io",
             defaultValue = "null")
     var inputFile: String? = null
-
 }
 
 // protoc plugin options
-class ProtocOptions : CommonOptions() {
-
-}
+class ProtocOptions : CommonOptions()

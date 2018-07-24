@@ -65,9 +65,11 @@ internal abstract class AbstractGenerator : ClientGenerator {
      * For direct properties of the type the path is should contain 1 element (the
      * name of the field). For nested properties more than 1 element can be given.
      */
-    protected fun getProtoFieldInfoForPath(context: GeneratorContext,
-                                           path: List<String>,
-                                           type: DescriptorProtos.DescriptorProto): ProtoFieldInfo {
+    protected fun getProtoFieldInfoForPath(
+        context: GeneratorContext,
+        path: List<String>,
+        type: DescriptorProtos.DescriptorProto
+    ): ProtoFieldInfo {
         // find current field
         val (name, idx) = "(.+)\\[([0-9])+]".toRegex().matchEntire(path.first())
                 ?.destructured?.let { (n, i) -> Pair(n, i.toInt()) }
@@ -93,8 +95,10 @@ internal abstract class AbstractGenerator : ClientGenerator {
     }
 
     /** Get the real response type for an LRO operation */
-    protected fun getLongRunningResponseType(ctx: GeneratorContext,
-                                             method: DescriptorProtos.MethodDescriptorProto): ClassName {
+    protected fun getLongRunningResponseType(
+        ctx: GeneratorContext,
+        method: DescriptorProtos.MethodDescriptorProto
+    ): ClassName {
         // TODO: there is no guarantee that this will always hold,
         //       but there isn't any more info in the proto (yet)
         val name = method.inputType.replace("Request\\z".toRegex(), "Response")
@@ -102,9 +106,11 @@ internal abstract class AbstractGenerator : ClientGenerator {
         return ctx.typeMap.getKotlinType(name)
     }
 
-    protected fun getResponseListElementType(ctx: GeneratorContext,
-                                             method: DescriptorProtos.MethodDescriptorProto,
-                                             paging: PagedResponse): ClassName {
+    protected fun getResponseListElementType(
+        ctx: GeneratorContext,
+        method: DescriptorProtos.MethodDescriptorProto,
+        paging: PagedResponse
+    ): ClassName {
         val outputType = ctx.typeMap.getProtoTypeDescriptor(method.outputType)
         val info = getProtoFieldInfoForPath(ctx, paging.responseList.split("."), outputType)
         return info.field.asClassName(ctx.typeMap)
@@ -115,14 +121,18 @@ internal abstract class AbstractGenerator : ClientGenerator {
      * for the method declaration and the [requestObject] that should be passed to the
      * underlying method.
      */
-    internal data class FlattenedMethodResult(val parameters: List<ParameterSpec>,
-                                              val requestObject: CodeBlock,
-                                              val config: FlattenedMethod)
+    internal data class FlattenedMethodResult(
+        val parameters: List<ParameterSpec>,
+        val requestObject: CodeBlock,
+        val config: FlattenedMethod
+    )
 
     /** Get the parameters to flatten the [method] using the given [config] and [context]. */
-    protected fun getFlattenedParameters(context: GeneratorContext,
-                                         method: DescriptorProtos.MethodDescriptorProto,
-                                         config: FlattenedMethod): FlattenedMethodResult {
+    protected fun getFlattenedParameters(
+        context: GeneratorContext,
+        method: DescriptorProtos.MethodDescriptorProto,
+        config: FlattenedMethod
+    ): FlattenedMethodResult {
         // get request type
         val requestType = context.typeMap.getProtoTypeDescriptor(method.inputType)
         val parametersAsPaths = config.parameters.map { it.split(".") }
@@ -234,7 +244,6 @@ internal abstract class AbstractGenerator : ClientGenerator {
 
     protected fun getParameterName(protoFieldName: String) =
             CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
-
 }
 
 // -----------------------------------------------------------------
@@ -242,10 +251,12 @@ internal abstract class AbstractGenerator : ClientGenerator {
 // -----------------------------------------------------------------
 
 /** Container for the [file], [message], and [field] and repeated [index] (if applicable) of a proto. */
-internal data class ProtoFieldInfo(val file: DescriptorProtos.FileDescriptorProto,
-                                   val message: DescriptorProtos.DescriptorProto,
-                                   val field: DescriptorProtos.FieldDescriptorProto,
-                                   val index: Int = -1)
+internal data class ProtoFieldInfo(
+    val file: DescriptorProtos.FileDescriptorProto,
+    val message: DescriptorProtos.DescriptorProto,
+    val field: DescriptorProtos.FieldDescriptorProto,
+    val index: Int = -1
+)
 
 /** Checks if this methods is a LRO. */
 internal fun DescriptorProtos.MethodDescriptorProto.isLongRunningOperation() =
@@ -297,8 +308,9 @@ internal fun DescriptorProtos.FileDescriptorProto.getParameterComments(fieldInfo
 
 /** Get the comments of a service method in this protofile, or null if not available */
 internal fun DescriptorProtos.FileDescriptorProto.getMethodComments(
-        service: DescriptorProtos.ServiceDescriptorProto,
-        method: DescriptorProtos.MethodDescriptorProto): String? {
+    service: DescriptorProtos.ServiceDescriptorProto,
+    method: DescriptorProtos.MethodDescriptorProto
+): String? {
     // find the magic numbers
     val serviceNumber = this.serviceList.indexOf(service)
     val methodNumber = service.methodList.indexOf(method)

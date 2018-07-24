@@ -190,10 +190,12 @@ internal class GRPCGenerator : AbstractGenerator() {
         return extras + apiMethods
     }
 
-    private fun createUnaryMethods(ctx: GeneratorContext,
-                                   method: DescriptorProtos.MethodDescriptorProto,
-                                   methodName: String,
-                                   options: MethodOptions): List<FunSpec> {
+    private fun createUnaryMethods(
+        ctx: GeneratorContext,
+        method: DescriptorProtos.MethodDescriptorProto,
+        methodName: String,
+        options: MethodOptions
+    ): List<FunSpec> {
         val methods = mutableListOf<FunSpec>()
 
         // add flattened methods
@@ -222,14 +224,16 @@ internal class GRPCGenerator : AbstractGenerator() {
         return methods.toList()
     }
 
-    private fun createUnaryMethod(ctx: GeneratorContext,
-                                  method: DescriptorProtos.MethodDescriptorProto,
-                                  methodName: String,
-                                  parameters: List<ParameterSpec>,
-                                  requestObject: CodeBlock,
-                                  flatteningConfig: FlattenedMethod? = null,
-                                  paging: PagedResponse? = null,
-                                  samples: List<SampleMethod> = listOf()): FunSpec {
+    private fun createUnaryMethod(
+        ctx: GeneratorContext,
+        method: DescriptorProtos.MethodDescriptorProto,
+        methodName: String,
+        parameters: List<ParameterSpec>,
+        requestObject: CodeBlock,
+        flatteningConfig: FlattenedMethod? = null,
+        paging: PagedResponse? = null,
+        samples: List<SampleMethod> = listOf()
+    ): FunSpec {
         val m = FunSpec.builder(methodName)
                 .addParameters(parameters)
 
@@ -321,10 +325,12 @@ internal class GRPCGenerator : AbstractGenerator() {
                 .build()
     }
 
-    private fun createStreamingMethods(ctx: GeneratorContext,
-                                       method: DescriptorProtos.MethodDescriptorProto,
-                                       methodName: String,
-                                       options: MethodOptions): List<FunSpec> {
+    private fun createStreamingMethods(
+        ctx: GeneratorContext,
+        method: DescriptorProtos.MethodDescriptorProto,
+        methodName: String,
+        options: MethodOptions
+    ): List<FunSpec> {
         val methods = mutableListOf<FunSpec>()
 
         // input / output types
@@ -398,13 +404,15 @@ internal class GRPCGenerator : AbstractGenerator() {
     }
 
     // create method comments from proto comments
-    private fun createMethodDoc(ctx: GeneratorContext,
-                                method: DescriptorProtos.MethodDescriptorProto,
-                                methodName: String,
-                                samples: List<SampleMethod>,
-                                flatteningConfig: FlattenedMethod? = null,
-                                parameters: List<ParameterSpec> = listOf(),
-                                extras: List<CodeBlock> = listOf()): CodeBlock {
+    private fun createMethodDoc(
+        ctx: GeneratorContext,
+        method: DescriptorProtos.MethodDescriptorProto,
+        methodName: String,
+        samples: List<SampleMethod>,
+        flatteningConfig: FlattenedMethod? = null,
+        parameters: List<ParameterSpec> = listOf(),
+        extras: List<CodeBlock> = listOf()
+    ): CodeBlock {
         val doc = CodeBlock.builder()
 
         // remove the spacing from proto files
@@ -418,7 +426,7 @@ internal class GRPCGenerator : AbstractGenerator() {
 
         // add any samples
         samples.forEach {
-            //doc.add(createMethodDocSample(ctx, method, methodName, it, flatteningConfig))
+            // doc.add(createMethodDocSample(ctx, method, methodName, it, flatteningConfig))
         }
 
         // add parameter comments
@@ -582,5 +590,4 @@ internal class GRPCGenerator : AbstractGenerator() {
                         .build())
                 .build()
     }
-
 }
