@@ -41,9 +41,9 @@ internal interface GrpcTypes {
             const val SUPPORT_LIB_GRPC_PACKAGE = "$SUPPORT_LIB_PACKAGE.grpc"
 
             val GrpcClient = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "GrpcClient")
+            fun GrpcClientStub(type: ClassName) = ParameterizedTypeName.get(
+                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "GrpcClientStub"), type)
 
-            fun ClientCall(type: ClassName) = ParameterizedTypeName.get(
-                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ClientCall"), type)
             val ClientCallOptions = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ClientCallOptions")
             val ClientCallOptionsBuilder = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ClientCallOptions.Builder")
 

@@ -82,7 +82,6 @@ abstract class BaseGeneratorTest {
             on { host }.doReturn("my.host")
             on { scopes }.doReturn(listOf("scope_1", "scope_2"))
             on { branding }.doReturn(BrandingOptions("testing", "just a simple test"))
-            on { licenseTemplate }.doReturn("The test license")
             on { get(any<String>()) }.doReturn(options)
             on { get(any<DescriptorProtos.ServiceDescriptorProto>()) }.doReturn(options)
         }

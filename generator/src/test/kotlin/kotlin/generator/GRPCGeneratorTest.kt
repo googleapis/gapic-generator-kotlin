@@ -42,7 +42,6 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         val imports = generate(opts).imports
         assertThat(imports).containsExactly(
                 ClassName(GrpcTypes.Support.SUPPORT_LIB_PACKAGE, "pager"),
-                ClassName(GrpcTypes.Support.SUPPORT_LIB_GRPC_PACKAGE, "decorate"),
                 ClassName(GrpcTypes.Support.SUPPORT_LIB_GRPC_PACKAGE, "prepare"))
     }
 
@@ -59,7 +58,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(method.parameters.first().name).isEqualTo("request")
         assertThat(method.parameters.first().type).isEqualTo(messageType("TestRequest"))
         assertThat(method.body.asNormalizedString()).isEqualTo("""
-                |return stubs.future.prepare(options).executeFuture {
+                |return stubs.future.executeFuture {
                 |  it.test(request)
                 |}
             """.asNormalizedString())
@@ -80,7 +79,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(method.body.asNormalizedString()).isEqualTo("""
                 |return ${longRunning("TestResponse")}(
                 |  stubs.operation,
-                |  stubs.future.prepare(options).executeFuture {
+                |  stubs.future.executeFuture {
                 |    it.operationTest(request)
                 |  }, ${messageType("TestResponse")}::class.java)
             """.asNormalizedString())
@@ -97,7 +96,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(method.returnType).isEqualTo(stream("TestRequest", "TestResponse"))
         assertThat(method.parameters).isEmpty()
         assertThat(method.body.asNormalizedString()).isEqualTo("""
-                |return stubs.stream.prepare(options).executeStreaming { it::streamTest }
+                |return stubs.stream.executeStreaming { it::streamTest }
             """.asNormalizedString())
     }
 
@@ -112,7 +111,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(method.returnType).isEqualTo(clientStream("TestRequest", "TestResponse"))
         assertThat(method.parameters).isEmpty()
         assertThat(method.body.asNormalizedString()).isEqualTo("""
-                |return stubs.stream.prepare(options).executeClientStreaming { it::streamClientTest }
+                |return stubs.stream.executeClientStreaming { it::streamClientTest }
             """.asNormalizedString())
     }
 
@@ -129,7 +128,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(method.parameters.first().name).isEqualTo("request")
         assertThat(method.parameters.first().type).isEqualTo(messageType("TestRequest"))
         assertThat(method.body.asNormalizedString()).isEqualTo("""
-                |return stubs.stream.prepare(options).executeServerStreaming { stub, observer ->
+                |return stubs.stream.executeServerStreaming { stub, observer ->
                 |  stub.streamServerTest(request, observer)
                 |}
             """.asNormalizedString())
@@ -157,7 +156,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
             assertThat(parameters.first().name).isEqualTo("request")
             assertThat(parameters.first().type).isEqualTo(messageType("TestRequest"))
             assertThat(this.body.asNormalizedString()).isEqualTo("""
-                |return stubs.future.prepare(options).executeFuture {
+                |return stubs.future.executeFuture {
                 |  it.testFlat(request)
                 |}
             """.asNormalizedString())
@@ -169,7 +168,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
             assertThat(parameters.first().name).isEqualTo("query")
             assertThat(parameters.first().type).isEqualTo(String::class.asTypeName())
             assertThat(this.body.asNormalizedString()).isEqualTo("""
-                |return stubs.future.prepare(options).executeFuture {
+                |return stubs.future.executeFuture {
                 |  it.testFlat($namespace.TestRequest.newBuilder()
                 |    .setQuery(query)
                 |    .build())
@@ -185,7 +184,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
             assertThat(parameters[1].name).isEqualTo("mainDetail")
             assertThat(parameters[1].type).isEqualTo(messageType("Detail"))
             assertThat(this.body.asNormalizedString()).isEqualTo("""
-                |return stubs.future.prepare(options).executeFuture {
+                |return stubs.future.executeFuture {
                 |  it.testFlat($namespace.TestRequest.newBuilder()
                 |    .setQuery(query)
                 |    .setMainDetail(mainDetail)
@@ -213,7 +212,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
             assertThat(parameters.first().name).isEqualTo("mainDetail")
             assertThat(parameters.first().type).isEqualTo(messageType("Detail"))
             assertThat(this.body.asNormalizedString()).isEqualTo("""
-                |return stubs.future.prepare(options).executeFuture {
+                |return stubs.future.executeFuture {
                 |  it.testFlatWithoutOriginal($namespace.TestRequest.newBuilder()
                 |    .setMainDetail(mainDetail)
                 |    .build())
@@ -240,7 +239,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
             assertThat(parameters.first().name).isEqualTo("evenMore")
             assertThat(parameters.first().type).isEqualTo(messageType("MoreDetail"))
             assertThat(this.body.asNormalizedString()).isEqualTo("""
-                |return stubs.future.prepare(options).executeFuture {
+                |return stubs.future.executeFuture {
                 |  it.nestedFlat($namespace.TestRequest.newBuilder()
                 |    .setMainDetail($namespace.Detail.newBuilder()
                 |      .setEvenMore(evenMore)
@@ -271,7 +270,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
             assertThat(parameters.first().type).isEqualTo(ParameterizedTypeName.get(
                     List::class.asTypeName(), messageType("Detail")))
             assertThat(this.body.asNormalizedString()).isEqualTo("""
-                |return stubs.future.prepare(options).executeFuture {
+                |return stubs.future.executeFuture {
                 |  it.nestedFlat($namespace.TestRequest.newBuilder()
                 |    .addAllMoreDetails(moreDetails)
                 |    .build())
@@ -298,7 +297,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
             assertThat(parameters.first().name).isEqualTo("evenMore")
             assertThat(parameters.first().type).isEqualTo(messageType("MoreDetail"))
             assertThat(this.body.asNormalizedString()).isEqualTo("""
-                |return stubs.future.prepare(options).executeFuture {
+                |return stubs.future.executeFuture {
                 |  it.nestedFlat($namespace.TestRequest.newBuilder()
                 |    .addMoreDetails($namespace.Detail.newBuilder()
                 |      .setEvenMore(evenMore)
@@ -328,7 +327,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
             assertThat(parameters.first().name).isEqualTo("useful")
             assertThat(parameters.first().type).isEqualTo(Boolean::class.asTypeName())
             assertThat(this.body.asNormalizedString()).isEqualTo("""
-                |return stubs.future.prepare(options).executeFuture {
+                |return stubs.future.executeFuture {
                 |  it.nestedFlatPrimitive($namespace.TestRequest.newBuilder()
                 |    .setMainDetail($namespace.Detail.newBuilder()
                 |      .setUseful(useful)

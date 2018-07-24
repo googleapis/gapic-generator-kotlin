@@ -78,7 +78,7 @@ internal class GRPCGenerator : AbstractGenerator() {
         // add statics
         val imports = listOf("pager")
                 .map { ClassName(GrpcTypes.Support.SUPPORT_LIB_PACKAGE, it) }
-        val grpcImports = listOf("decorate", "prepare")
+        val grpcImports = listOf("prepare")
                 .map { ClassName(GrpcTypes.Support.SUPPORT_LIB_GRPC_PACKAGE, it) }
 
         // all done!
@@ -124,11 +124,11 @@ internal class GRPCGenerator : AbstractGenerator() {
                 .initializer(CodeBlock.builder()
                         .add("%T(\n",
                                 ClassName.bestGuess(STUBS_CLASS_TYPE))
-                        .add("%T.newStub(%N).decorate().prepare(%N),\n",
+                        .add("%T.newStub(%N).prepare(%N),\n",
                                 grpcType, PROP_CHANNEL, PROP_CALL_OPTS)
-                        .add("%T.newFutureStub(%N).decorate().prepare(%N),\n",
+                        .add("%T.newFutureStub(%N).prepare(%N),\n",
                                 grpcType, PROP_CHANNEL, PROP_CALL_OPTS)
-                        .add("%T.newFutureStub(%N).decorate().prepare(%N))",
+                        .add("%T.newFutureStub(%N).prepare(%N))",
                                 GrpcTypes.OperationsGrpc, PROP_CHANNEL, PROP_CALL_OPTS)
                         .build())
                 .build()
@@ -558,11 +558,11 @@ internal class GRPCGenerator : AbstractGenerator() {
 
     // creates a nested type that will be used to hold the gRPC stubs used by the client
     private fun createStubHolderType(ctx: GeneratorContext): TypeSpec {
-        val streamType = GrpcTypes.Support.ClientCall(ctx.typeMap.getKotlinGrpcType(
+        val streamType = GrpcTypes.Support.GrpcClientStub(ctx.typeMap.getKotlinGrpcType(
                 ctx.proto, ctx.service, "Grpc.${ctx.service.name}Stub"))
-        val futureType = GrpcTypes.Support.ClientCall(ctx.typeMap.getKotlinGrpcType(
+        val futureType = GrpcTypes.Support.GrpcClientStub(ctx.typeMap.getKotlinGrpcType(
                 ctx.proto, ctx.service, "Grpc.${ctx.service.name}FutureStub"))
-        val opType = GrpcTypes.Support.ClientCall(GrpcTypes.OperationsFutureStub)
+        val opType = GrpcTypes.Support.GrpcClientStub(GrpcTypes.OperationsFutureStub)
 
         return TypeSpec.classBuilder(STUBS_CLASS_TYPE)
                 .addModifiers(KModifier.PRIVATE)
