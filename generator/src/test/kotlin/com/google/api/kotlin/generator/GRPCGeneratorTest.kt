@@ -18,10 +18,11 @@ package com.google.api.kotlin.generator
 
 import com.google.api.kotlin.BaseGeneratorTest
 import com.google.api.kotlin.asNormalizedString
-import com.google.api.kotlin.generator.config.FlattenedMethod
-import com.google.api.kotlin.generator.config.MethodOptions
-import com.google.api.kotlin.generator.config.ServiceOptions
-import com.google.api.kotlin.generator.types.GrpcTypes
+import com.google.api.kotlin.firstSource
+import com.google.api.kotlin.config.FlattenedMethod
+import com.google.api.kotlin.config.MethodOptions
+import com.google.api.kotlin.config.ServiceOptions
+import com.google.api.kotlin.types.GrpcTypes
 import com.google.common.truth.Truth.assertThat
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -34,14 +35,14 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
     fun `Generates with class documentation`() {
         val opts = ServiceOptions(listOf())
 
-        assertThat(generate(opts).type.kdoc.toString()).isNotEmpty()
+        assertThat(generate(opts).firstSource().type.kdoc.toString()).isNotEmpty()
     }
 
     @Test
     fun `Generates with required static imports`() {
         val opts = ServiceOptions(listOf())
 
-        val imports = generate(opts).imports
+        val imports = generate(opts).firstSource().imports
         assertThat(imports).containsExactly(
                 ClassName(GrpcTypes.Support.SUPPORT_LIB_PACKAGE, "pager"),
                 ClassName(GrpcTypes.Support.SUPPORT_LIB_GRPC_PACKAGE, "prepare"))
@@ -51,7 +52,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
     fun `Generates the test method`() {
         val opts = ServiceOptions(listOf(MethodOptions(name = "Test")))
 
-        val methods = generate(opts).type.funSpecs.filter { it.name == "test" }
+        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "test" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
@@ -70,7 +71,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
     fun `Generates the LRO test method`() {
         val opts = ServiceOptions(listOf(MethodOptions(name = "OperationTest")))
 
-        val methods = generate(opts).type.funSpecs.filter { it.name == "operationTest" }
+        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "operationTest" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
@@ -91,7 +92,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
     fun `Generates the streamTest method`() {
         val opts = ServiceOptions(listOf(MethodOptions(name = "StreamTest")))
 
-        val methods = generate(opts).type.funSpecs.filter { it.name == "streamTest" }
+        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "streamTest" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
@@ -106,7 +107,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
     fun `Generates the streamClientTest method`() {
         val opts = ServiceOptions(listOf(MethodOptions(name = "StreamTest")))
 
-        val methods = generate(opts).type.funSpecs.filter { it.name == "streamClientTest" }
+        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "streamClientTest" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
@@ -121,7 +122,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
     fun `Generates the streamServerTest method`() {
         val opts = ServiceOptions(listOf(MethodOptions(name = "StreamTest")))
 
-        val methods = generate(opts).type.funSpecs.filter { it.name == "streamServerTest" }
+        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "streamServerTest" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
@@ -145,7 +146,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
                                 FlattenedMethod(listOf("query", "main_detail"))),
                         keepOriginalMethod = true)))
 
-        val methods = generate(opts).type.funSpecs.filter { it.name == "testFlat" }
+        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "testFlat" }
         assertThat(methods).hasSize(3)
         assertThat(methods.map { it.returnType }).containsExactly(
                 futureCall("TestResponse"),
@@ -204,7 +205,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
                                 FlattenedMethod(listOf("main_detail"))),
                         keepOriginalMethod = false)))
 
-        val methods = generate(opts).type.funSpecs.filter { it.name == "testFlatWithoutOriginal" }
+        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "testFlatWithoutOriginal" }
         assertThat(methods).hasSize(1)
         assertThat(methods.map { it.returnType }).containsExactly(futureCall("TestResponse"))
 
@@ -231,7 +232,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
                                 FlattenedMethod(listOf("main_detail.even_more"))),
                         keepOriginalMethod = false)))
 
-        val methods = generate(opts).type.funSpecs.filter { it.name == "nestedFlat" }
+        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "nestedFlat" }
         assertThat(methods).hasSize(1)
         assertThat(methods.map { it.returnType }).containsExactly(futureCall("TestResponse"))
 
@@ -261,7 +262,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
                                 FlattenedMethod(listOf("more_details"))),
                         keepOriginalMethod = false)))
 
-        val methods = generate(opts).type.funSpecs.filter { it.name == "nestedFlat" }
+        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "nestedFlat" }
         assertThat(methods).hasSize(1)
         assertThat(methods.map { it.returnType }).containsExactly(futureCall("TestResponse"))
 
@@ -289,7 +290,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
                                 FlattenedMethod(listOf("more_details[0].even_more"))),
                         keepOriginalMethod = false)))
 
-        val methods = generate(opts).type.funSpecs.filter { it.name == "nestedFlat" }
+        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "nestedFlat" }
         assertThat(methods).hasSize(1)
         assertThat(methods.map { it.returnType }).containsExactly(futureCall("TestResponse"))
 
@@ -319,7 +320,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
                                 FlattenedMethod(listOf("main_detail.useful"))),
                         keepOriginalMethod = false)))
 
-        val methods = generate(opts).type.funSpecs.filter { it.name == "nestedFlatPrimitive" }
+        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "nestedFlatPrimitive" }
         assertThat(methods).hasSize(1)
         assertThat(methods.map { it.returnType }).containsExactly(futureCall("TestResponse"))
 

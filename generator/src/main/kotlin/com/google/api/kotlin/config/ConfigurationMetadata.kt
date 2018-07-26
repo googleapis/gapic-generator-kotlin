@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.api.kotlin.generator.config
+package com.google.api.kotlin.config
 
 import com.google.protobuf.DescriptorProtos
 import mu.KotlinLogging

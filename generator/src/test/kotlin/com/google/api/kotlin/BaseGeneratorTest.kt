@@ -17,11 +17,11 @@
 package com.google.api.kotlin
 
 import com.google.api.kotlin.generator.GRPCGenerator
-import com.google.api.kotlin.generator.config.BrandingOptions
-import com.google.api.kotlin.generator.config.ConfigurationMetadata
-import com.google.api.kotlin.generator.config.ProtobufTypeMapper
-import com.google.api.kotlin.generator.config.ServiceOptions
-import com.google.api.kotlin.generator.types.GrpcTypes
+import com.google.api.kotlin.config.BrandingOptions
+import com.google.api.kotlin.config.ConfigurationMetadata
+import com.google.api.kotlin.config.ProtobufTypeMapper
+import com.google.api.kotlin.config.ServiceOptions
+import com.google.api.kotlin.types.GrpcTypes
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.compiler.PluginProtos
 import com.nhaarman.mockito_kotlin.any
@@ -90,7 +90,7 @@ abstract class BaseGeneratorTest {
     }
 
     // invoke the generator
-    internal fun generate(options: ServiceOptions): GeneratorResponse {
+    internal fun generate(options: ServiceOptions): List<GeneratedArtifact> {
         val mockedTypeMap = getMockedTypeMap()
         val mockedConfig: ConfigurationMetadata = getMockedConfig(options)
 
@@ -123,3 +123,11 @@ fun CodeBlock.asNormalizedString(): String {
 fun String.asNormalizedString(marginPrefix: String = "|"): String {
     return this.trimMargin(marginPrefix).replace("(?m)^(\\s)+".toRegex(), "")
 }
+
+// non-test sources
+internal fun List<GeneratedArtifact>.sources(): List<GeneratedSource> = this
+    .mapNotNull { it as? GeneratedSource }
+    .filter { it.kind == GeneratedSource.Kind.SOURCE }
+
+// first non-test source
+internal fun List<GeneratedArtifact>.firstSource() = this.sources().first()

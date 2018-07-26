@@ -16,10 +16,11 @@
 
 package com.google.api.kotlin.generator
 
+import com.google.api.kotlin.GeneratedArtifact
+import com.google.api.kotlin.GeneratedSource
 import com.google.api.kotlin.GeneratorContext
-import com.google.api.kotlin.GeneratorResponse
-import com.google.api.kotlin.generator.types.GrpcTypes
-import com.google.api.kotlin.generator.types.RetrofitTypes
+import com.google.api.kotlin.types.GrpcTypes
+import com.google.api.kotlin.types.RetrofitTypes
 import com.google.protobuf.DescriptorProtos
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -46,7 +47,7 @@ private const val RETROFIT_INTERFACE_NAME = "RPC"
  */
 internal class RetrofitGenerator : AbstractGenerator() {
 
-    override fun generateServiceClient(ctx: GeneratorContext): GeneratorResponse {
+    override fun generateServiceClient(ctx: GeneratorContext): List<GeneratedArtifact> {
         val type = TypeSpec.classBuilder(ctx.className)
 
         // build client
@@ -60,7 +61,7 @@ internal class RetrofitGenerator : AbstractGenerator() {
                 .build())
 
         // all done!
-        return GeneratorResponse(type.build())
+        return listOf(GeneratedSource(ctx.className.packageName, type.build()))
     }
 
     /** constructor for the client  */

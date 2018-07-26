@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.google.api
+package com.google.api.kotlin
 
-import com.google.api.kotlin.KotlinClientGenerator
 import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.api.kotlin.generator.RetrofitGenerator
-import com.google.api.kotlin.generator.config.ConfigurationMetadataFactory
+import com.google.api.kotlin.config.ConfigurationMetadataFactory
 import com.google.devtools.common.options.Option
 import com.google.devtools.common.options.OptionsBase
 import com.google.devtools.common.options.OptionsParser

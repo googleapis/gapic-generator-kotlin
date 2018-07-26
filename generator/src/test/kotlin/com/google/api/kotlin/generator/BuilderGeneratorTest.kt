@@ -17,11 +17,10 @@
 package com.google.api.kotlin.generator
 
 import com.google.api.kotlin.asNormalizedString
-import com.google.api.kotlin.generator.config.ProtobufTypeMapper
+import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.common.truth.Truth.assertThat
 import com.nhaarman.mockito_kotlin.mock
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.FunSpec
 import kotlin.test.Test
 
 class BuilderGeneratorTest {
@@ -36,14 +35,14 @@ class BuilderGeneratorTest {
         }
 
         // build types
-        val files = BuilderGenerator().generate(typeMap).map { it.build() }
+        val files = BuilderGenerator().generate(typeMap)
 
         assertThat(files).hasSize(1)
         val file = files.first()
         assertThat(file.packageName).isEqualTo("com.google.api")
-        assertThat(file.name).isEqualTo("KotlinBuilders")
+        assertThat(file.type.name).isEqualTo("KotlinBuilders")
 
-        val funs = file.members.mapNotNull { it as? FunSpec }
+        val funs = file.type.funSpecs
         assertThat(funs).hasSize(2)
 
         fun methodBody(type: String) = "return com.google.api.$type.newBuilder().apply(init).build()"
@@ -72,14 +71,14 @@ class BuilderGeneratorTest {
         }
 
         // build types
-        val files = BuilderGenerator().generate(typeMap).map { it.build() }
+        val files = BuilderGenerator().generate(typeMap)
 
         assertThat(files).hasSize(1)
         val file = files.first()
         assertThat(file.packageName).isEqualTo("com.google.api")
-        assertThat(file.name).isEqualTo("KotlinBuilders")
+        assertThat(file.type.name).isEqualTo("KotlinBuilders")
 
-        val funs = file.members.mapNotNull { it as? FunSpec }
+        val funs = file.type.funSpecs
         assertThat(funs).hasSize(9)
 
         fun methodBody(type: String) = "return com.google.api.$type.newBuilder().apply(init).build()"
@@ -106,7 +105,7 @@ class BuilderGeneratorTest {
         }
 
         // build types
-        val files = BuilderGenerator().generate(typeMap).map { it.build() }
+        val files = BuilderGenerator().generate(typeMap)
 
         assertThat(files).isEmpty()
     }
@@ -122,14 +121,14 @@ class BuilderGeneratorTest {
         }
 
         // build types
-        val files = BuilderGenerator().generate(typeMap).map { it.build() }
+        val files = BuilderGenerator().generate(typeMap)
 
         assertThat(files).hasSize(1)
         val file = files.first()
         assertThat(file.packageName).isEqualTo("com.google.protobuf")
-        assertThat(file.name).isEqualTo("KotlinBuilders")
+        assertThat(file.type.name).isEqualTo("KotlinBuilders")
 
-        val funs = file.members.mapNotNull { it as? FunSpec }
+        val funs = file.type.funSpecs
         assertThat(funs).hasSize(1)
         assertThat(funs.first().name).isEqualTo("Surprise")
     }

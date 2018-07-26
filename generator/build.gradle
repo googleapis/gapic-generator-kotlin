@@ -91,9 +91,9 @@ protobuf {
     }
 }
 
-mainClassName = 'com.google.api.ClientPluginKt'
+mainClassName = 'com.google.api.kotlin.ClientPluginKt'
 bootJar {
-    mainClassName = 'com.google.api.ClientPluginKt'
+    mainClassName = 'com.google.api.kotlin.ClientPluginKt'
     classifier = 'core'
 
     launchScript()

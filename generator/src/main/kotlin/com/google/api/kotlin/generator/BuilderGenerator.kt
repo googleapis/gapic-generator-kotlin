@@ -16,11 +16,12 @@
 
 package com.google.api.kotlin.generator
 
-import com.google.api.kotlin.generator.config.ProtobufTypeMapper
+import com.google.api.kotlin.GeneratedSource
+import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asTypeName
 
 /**
@@ -31,7 +32,7 @@ internal class BuilderGenerator {
 
     private val SKIP = listOf("Any", "Empty")
 
-    fun generate(types: ProtobufTypeMapper): List<FileSpec.Builder> {
+    fun generate(types: ProtobufTypeMapper): List<GeneratedSource> {
         // package name -> builder functions
         val packagesToBuilders = mutableMapOf<String, MutableList<FunSpec>>()
 
@@ -73,9 +74,9 @@ internal class BuilderGenerator {
 
         // collect the builder functions into types
         return packagesToBuilders.keys.map { packageName ->
-            val file = FileSpec.builder(packageName, "KotlinBuilders")
-            packagesToBuilders[packageName]?.forEach { file.addFunction(it) }
-            file
+            val type = TypeSpec.classBuilder("KotlinBuilders")
+            packagesToBuilders[packageName]?.forEach { type.addFunction(it) }
+            GeneratedSource(packageName, type.build())
         }
     }
 }

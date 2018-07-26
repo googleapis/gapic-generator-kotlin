@@ -16,13 +16,16 @@
 
 package com.google.api.kotlin.generator
 
+import com.google.api.kotlin.GeneratedArtifact
+import com.google.api.kotlin.GeneratedSource
 import com.google.api.kotlin.GeneratorContext
-import com.google.api.kotlin.GeneratorResponse
-import com.google.api.kotlin.generator.config.FlattenedMethod
-import com.google.api.kotlin.generator.config.MethodOptions
-import com.google.api.kotlin.generator.config.PagedResponse
-import com.google.api.kotlin.generator.config.SampleMethod
-import com.google.api.kotlin.generator.types.GrpcTypes
+import com.google.api.kotlin.TestableFunSpec
+import com.google.api.kotlin.asTestable
+import com.google.api.kotlin.config.FlattenedMethod
+import com.google.api.kotlin.config.MethodOptions
+import com.google.api.kotlin.config.PagedResponse
+import com.google.api.kotlin.config.SampleMethod
+import com.google.api.kotlin.types.GrpcTypes
 import com.google.protobuf.DescriptorProtos
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
@@ -60,20 +63,23 @@ private const val PLACEHOLDER_KEYFILE = "< keyfile >"
  */
 internal class GRPCGenerator : AbstractGenerator() {
 
-    override fun generateServiceClient(ctx: GeneratorContext): GeneratorResponse {
-        val type = TypeSpec.classBuilder(ctx.className)
+    override fun generateServiceClient(ctx: GeneratorContext): List<GeneratedArtifact> {
+        val artifacts = mutableListOf<GeneratedArtifact>()
+
+        val clientType = TypeSpec.classBuilder(ctx.className)
+        val apiMethods = createMethods(ctx)
 
         // build client
-        type.addAnnotation(createGeneratedByAnnotation())
-        type.addKdoc(createClassKDoc(ctx))
-        type.superclass(GrpcTypes.Support.GrpcClient)
-        type.addSuperclassConstructorParameter("%N", PROP_CHANNEL)
-        type.addSuperclassConstructorParameter("%N", PROP_CALL_OPTS)
-        type.primaryConstructor(createPrimaryConstructor(ctx))
-        type.addProperties(createProperties(ctx))
-        type.addFunctions(createMethods(ctx))
-        type.addType(createCompanion(ctx))
-        type.addType(createStubHolderType(ctx))
+        clientType.addAnnotation(createGeneratedByAnnotation())
+        clientType.addKdoc(createClassKDoc(ctx))
+        clientType.superclass(GrpcTypes.Support.GrpcClient)
+        clientType.addSuperclassConstructorParameter("%N", PROP_CHANNEL)
+        clientType.addSuperclassConstructorParameter("%N", PROP_CALL_OPTS)
+        clientType.primaryConstructor(createPrimaryConstructor(ctx))
+        clientType.addProperties(createProperties(ctx))
+        clientType.addFunctions(apiMethods.map { it.function })
+        clientType.addType(createCompanion(ctx))
+        clientType.addType(createStubHolderType(ctx))
 
         // add statics
         val imports = listOf("pager")
@@ -81,8 +87,21 @@ internal class GRPCGenerator : AbstractGenerator() {
         val grpcImports = listOf("prepare")
                 .map { ClassName(GrpcTypes.Support.SUPPORT_LIB_GRPC_PACKAGE, it) }
 
+        // add client type
+        artifacts.add(GeneratedSource(ctx.className.packageName, clientType.build(), imports + grpcImports))
+
+        // build unit tests
+        val unitTestType = TypeSpec.classBuilder("${ctx.className.simpleName}Test")
+        unitTestType.addFunctions(createUnitTests(apiMethods))
+        if (unitTestType.funSpecs.isNotEmpty()) {
+            artifacts.add(GeneratedSource(
+                ctx.className.packageName,
+                unitTestType.build(),
+                kind = GeneratedSource.Kind.UNIT_TEST))
+        }
+
         // all done!
-        return GeneratorResponse(type.build(), imports + grpcImports)
+        return artifacts.toList()
     }
 
     /** the top level (class) comment */
@@ -136,7 +155,7 @@ internal class GRPCGenerator : AbstractGenerator() {
         return listOf(stub)
     }
 
-    private fun createMethods(ctx: GeneratorContext): List<FunSpec> {
+    private fun createMethods(ctx: GeneratorContext): List<TestableFunSpec> {
         // we'll use this in the example text
         val firstMethodName = ctx.service.methodList
                 .firstOrNull()?.name?.decapitalize()
@@ -171,6 +190,7 @@ internal class GRPCGenerator : AbstractGenerator() {
                         .addStatement("return %T(%N, options.build())",
                                 ctx.className, PROP_CHANNEL)
                         .build()
+                        .asTestable()
         )
 
         // API methods
@@ -195,8 +215,8 @@ internal class GRPCGenerator : AbstractGenerator() {
         method: DescriptorProtos.MethodDescriptorProto,
         methodName: String,
         options: MethodOptions
-    ): List<FunSpec> {
-        val methods = mutableListOf<FunSpec>()
+    ): List<TestableFunSpec> {
+        val methods = mutableListOf<TestableFunSpec>()
 
         // add flattened methods
         methods.addAll(options.flattenedMethods.map { flattenedMethod ->
@@ -233,7 +253,7 @@ internal class GRPCGenerator : AbstractGenerator() {
         flatteningConfig: FlattenedMethod? = null,
         paging: PagedResponse? = null,
         samples: List<SampleMethod> = listOf()
-    ): FunSpec {
+    ): TestableFunSpec {
         val m = FunSpec.builder(methodName)
                 .addParameters(parameters)
 
@@ -321,8 +341,8 @@ internal class GRPCGenerator : AbstractGenerator() {
         }
 
         // finish up and add documentation
-        return m.addKdoc(createMethodDoc(ctx, method, methodName, samples, flatteningConfig, parameters, extraParamDocs))
-                .build()
+        val mDoc = createMethodDoc(ctx, method, methodName, samples, flatteningConfig, parameters, extraParamDocs)
+        return TestableFunSpec(m.addKdoc(mDoc).build(), CodeBlock.of("throw Exception()"))
     }
 
     private fun createStreamingMethods(
@@ -330,8 +350,8 @@ internal class GRPCGenerator : AbstractGenerator() {
         method: DescriptorProtos.MethodDescriptorProto,
         methodName: String,
         options: MethodOptions
-    ): List<FunSpec> {
-        val methods = mutableListOf<FunSpec>()
+    ): List<TestableFunSpec> {
+        val methods = mutableListOf<TestableFunSpec>()
 
         // input / output types
         val normalInputType = ctx.typeMap.getKotlinType(method.inputType)
@@ -370,7 +390,7 @@ internal class GRPCGenerator : AbstractGenerator() {
             } else {
                 throw IllegalArgumentException("Unknown streaming type (not client or server)!")
             }
-            flattened.build()
+            TestableFunSpec(flattened.build(), CodeBlock.of("throw Exception()"))
         })
 
         // unchanged method
@@ -397,7 +417,7 @@ internal class GRPCGenerator : AbstractGenerator() {
             } else {
                 throw IllegalArgumentException("Unknown streaming type (not client or server)!")
             }
-            methods.add(normal.build())
+            methods.add(TestableFunSpec(normal.build(), CodeBlock.of("throw Exception()")))
         }
 
         return methods.toList()
@@ -591,5 +611,16 @@ internal class GRPCGenerator : AbstractGenerator() {
                         .initializer(PROP_STUBS_OPERATION)
                         .build())
                 .build()
+    }
+
+    private fun createUnitTests(functions: List<TestableFunSpec>): List<FunSpec> {
+        return functions
+            .filter { it.unitTestCode != null }
+            .map {
+                FunSpec.builder("test${it.function.name.capitalize()}")
+                    .addAnnotation(ClassName("kotlin.test", "Test"))
+                    .addCode(it.unitTestCode!!)
+                    .build()
+        }
     }
 }

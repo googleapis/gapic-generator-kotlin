@@ -17,15 +17,17 @@
 package com.google.api.kotlin
 
 import com.google.api.kotlin.generator.BuilderGenerator
-import com.google.api.kotlin.generator.config.ConfigurationMetadata
-import com.google.api.kotlin.generator.config.ConfigurationMetadataFactory
-import com.google.api.kotlin.generator.config.ProtobufTypeMapper
+import com.google.api.kotlin.config.ConfigurationMetadata
+import com.google.api.kotlin.config.ConfigurationMetadataFactory
+import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.compiler.PluginProtos
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.TypeSpec
 import mu.KotlinLogging
 import java.util.Calendar
@@ -46,8 +48,9 @@ internal class KotlinClientGenerator(
     companion object {
         /** protos to ignore if found during processing */
         private val SKIP_PROTOS_WITH_NAME = listOf(
-                "google/bytestream/bytestream.proto",
-                "google/longrunning/operations.proto")
+            "google/bytestream/bytestream.proto",
+            "google/longrunning/operations.proto"
+        )
     }
 
     /**
@@ -63,31 +66,32 @@ internal class KotlinClientGenerator(
 
         // generate code for the services
         val files = request.protoFileList
-                .filter { it.serviceCount > 0 }
-                .filter { request.fileToGenerateList.contains(it.name) }
-                .filter { !SKIP_PROTOS_WITH_NAME.contains(it.name) }
-                .flatMap {
-                    it.serviceList.mapNotNull { service ->
-                        try {
-                            processProtoService(
-                                    it, service, clientConfigFactory.find(it), typeMap)
-                        } catch (e: Throwable) {
-                            log.error(e) { "Failed to generate client for: ${it.name}" }
-                            null
-                        }
+            .filter { it.serviceCount > 0 }
+            .filter { request.fileToGenerateList.contains(it.name) }
+            .filter { !SKIP_PROTOS_WITH_NAME.contains(it.name) }
+            .flatMap {
+                it.serviceList.mapNotNull { service ->
+                    try {
+                        processProtoService(
+                            it, service, clientConfigFactory.find(it), typeMap
+                        )
+                    } catch (e: Throwable) {
+                        log.error(e) { "Failed to generate client for: ${it.name}" }
+                        null
                     }
                 }
+            }.flatMap { it.asIterable() }
 
         // generate builders
-        val builderFiles = builderGenerator?.let {
-            g -> g.generate(typeMap).map { toFile(it) }
+        val builderFiles = builderGenerator?.let { g ->
+            g.generate(typeMap).map { toSourceFile(it) }
         } ?: listOf()
 
         // put it all together
         return CodeGeneratorResponse.newBuilder()
-                .addAllFile(files)
-                .addAllFile(builderFiles)
-                .build()
+            .addAllFile(files)
+            .addAllFile(builderFiles)
+            .build()
     }
 
     /** Process the proto file and extract services to process */
@@ -96,7 +100,7 @@ internal class KotlinClientGenerator(
         service: DescriptorProtos.ServiceDescriptorProto,
         metadata: ConfigurationMetadata,
         typeMap: ProtobufTypeMapper
-    ): PluginProtos.CodeGeneratorResponse.File {
+    ): List<PluginProtos.CodeGeneratorResponse.File> {
         log.debug { "processing proto: ${proto.name} -> service: ${service.name}" }
 
         // get package name
@@ -111,42 +115,56 @@ internal class KotlinClientGenerator(
         val ctx = GeneratorContext(proto, service, metadata, className, typeMap)
 
         // generate
-        val (type, imports) = clientGenerator.generateServiceClient(ctx)
-        val fileSpec = FileSpec.builder(packageName, className.simpleName)
-
-        // add implementation
-        fileSpec.addType(type)
-        imports.forEach { fileSpec.addImport(it.packageName, it.simpleName) }
-
-        // create file response
-        return toFile(fileSpec)
+        val artifacts = clientGenerator.generateServiceClient(ctx)
+        return artifacts.map {
+            when (it) {
+                is GeneratedSource -> toSourceFile(it)
+                else -> throw Exception("Not Implemented!")
+            }
+        }
     }
 
-    private fun toFile(
-        fileSpec: FileSpec.Builder,
+    private fun toSourceFile(
+        source: GeneratedSource,
         addLicense: Boolean = true
     ): PluginProtos.CodeGeneratorResponse.File {
-        // add headers
+        val name = source.type.name ?: throw IllegalStateException("Anonymous sources not allowed")
+        val fileSpec = FileSpec.builder(source.packageName, name)
+
+        // add header
         if (addLicense) {
             // TODO: not sure how this will be configured long term
-            val license = this.javaClass.getResource("/license-templates/apache-2.0.txt")?.readText()
+            val license =
+                this.javaClass.getResource("/license-templates/apache-2.0.txt")?.readText()
             license?.let {
-                fileSpec.addComment("%L", it
+                fileSpec.addComment(
+                    "%L", it
                         .replaceFirst("[yyyy]", "${Calendar.getInstance().get(Calendar.YEAR)}")
-                        .replaceFirst("[name of copyright owner]", "Google LLC"))
+                        .replaceFirst("[name of copyright owner]", "Google LLC")
+                )
             }
         }
 
-        // put it together and create file
+        // add implementation
+        fileSpec.addType(source.type)
+        source.imports.forEach { i -> fileSpec.addImport(i.packageName, i.simpleName) }
+
+        // determine file name and path
         val file = fileSpec.build()
         val fileDir = file.packageName
-                .toLowerCase()
-                .split(".")
-                .joinToString("/")
+            .toLowerCase()
+            .split(".")
+            .joinToString("/")
+        val fileName = when (source.kind) {
+            GeneratedSource.Kind.UNIT_TEST -> "test/$fileDir/${file.name}.kt"
+            else -> "$fileDir/${file.name}.kt"
+        }
+
+        // put it together and create file
         return PluginProtos.CodeGeneratorResponse.File.newBuilder()
-                .setName("$fileDir/${file.name}.kt")
-                .setContent(file.toString())
-                .build()
+            .setName(fileName)
+            .setContent(file.toString())
+            .build()
     }
 }
 
@@ -163,11 +181,11 @@ internal interface ClientGenerator {
      * @param ctx content
      * @return
      */
-    fun generateServiceClient(ctx: GeneratorContext): GeneratorResponse
+    fun generateServiceClient(ctx: GeneratorContext): List<GeneratedArtifact>
 }
 
 /** Data model for client generation */
-internal data class GeneratorContext(
+internal class GeneratorContext(
     val proto: DescriptorProtos.FileDescriptorProto,
     val service: DescriptorProtos.ServiceDescriptorProto,
     val metadata: ConfigurationMetadata,
@@ -175,5 +193,24 @@ internal data class GeneratorContext(
     val typeMap: ProtobufTypeMapper
 )
 
-/** Type definition for the client */
-internal data class GeneratorResponse(val type: TypeSpec, val imports: List<ClassName> = listOf())
+internal abstract class GeneratedArtifact()
+
+internal class GeneratedSource(
+    val packageName: String,
+    val type: TypeSpec,
+    val imports: List<ClassName> = listOf(),
+    val kind: Kind = Kind.SOURCE
+) : GeneratedArtifact() {
+    internal enum class Kind {
+        SOURCE, UNIT_TEST
+    }
+}
+
+/** FunSpec with additional code blocks that can be used to generate tests */
+internal class TestableFunSpec(
+    val function: FunSpec,
+    val unitTestCode: CodeBlock? = null
+)
+
+internal fun FunSpec.asTestable(unitTestCode: CodeBlock? = null) =
+    TestableFunSpec(this, unitTestCode)
