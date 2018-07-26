@@ -8,8 +8,34 @@ You can find some examples, using Google Cloud APIs, in the [examples directory]
 
 ## Getting Started
 
-You can use Kgen through the command line or with Gradle. Using Gradle is simplier in most
-cases, so we'll start there.
+You can use Kgen with Docker or with Gradle. Using Docker is simplier in most cases, so we'll start
+there, but using Gradle directly may be a better choice if you will be adding your own manually 
+written code to the generated code and will be using Gradle for your project.
+
+### Docker
+
+The docker images for this project are coming soon, but have not yet been published. To build locally
+run the following:
+
+```bash
+$ cd generator
+$ ./gradlew build && docker build . -t kotlin-generator
+```
+
+Use the generator by mounting your input protocol buffers directory at `/proto` and mounting an 
+output directory at `/generated`. For example:
+
+```bash
+$ mkdir example-output
+$ docker run -it --rm \
+         --mount type=bind,source="$(pwd)"/example-input,target=/proto \
+         --mount type=bind,source="$(pwd)"/example-output,target=/generated \
+         kotlin-generator
+```
+
+*Note* Until `com.google.kgax:kgax-grpc` is published you must build and publish a local
+version of the library by building the kgax-grpc library and running the gradle local publish
+target. Then, copy your ~/.m2/repository to `generator/repository`. This will be removed soon!
 
 ### Gradle
 
@@ -44,7 +70,7 @@ cases, so we'll start there.
       protobuf {
           // set the version of protobuf compiler to use
           protoc {
-              artifact = 'com.google.protobuf:protoc:3.0.0'
+              artifact = 'com.google.protobuf:protoc:3.6.0'
           }
           // set the version of the code generators to use
           plugins {
@@ -96,9 +122,45 @@ cases, so we'll start there.
      for your application to use, and you can find it at `app/build/generated/source/proto`
      (Android) or `build/generated/source/proto` (standalone application).
      
-### Command Line
+## Code Formatting
 
-Coming soon!
+This project uses dockerized versions of Intellij CE's code formatter,
+[Google Java Format](https://github.com/google/google-java-format) and [ktlint](https://ktlint.github.io/). 
+They can be customized for the generator and they can be used standalone.
+
+### Building
+
+```
+  $ docker build --target formatter . -t formatter
+  $ docker build --target javaformatter . -t javaformatter
+  $ docker build --target ktlint . -t ktlint
+```
+
+### Usage
+
+Run the container and mount the directory that contains the source files that you want to 
+format to `/src` inside the container. It will format all files recursively using the rules defined 
+in `format.xml`. For example, to format the files in the current directory use:
+
+```
+  $ docker run --rm -it -v $PWD:/src formatter
+  $ docker run --rm -it -v $PWD:/src javaformatter
+  $ docker run --rm -it -v $PWD:/src ktlint
+```
+
+### Customizing
+
+You can replace `/usr/ide/format.xml` with your own formatter configuration to customize
+the settings for the intelliJ formatter. See the official [documentation](https://www.jetbrains.com/help/idea/settings-code-style.html)
+for more details.
+
+Alternatively, you may override the defaults for any of the formatters by passing arguments to the commands. 
+See the `Dockerfile` for the default set of arugments.
+
+### Why So Many Formatters
+
+ktlint does not currently fix long lines so the Intellij formatter is being used for now. This is likely 
+to change at some point so we are experimenting with the various options that are available.
 
 ## Contributing
 

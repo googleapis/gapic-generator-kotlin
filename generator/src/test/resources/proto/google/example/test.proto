@@ -8,26 +8,26 @@ import "google/longrunning/test_longrunning.proto";
 option java_multiple_files = true;
 
 service TestService {
-  rpc Test (TestRequest) returns (TestResponse);
-  rpc TestFlat (TestRequest) returns (TestResponse);
-  rpc TestFlatWithoutOriginal (TestRequest) returns (TestResponse);
+    rpc Test (TestRequest) returns (TestResponse);
+    rpc TestFlat (TestRequest) returns (TestResponse);
+    rpc TestFlatWithoutOriginal (TestRequest) returns (TestResponse);
 
-  rpc StreamTest (stream TestRequest) returns (stream TestResponse);
-  rpc StreamClientTest (stream TestRequest) returns (TestResponse);
-  rpc StreamServerTest (TestRequest) returns (stream TestResponse);
+    rpc StreamTest (stream TestRequest) returns (stream TestResponse);
+    rpc StreamClientTest (stream TestRequest) returns (TestResponse);
+    rpc StreamServerTest (TestRequest) returns (stream TestResponse);
 
-  rpc OperationTest (TestRequest) returns (google.longrunning.Operation);
+    rpc OperationTest (TestRequest) returns (google.longrunning.Operation);
 
-  rpc NestedFlat (TestRequest) returns (TestResponse);
-  rpc NestedFlatPrimitive (TestRequest) returns (TestResponse);
+    rpc NestedFlat (TestRequest) returns (TestResponse);
+    rpc NestedFlatPrimitive (TestRequest) returns (TestResponse);
 }
 
 message TestRequest {
-  string query = 1;
-  Detail main_detail = 2;
-  repeated Detail more_details = 3;
+    string query = 1;
+    Detail main_detail = 2;
+    repeated Detail more_details = 3;
 }
 
 message TestResponse {
-  Result result = 1;
+    Result result = 1;
 }

@@ -33,7 +33,7 @@ import com.squareup.kotlinpoet.FLOAT
 import com.squareup.kotlinpoet.INT
 import com.squareup.kotlinpoet.LONG
 import com.squareup.kotlinpoet.ParameterSpec
-import com.squareup.kotlinpoet.ParameterizedTypeName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.asTypeName
 import org.apache.commons.text.WordUtils
 import javax.annotation.Generated
@@ -144,9 +144,9 @@ internal abstract class AbstractGenerator : ClientGenerator {
             val typeName = when {
                 field.isMap(context.typeMap) -> {
                     val (keyType, valueType) = field.describeMap(context.typeMap)
-                    ParameterizedTypeName.get(Map::class.asTypeName(), keyType, valueType)
+                    Map::class.asTypeName().parameterizedBy(keyType, valueType)
                 }
-                field.isRepeated() -> ParameterizedTypeName.get(List::class.asTypeName(), rawType)
+                field.isRepeated() -> List::class.asTypeName().parameterizedBy(rawType)
                 else -> rawType
             }
             ParameterSpec.builder(getParameterName(path.last()), typeName).build()

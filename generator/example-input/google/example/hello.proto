@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package google.example;
+
+option java_multiple_files = true;
+
+service HelloService {
+     rpc HiThere (HiRequest) returns (HiResponse);
+}
+
+message HiRequest {
+    string query = 1;
+}
+
+message HiResponse {
+    string result = 1;
+}

@@ -112,11 +112,11 @@ internal class KotlinClientGenerator(
 
         // generate
         val (type, imports) = clientGenerator.generateServiceClient(ctx)
-        val fileSpec = FileSpec.builder(packageName, className.simpleName())
+        val fileSpec = FileSpec.builder(packageName, className.simpleName)
 
         // add implementation
         fileSpec.addType(type)
-        imports.forEach { fileSpec.addStaticImport(it.packageName(), it.simpleName()) }
+        imports.forEach { fileSpec.addImport(it.packageName, it.simpleName) }
 
         // create file response
         return toFile(fileSpec)

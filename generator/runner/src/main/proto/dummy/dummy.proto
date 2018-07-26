@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package dummy;
+
+// dummy message to ensure the protoc plugins are downloaded
+message Hi {
+    string field = 1;
+}

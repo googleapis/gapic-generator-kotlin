@@ -33,6 +33,9 @@ private val log = KotlinLogging.logger {}
 /**
  * Metadata not in the proto file (i.e. info from the service config).
  *
+ * Note: this will need to change significantly when the configuration is moved into the
+ * protos, so this implementation is being kept to a minimum in the meantime.
+ *
  * @author jbolinger
  */
 internal class ConfigurationMetadata constructor(
@@ -44,9 +47,13 @@ internal class ConfigurationMetadata constructor(
 ) {
 
     /** Get the options for the given service */
-    operator fun get(serviceName: String) =
-            serviceOptions[serviceName]
-                    ?: throw IllegalArgumentException("no service defined with name: $serviceName")
+    operator fun get(serviceName: String): ServiceOptions {
+        val opt = serviceOptions[serviceName]
+        if (opt == null) {
+            log.warn { "No service defined with name: $serviceName (using default optioons)" }
+        }
+        return opt ?: ServiceOptions()
+    }
 
     operator fun get(service: DescriptorProtos.ServiceDescriptorProto) =
             get("$packageName.${service.name}")
@@ -83,8 +90,7 @@ internal class ConfigurationMetadataFactory(val rootDirectory: String = "") {
     fun find(proto: DescriptorProtos.FileDescriptorProto): ConfigurationMetadata {
         val protoPath = Paths.get(rootDirectory, proto.name)
 
-        val version = protoPath.parent?.fileName
-                ?: throw IllegalStateException("version directory not found")
+        val version = protoPath.parent?.fileName ?: "unknown_version"
 
         // find all config files
         val matcher = { name: String, pattern: String ->
@@ -95,41 +101,57 @@ internal class ConfigurationMetadataFactory(val rootDirectory: String = "") {
                 .filter { it.isFile }
                 .filter { matcher(it.name, "*_$version.yaml") }
                 .findFirst()
-                .orElseThrow { IllegalStateException("service yaml not found") }
+                .orElse(null)
         val clientConfig = Files.list(protoPath.parent)
                 .map { it.toFile() }
                 .filter { it.isFile }
                 .filter { matcher(it.name, "*_gapic.yaml") }
                 .findFirst()
-                .orElseThrow { IllegalStateException("client (gapic) yaml not found") }
+                .orElse(null)
 
         // parse them
         return parse(proto.`package`, serviceConfig, clientConfig)
     }
 
     // Parses the configuration (service yaml) files.
-    private fun parse(packageName: String, serviceFile: File, clientFile: File): ConfigurationMetadata {
-        FileInputStream(serviceFile).use { ins ->
-            val config = yaml.loadAs(ins, ServiceConfigYaml::class.java)
+    private fun parse(packageName: String, serviceFile: File?, clientFile: File?): ConfigurationMetadata {
+        val apiConfig = if (clientFile != null) {
+            log.debug { "parsing config file: ${clientFile.absolutePath}" }
+            parseClient(clientFile)
+        } else {
+            log.warn { "No service configuration found for package: $packageName (using defaults)" }
+            mapOf()
+        }
 
-            // parse out the useful info
-            val name = config.title
-            val summary = config.documentation?.summary
-                    ?: "Client library for a wonderful product!"
-            val host = config.name
-            val scopes = config.authentication?.rules
-                    ?.filter { it.oauth != null }
-                    ?.map { it.oauth!! }
-                    ?.map { it.canonical_scopes }
-                    ?.map { it.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray() }
-                    ?.flatMap { it.asIterable() }
-                    ?.map { it.replace("\n".toRegex(), "").trim { it <= ' ' } }
-                    ?.toSet() ?: setOf()
+        if (serviceFile != null) {
+            FileInputStream(serviceFile).use { ins ->
+                val config = yaml.loadAs(ins, ServiceConfigYaml::class.java)
 
-            // put it all together
-            return ConfigurationMetadata(host, scopes.toList(),
-                    BrandingOptions(name, summary),
-                    packageName, parseClient(clientFile))
+                // parse out the useful info
+                val name = config.title
+                val summary = config.documentation?.summary
+                        ?: "Client library for a wonderful product!"
+                val host = config.name
+                val scopes = config.authentication?.rules
+                        ?.filter { it.oauth != null }
+                        ?.map { it.oauth!! }
+                        ?.map { it.canonical_scopes }
+                        ?.map { it.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray() }
+                        ?.flatMap { it.asIterable() }
+                        ?.map { it.replace("\n".toRegex(), "").trim { it <= ' ' } }
+                        ?.toSet() ?: setOf()
+
+                // put it all together
+                return ConfigurationMetadata(host, scopes.toList(),
+                        BrandingOptions(name, summary),
+                        packageName, apiConfig)
+            }
+        } else {
+            // use defaults
+            log.warn { "No gapic configuration found for package: $packageName (using defaults)" }
+            return ConfigurationMetadata("service.example.com", listOf("https://example.com/auth/scope"),
+                    BrandingOptions("Example API", "No configuration was provided for this API!"),
+                    packageName, apiConfig)
         }
     }
 

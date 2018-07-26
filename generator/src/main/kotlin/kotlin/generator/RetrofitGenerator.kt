@@ -26,7 +26,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
-import com.squareup.kotlinpoet.ParameterizedTypeName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import mu.KotlinLogging
@@ -100,8 +100,7 @@ internal class RetrofitGenerator : AbstractGenerator() {
         val methodName = method.name.decapitalize()
         val normal = FunSpec.builder(methodName)
                 .addParameter(PARAM_REQUEST, ctx.typeMap.getKotlinType(method.inputType))
-                .returns(ParameterizedTypeName.get(
-                        RetrofitTypes.Call, ctx.typeMap.getKotlinType(method.outputType)))
+                .returns(RetrofitTypes.Call.parameterizedBy(ctx.typeMap.getKotlinType(method.outputType)))
                 .addStatement("return %N.%L(%N)", PROP_CLIENT, methodName, PARAM_REQUEST)
                 .build()
 
@@ -130,8 +129,7 @@ internal class RetrofitGenerator : AbstractGenerator() {
                                                     PARAM_REQUEST, ctx.typeMap.getKotlinType(it.inputType))
                                                     .addAnnotation(RetrofitTypes.Body)
                                                     .build())
-                                            .returns(ParameterizedTypeName.get(
-                                                    RetrofitTypes.Call, ctx.typeMap.getKotlinType(it.outputType)))
+                                            .returns(RetrofitTypes.Call.parameterizedBy(ctx.typeMap.getKotlinType(it.outputType)))
                                             .addAnnotation(AnnotationSpec.builder(RetrofitTypes.POST)
                                                     .addMember("\"/\\\$rpc/${ctx.proto.`package`}.${ctx.service.name}/${it.name}\"")
                                                     .build())
@@ -149,7 +147,7 @@ internal class RetrofitGenerator : AbstractGenerator() {
                         .defaultValue("%S", "https://${ctx.metadata.host}")
                         .build())
                 .addParameter(ParameterSpec.builder("scopes",
-                        ParameterizedTypeName.get(List::class, String::class))
+                        List::class.parameterizedBy(String::class))
                         .defaultValue("listOf(%L)", ctx.metadata.scopesAsLiteral)
                         .build())
                 .returns(ctx.className)
@@ -161,7 +159,7 @@ internal class RetrofitGenerator : AbstractGenerator() {
                 .addAnnotation(JvmStatic::class)
                 .addParameter("keyFile", InputStream::class)
                 .addParameter("host", String::class)
-                .addParameter("scopes", ParameterizedTypeName.get(List::class, String::class))
+                .addParameter("scopes", List::class.parameterizedBy(String::class))
                 .returns(ClassName("", RETROFIT_INTERFACE_NAME))
                 .addStatement("val keyContent = keyFile.readBytes()")
                 .addStatement("val httpClient = %T.Builder().addInterceptor { chain ->", RetrofitTypes.OkHttpClient)

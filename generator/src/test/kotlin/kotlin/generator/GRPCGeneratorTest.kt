@@ -24,7 +24,7 @@ import com.google.api.kotlin.generator.config.ServiceOptions
 import com.google.api.kotlin.generator.types.GrpcTypes
 import com.google.common.truth.Truth.assertThat
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.ParameterizedTypeName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.asTypeName
 import kotlin.test.Test
 
@@ -269,8 +269,8 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(method).isNotNull()
         method?.apply {
             assertThat(parameters.first().name).isEqualTo("moreDetails")
-            assertThat(parameters.first().type).isEqualTo(ParameterizedTypeName.get(
-                    List::class.asTypeName(), messageType("Detail")))
+            assertThat(parameters.first().type).isEqualTo(
+                    List::class.asTypeName().parameterizedBy(messageType("Detail")))
             assertThat(this.body.asNormalizedString()).isEqualTo("""
                 |return stubs.future.executeFuture {
                 |  it.nestedFlat($namespace.TestRequest.newBuilder()

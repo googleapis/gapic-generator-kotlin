@@ -20,6 +20,7 @@ import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.generator.config.ProtobufTypeMapper
 import com.google.common.truth.Truth.assertThat
 import com.nhaarman.mockito_kotlin.mock
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
 import kotlin.test.Test
 
@@ -46,14 +47,52 @@ class BuilderGeneratorTest {
         assertThat(funs).hasSize(2)
 
         fun methodBody(type: String) = "return com.google.api.$type.newBuilder().apply(init).build()"
-        val foo = funs.find { it.name == "Foo" }!!
-        assertThat(foo.body.asNormalizedString()).isEqualTo(methodBody("Foo"))
-        val bar = funs.find { it.name == "Bar" }!!
-        assertThat(bar.body.asNormalizedString()).isEqualTo(methodBody("Bar"))
-
-        for (f in listOf(foo, bar)) {
+        listOf("Foo", "Bar").forEach { name ->
+            val f = funs.find { it.name == name } ?: throw Exception("fun not found $name")
+            assertThat(f.body.asNormalizedString()).isEqualTo(methodBody(name))
             assertThat(f.parameters).hasSize(1)
             assertThat(f.parameters.first().name).isEqualTo("init")
+        }
+    }
+
+    @Test
+    fun `generates nested builders`() {
+        val typeMap: ProtobufTypeMapper = mock {
+            on { getAllKotlinTypes() }.thenReturn(listOf(
+                "com.google.api.Foo",
+                "com.google.api.Foo.A",
+                "com.google.api.Foo.A.B",
+                "com.google.api.Foo.A.B.C",
+                "com.google.api.Bar",
+                "com.google.api.Bar.X",
+                "com.google.api.Bar.Y",
+                "com.google.api.Bar.Z",
+                "com.google.api.Baz"
+            ))
+        }
+
+        // build types
+        val files = BuilderGenerator().generate(typeMap).map { it.build() }
+
+        assertThat(files).hasSize(1)
+        val file = files.first()
+        assertThat(file.packageName).isEqualTo("com.google.api")
+        assertThat(file.name).isEqualTo("KotlinBuilders")
+
+        val funs = file.members.mapNotNull { it as? FunSpec }
+        assertThat(funs).hasSize(9)
+
+        fun methodBody(type: String) = "return com.google.api.$type.newBuilder().apply(init).build()"
+        listOf("Foo", "Foo.A", "Foo.A.B", "Foo.A.B.C", "Bar", "Bar.X", "Bar.Y", "Bar.Z", "Baz").forEach { qualifiedName ->
+            val path = qualifiedName.split(".")
+            val f = funs.find { it.name == path.last() } ?: throw Exception("fun not found $qualifiedName")
+            assertThat(f.body.asNormalizedString()).isEqualTo(methodBody(qualifiedName))
+            assertThat(f.parameters).hasSize(1)
+            assertThat(f.parameters.first().name).isEqualTo("init")
+            if (path.size > 1) {
+                assertThat(f.receiverType).isEqualTo(ClassName("com.google.api",
+                    path.subList(0, path.size - 1).joinToString(".")))
+            }
         }
     }
 

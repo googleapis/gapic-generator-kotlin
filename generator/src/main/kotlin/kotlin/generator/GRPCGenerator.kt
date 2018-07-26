@@ -30,10 +30,10 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterSpec
-import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asTypeName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import mu.KotlinLogging
 import java.io.InputStream
 
@@ -456,9 +456,9 @@ internal class GRPCGenerator : AbstractGenerator() {
 
     private fun createCompanion(ctx: GeneratorContext): TypeSpec {
         return TypeSpec.companionObjectBuilder()
-                .addKdoc("Utilities for creating a fully configured %N.\n", ctx.className.simpleName())
+                .addKdoc("Utilities for creating a fully configured %N.\n", ctx.className.simpleName)
                 .addProperty(PropertySpec.builder(
-                        CONST_ALL_SCOPES, ParameterizedTypeName.get(List::class, String::class))
+                        CONST_ALL_SCOPES, List::class.parameterizedBy(String::class))
                         .addAnnotation(JvmStatic::class)
                         .initializer("listOf(%L)", ctx.metadata.scopesAsLiteral)
                         .build())
@@ -476,12 +476,12 @@ internal class GRPCGenerator : AbstractGenerator() {
                     |TODO: ADD INFO ABOUT REFRESHING
                     |
                     |If a [channel] is not provided one will be created automatically (recommended).
-                    |""".trimMargin(), ctx.className.simpleName())
+                    |""".trimMargin(), ctx.className.simpleName)
                 .addAnnotation(JvmStatic::class)
                 .addAnnotation(JvmOverloads::class)
                 .addParameter("accessToken", GrpcTypes.Auth.AccessToken)
                 .addParameter(ParameterSpec.builder("scopes",
-                        ParameterizedTypeName.get(List::class, String::class))
+                        List::class.parameterizedBy(String::class))
                         .defaultValue("%N", CONST_ALL_SCOPES)
                         .build())
                 .addParameter(ParameterSpec.builder(
@@ -500,12 +500,12 @@ internal class GRPCGenerator : AbstractGenerator() {
                     |Create a %N with service account credentials from a JSON [keyFile].
                     |
                     |If a [channel] is not provided one will be created automatically (recommended).
-                    |""".trimMargin(), ctx.className.simpleName())
+                    |""".trimMargin(), ctx.className.simpleName)
                 .addAnnotation(JvmStatic::class)
                 .addAnnotation(JvmOverloads::class)
                 .addParameter("keyFile", InputStream::class)
                 .addParameter(ParameterSpec.builder("scopes",
-                        ParameterizedTypeName.get(List::class, String::class))
+                        List::class.parameterizedBy(String::class))
                         .defaultValue("%N", CONST_ALL_SCOPES)
                         .build())
                 .addParameter(ParameterSpec.builder(
@@ -524,7 +524,7 @@ internal class GRPCGenerator : AbstractGenerator() {
                     |Create a %N with the provided credentials.
                     |
                     |If a [channel] is not provided one will be created automatically (recommended).
-                    |""".trimMargin(), ctx.className.simpleName())
+                    |""".trimMargin(), ctx.className.simpleName)
                 .addAnnotation(JvmStatic::class)
                 .addAnnotation(JvmOverloads::class)
                 .addParameter("credentials", GrpcTypes.Auth.GoogleCredentials)
@@ -543,14 +543,16 @@ internal class GRPCGenerator : AbstractGenerator() {
                     |
                     |Prefer to use [fromAccessToken], [fromServiceAccount], or [fromCredentials] unless
                     |you need to customize the channel.
-                    |""".trimMargin(), ctx.className.simpleName())
+                    |""".trimMargin(), ctx.className.simpleName)
+                .addAnnotation(JvmStatic::class)
+                .addAnnotation(JvmOverloads::class)
                 .addParameter(ParameterSpec.builder("host", String::class)
                         .defaultValue("%S", ctx.metadata.host)
                         .build())
-                .addParameter(ParameterSpec.builder("port", Int::class.asTypeName())
+                .addParameter(ParameterSpec.builder("port", Int::class)
                         .defaultValue("443")
                         .build())
-                .addParameter(ParameterSpec.builder("enableRetry", Boolean::class.asTypeName())
+                .addParameter(ParameterSpec.builder("enableRetry", Boolean::class)
                         .defaultValue("true")
                         .build())
                 .returns(GrpcTypes.ManagedChannel)

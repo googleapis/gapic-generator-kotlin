@@ -17,7 +17,7 @@
 package com.google.api.kotlin.generator.types
 
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.ParameterizedTypeName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
 
 /**
@@ -41,32 +41,30 @@ internal interface GrpcTypes {
             const val SUPPORT_LIB_GRPC_PACKAGE = "$SUPPORT_LIB_PACKAGE.grpc"
 
             val GrpcClient = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "GrpcClient")
-            fun GrpcClientStub(type: ClassName) = ParameterizedTypeName.get(
-                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "GrpcClientStub"), type)
+            fun GrpcClientStub(type: ClassName) =
+                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "GrpcClientStub").parameterizedBy(type)
 
             val ClientCallOptions = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ClientCallOptions")
             val ClientCallOptionsBuilder = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ClientCallOptions.Builder")
 
-            fun FutureCall(type: ClassName) = ParameterizedTypeName.get(
-                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "FutureCall"), type)
-            fun CallResult(type: ClassName) = ParameterizedTypeName.get(
-                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "CallResult"), type)
-            fun StreamingCall(requestType: ClassName, responseType: ClassName) = ParameterizedTypeName.get(
-                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "StreamingCall"), requestType, responseType)
-            fun ClientStreamingCall(requestType: ClassName, responseType: ClassName) = ParameterizedTypeName.get(
-                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ClientStreamingCall"), requestType, responseType)
+            fun FutureCall(type: ClassName) =
+                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "FutureCall").parameterizedBy(type)
+            fun CallResult(type: ClassName) =
+                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "CallResult").parameterizedBy(type)
+            fun StreamingCall(requestType: ClassName, responseType: ClassName) =
+                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "StreamingCall").parameterizedBy(requestType, responseType)
+            fun ClientStreamingCall(requestType: ClassName, responseType: ClassName) =
+                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ClientStreamingCall").parameterizedBy(requestType, responseType)
             fun ServerStreamingCall(type: ClassName) =
-                    ParameterizedTypeName.get(
-                            ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ServerStreamingCall"), type)
+                ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ServerStreamingCall").parameterizedBy(type)
 
-            fun LongRunningCall(type: TypeName) = ParameterizedTypeName.get(
-                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "LongRunningCall"), type)
+            fun LongRunningCall(type: TypeName) =
+                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "LongRunningCall").parameterizedBy(type)
 
             fun Pager(requestTypeT: TypeName, responseType: TypeName, elementType: TypeName) =
-                    ParameterizedTypeName.get(ClassName(SUPPORT_LIB_PACKAGE, "Pager"),
-                            requestTypeT, responseType, elementType)
-            fun PageResult(type: ClassName) = ParameterizedTypeName.get(
-                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "PageResult"), type)
+                    ClassName(SUPPORT_LIB_PACKAGE, "Pager").parameterizedBy(requestTypeT, responseType, elementType)
+            fun PageResult(type: ClassName) =
+                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "PageResult").parameterizedBy(type)
         }
     }
 

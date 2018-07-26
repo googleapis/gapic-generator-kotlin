@@ -1,6 +1,8 @@
 .gradle/
+runner/.gradle/
 .idea/
 .settings/
 bin/
-build/
 out/
+example-input/
+example-output/
