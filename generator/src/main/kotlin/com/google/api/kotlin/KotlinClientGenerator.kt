@@ -53,13 +53,18 @@ internal class KotlinClientGenerator(
         )
     }
 
+    data class Artifacts(
+        val sourceCode: CodeGeneratorResponse,
+        val testCode: CodeGeneratorResponse
+    )
+
     /**
      * Generate the client.
      *
      * @param request protobuf code generation request
      * @return response from this plugin to forward to the protobuf code generator
      */
-    fun generate(request: CodeGeneratorRequest): CodeGeneratorResponse {
+    fun generate(request: CodeGeneratorRequest): Artifacts {
         // create type map
         val typeMap = ProtobufTypeMapper.fromProtos(request.protoFileList)
         log.debug { "Discovered type: $typeMap" }
@@ -82,16 +87,36 @@ internal class KotlinClientGenerator(
                 }
             }.flatMap { it.asIterable() }
 
+
+        // extract source files
+        val sourceFiles = files
+            .filterIsInstance(GeneratedSource::class.java)
+            .filter { it.kind == GeneratedSource.Kind.SOURCE }
+            .map { toSourceFile(it) }
+
         // generate builders
         val builderFiles = builderGenerator?.let { g ->
             g.generate(typeMap).map { toSourceFile(it) }
         } ?: listOf()
 
-        // put it all together
-        return CodeGeneratorResponse.newBuilder()
-            .addAllFile(files)
+        // put all sources together
+        val sourceCode = CodeGeneratorResponse.newBuilder()
+            .addAllFile(sourceFiles)
             .addAllFile(builderFiles)
             .build()
+
+        // extract test files
+        val testFiles = files
+            .filterIsInstance(GeneratedSource::class.java)
+            .filter { it.kind == GeneratedSource.Kind.UNIT_TEST }
+            .map { toSourceFile(it) }
+
+        // put all test sources together
+        val testCode = CodeGeneratorResponse.newBuilder()
+            .addAllFile(testFiles)
+            .build()
+
+        return Artifacts(sourceCode, testCode)
     }
 
     /** Process the proto file and extract services to process */
@@ -100,7 +125,7 @@ internal class KotlinClientGenerator(
         service: DescriptorProtos.ServiceDescriptorProto,
         metadata: ConfigurationMetadata,
         typeMap: ProtobufTypeMapper
-    ): List<PluginProtos.CodeGeneratorResponse.File> {
+    ): List<GeneratedArtifact> {
         log.debug { "processing proto: ${proto.name} -> service: ${service.name}" }
 
         // get package name
@@ -115,20 +140,14 @@ internal class KotlinClientGenerator(
         val ctx = GeneratorContext(proto, service, metadata, className, typeMap)
 
         // generate
-        val artifacts = clientGenerator.generateServiceClient(ctx)
-        return artifacts.map {
-            when (it) {
-                is GeneratedSource -> toSourceFile(it)
-                else -> throw Exception("Not Implemented!")
-            }
-        }
+        return clientGenerator.generateServiceClient(ctx)
     }
 
     private fun toSourceFile(
         source: GeneratedSource,
         addLicense: Boolean = true
     ): PluginProtos.CodeGeneratorResponse.File {
-        val name = source.type.name ?: throw IllegalStateException("Anonymous sources not allowed")
+        val name = source.name
         val fileSpec = FileSpec.builder(source.packageName, name)
 
         // add header
@@ -146,8 +165,9 @@ internal class KotlinClientGenerator(
         }
 
         // add implementation
-        fileSpec.addType(source.type)
-        source.imports.forEach { i -> fileSpec.addImport(i.packageName, i.simpleName) }
+        source.types.forEach { fileSpec.addType(it) }
+        source.functions.forEach { fileSpec.addFunction(it) }
+        source.imports.forEach { fileSpec.addImport(it.packageName, it.simpleName) }
 
         // determine file name and path
         val file = fileSpec.build()
@@ -155,10 +175,7 @@ internal class KotlinClientGenerator(
             .toLowerCase()
             .split(".")
             .joinToString("/")
-        val fileName = when (source.kind) {
-            GeneratedSource.Kind.UNIT_TEST -> "test/$fileDir/${file.name}.kt"
-            else -> "$fileDir/${file.name}.kt"
-        }
+        val fileName = "$fileDir/${file.name}.kt"
 
         // put it together and create file
         return PluginProtos.CodeGeneratorResponse.File.newBuilder()
@@ -197,8 +214,10 @@ internal abstract class GeneratedArtifact()
 
 internal class GeneratedSource(
     val packageName: String,
-    val type: TypeSpec,
+    val name: String,
+    val types: List<TypeSpec> = listOf(),
     val imports: List<ClassName> = listOf(),
+    val functions: List<FunSpec> = listOf(),
     val kind: Kind = Kind.SOURCE
 ) : GeneratedArtifact() {
     internal enum class Kind {

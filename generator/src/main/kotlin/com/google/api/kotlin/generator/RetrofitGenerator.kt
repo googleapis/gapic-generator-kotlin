@@ -64,7 +64,13 @@ internal class RetrofitGenerator : AbstractGenerator(), ClientGenerator {
         )
 
         // all done!
-        return listOf(GeneratedSource(ctx.className.packageName, type.build()))
+        return listOf(
+            GeneratedSource(
+                ctx.className.packageName,
+                ctx.className.simpleName,
+                types = listOf(type.build())
+            )
+        )
     }
 
     /** constructor for the client  */

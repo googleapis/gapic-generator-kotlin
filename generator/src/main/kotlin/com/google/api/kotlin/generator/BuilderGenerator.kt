@@ -21,7 +21,6 @@ import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.LambdaTypeName
-import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asTypeName
 
 /**
@@ -82,9 +81,12 @@ internal class BuilderGenerator {
 
         // collect the builder functions into types
         return packagesToBuilders.keys.map { packageName ->
-            val type = TypeSpec.classBuilder("KotlinBuilders")
-            packagesToBuilders[packageName]?.forEach { type.addFunction(it) }
-            GeneratedSource(packageName, type.build())
+            GeneratedSource(
+                packageName,
+                "KotlinBuilders",
+                functions = packagesToBuilders[packageName]?.toList()
+                    ?: throw IllegalStateException("No functions in package!/**/")
+            )
         }
     }
 }

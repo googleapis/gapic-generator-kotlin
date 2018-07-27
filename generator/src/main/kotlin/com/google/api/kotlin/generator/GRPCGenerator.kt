@@ -52,6 +52,7 @@ private const val PROP_STUBS_FUTURE = "future"
 private const val PROP_STUBS_OPERATION = "operation"
 private const val CONST_ALL_SCOPES = "ALL_SCOPES"
 private const val PARAM_REQUEST = "request"
+private const val PARAM_FACTORY = "factory"
 private const val FUN_PREPARE = "prepare"
 private const val STUBS_CLASS_TYPE = "Stubs"
 
@@ -92,22 +93,15 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
         artifacts.add(
             GeneratedSource(
                 ctx.className.packageName,
-                clientType.build(),
-                imports + grpcImports
+                ctx.className.simpleName,
+                types = listOf(clientType.build()),
+                imports = imports + grpcImports
             )
         )
 
         // build unit tests
-        val unitTestType = TypeSpec.classBuilder("${ctx.className.simpleName}Test")
-        unitTestType.addFunctions(Tests.generateUnitTests(apiMethods))
-        if (unitTestType.funSpecs.isNotEmpty()) {
-            artifacts.add(
-                GeneratedSource(
-                    ctx.className.packageName,
-                    unitTestType.build(),
-                    kind = GeneratedSource.Kind.UNIT_TEST
-                )
-            )
+        UnitTests.generate(ctx, apiMethods)?.let {
+            artifacts.add(it)
         }
 
         // all done!
@@ -123,12 +117,12 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
             // add primary (summary) section
             doc.add(
                 """
-            |%L
-            |
-            |%L
-            |
-            |[Product Documentation](%L)
-            |""".trimMargin(),
+                |%L
+                |
+                |%L
+                |
+                |[Product Documentation](%L)
+                |""".trimMargin(),
                 m.branding.name, m.branding.summary.wrap(), m.branding.url
             )
 
@@ -145,7 +139,11 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                 .addModifiers(KModifier.PRIVATE)
                 .addParameter(PROP_CHANNEL, GrpcTypes.ManagedChannel)
                 .addParameter(PROP_CALL_OPTS, GrpcTypes.Support.ClientCallOptions)
-                .build()
+                .addParameter(
+                    ParameterSpec.builder(
+                        PARAM_FACTORY, ClassName("", STUBS_CLASS_TYPE, "Factory").asNullable()
+                    ).defaultValue("null").build()
+                ).build()
         }
     }
 
@@ -162,7 +160,10 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                 .initializer(
                     CodeBlock.builder()
                         .add(
-                            "%T(\n",
+                            "%N?.create(%N, %N) ?: %T(\n",
+                            PARAM_FACTORY,
+                            PROP_CHANNEL,
+                            PROP_CALL_OPTS,
                             ClassName.bestGuess(STUBS_CLASS_TYPE)
                         )
                         .add(
@@ -196,18 +197,18 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                 FunSpec.builder(FUN_PREPARE)
                     .addKdoc(
                         """
-                            |Prepare for an API call by setting any desired options. For example:
-                            |
-                            |```
-                            |val client = %T.fromServiceAccount(%L)
-                            |val response = client.prepare {
-                            |  withMetadata("my-custom-header", listOf("some", "thing"))
-                            |}.%N(request).get()
-                            |```
-                            |
-                            |If you will make multiple requests with the same settings, simply
-                            |save the client returned by this call and reuse it.
-                            |""".trimMargin(),
+                        |Prepare for an API call by setting any desired options. For example:
+                        |
+                        |```
+                        |val client = %T.fromServiceAccount(%L)
+                        |val response = client.prepare {
+                        |  withMetadata("my-custom-header", listOf("some", "thing"))
+                        |}.%N(request).get()
+                        |```
+                        |
+                        |You may save the client returned by this call and reuse it if you
+                        |plan to make multiple requests with the same settings.
+                        |""".trimMargin(),
                         ctx.className, PLACEHOLDER_KEYFILE, firstMethodName ?: "method"
                     )
                     .returns(ctx.className)
@@ -464,10 +465,10 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                     )
                     flattened.addCode(
                         """
-                    |val stream = %N.%N.executeStreaming { it::%N }
-                    |stream.requests.send(%L)
-                    |return stream
-                    |""".trimMargin(),
+                        |val stream = %N.%N.executeStreaming { it::%N }
+                        |stream.requests.send(%L)
+                        |return stream
+                        |""".trimMargin(),
                         PROP_STUBS, PROP_STUBS_STREAM, methodName, request
                     )
                 } else if (method.hasClientStreaming()) { // client only
@@ -497,10 +498,10 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                     flattened.returns(GrpcTypes.Support.ServerStreamingCall(normalOutputType))
                     flattened.addCode(
                         """
-                    |return %N.%N.executeServerStreaming { stub, observer ->
-                    |  stub.%N(%L, observer)
-                    |}
-                    |""".trimMargin(),
+                        |return %N.%N.executeServerStreaming { stub, observer ->
+                        |  stub.%N(%L, observer)
+                        |}
+                        |""".trimMargin(),
                         PROP_STUBS, PROP_STUBS_STREAM, methodName, request
                     )
                 } else {
@@ -540,10 +541,10 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                     normal.returns(GrpcTypes.Support.ServerStreamingCall(normalOutputType))
                     normal.addCode(
                         """
-                    |return %N.%N.executeServerStreaming { stub, observer ->
-                    |  stub.%N(%N, observer)
-                    |}
-                    |""".trimMargin(),
+                        |return %N.%N.executeServerStreaming { stub, observer ->
+                        |  stub.%N(%N, observer)
+                        |}
+                        |""".trimMargin(),
                         PROP_STUBS, PROP_STUBS_STREAM, methodName, PARAM_REQUEST
                     )
                 } else {
@@ -633,7 +634,7 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
             val fromAccessToken = FunSpec.builder("fromAccessToken")
                 .addKdoc(
                     """
-                    |Create a %N with the provided access token.
+                    |Create a %N with the provided [accessToken].
                     |
                     |TODO: ADD INFO ABOUT REFRESHING
                     |
@@ -655,7 +656,7 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                     ParameterSpec.builder(
                         "channel", GrpcTypes.ManagedChannel.asNullable()
                     )
-                        .defaultValue("%L", "null")
+                        .defaultValue("null")
                         .build()
                 )
                 .returns(ctx.className)
@@ -694,7 +695,7 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                     ParameterSpec.builder(
                         "channel", GrpcTypes.ManagedChannel.asNullable()
                     )
-                        .defaultValue("%L", "null")
+                        .defaultValue("null")
                         .build()
                 )
                 .returns(ctx.className)
@@ -713,7 +714,7 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
             val fromCredentials = FunSpec.builder("fromCredentials")
                 .addKdoc(
                     """
-                    |Create a %N with the provided credentials.
+                    |Create a %N with the provided [credentials].
                     |
                     |If a [channel] is not provided one will be created automatically (recommended).
                     |""".trimMargin(), ctx.className.simpleName
@@ -725,7 +726,7 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                     ParameterSpec.builder(
                         "channel", GrpcTypes.ManagedChannel.asNullable()
                     )
-                        .defaultValue("%L", "null")
+                        .defaultValue("null")
                         .build()
                 )
                 .returns(ctx.className)
@@ -737,13 +738,50 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                 )
                 .build()
 
+            val fromStubs = FunSpec.builder("fromStubs")
+                .addKdoc(
+                    """
+                    |Create a %N with the provided gRPC stubs.
+                    |
+                    |This is an advanced method and should only be used when you need complete
+                    |control over the underlying gRPC stubs that are used by this client.
+                    |
+                    |Prefer to use [fromAccessToken], [fromServiceAccount], or [fromCredentials].
+                    |""".trimMargin(), ctx.className.simpleName
+                )
+                .addAnnotation(JvmStatic::class)
+                .addAnnotation(JvmOverloads::class)
+                .addParameter(PARAM_FACTORY, ClassName("", STUBS_CLASS_TYPE, "Factory"))
+                .addParameter(
+                    ParameterSpec.builder(
+                        "channel", GrpcTypes.ManagedChannel.asNullable()
+                    )
+                        .defaultValue("null")
+                        .build()
+                )
+                .addParameter(
+                    ParameterSpec.builder(
+                        "options", GrpcTypes.Support.ClientCallOptions.asNullable()
+                    )
+                        .defaultValue("null")
+                        .build()
+                )
+                .returns(ctx.className)
+                .addStatement(
+                    "return %T(channel ?: createChannel(), options ?: %T(), %N)",
+                    ctx.className,
+                    GrpcTypes.Support.ClientCallOptions,
+                    PARAM_FACTORY
+                )
+                .build()
+
             val createChannel = FunSpec.builder("createChannel")
                 .addKdoc(
                     """
-                    |Create a [ManagedChannel] to use with %N.
+                    |Create a [ManagedChannel] to use with a %N.
                     |
-                    |Prefer to use [fromAccessToken], [fromServiceAccount], or [fromCredentials] unless
-                    |you need to customize the channel.
+                    |Prefer to use the default value with [fromAccessToken], [fromServiceAccount],
+                    |or [fromCredentials] unless you need to customize the channel.
                     |""".trimMargin(), ctx.className.simpleName
                 )
                 .addAnnotation(JvmStatic::class)
@@ -774,7 +812,13 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                 .addStatement("return builder.build()")
                 .build()
 
-            return listOf(fromAccessToken, fromServiceAccount, fromCredentials, createChannel)
+            return listOf(
+                fromAccessToken,
+                fromServiceAccount,
+                fromCredentials,
+                fromStubs,
+                createChannel
+            )
         }
     }
 
@@ -794,7 +838,6 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
             val opType = GrpcTypes.Support.GrpcClientStub(GrpcTypes.OperationsFutureStub)
 
             return TypeSpec.classBuilder(STUBS_CLASS_TYPE)
-                .addModifiers(KModifier.PRIVATE)
                 .primaryConstructor(
                     FunSpec.constructorBuilder()
                         .addParameter(PROP_STUBS_STREAM, streamType)
@@ -817,12 +860,53 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                         .initializer(PROP_STUBS_OPERATION)
                         .build()
                 )
+                .addType(
+                    TypeSpec.interfaceBuilder("Factory")
+                        .addFunction(
+                            FunSpec.builder("create")
+                                .addModifiers(KModifier.ABSTRACT)
+                                .returns(ClassName("", STUBS_CLASS_TYPE))
+                                .addParameter(PROP_CHANNEL, GrpcTypes.ManagedChannel)
+                                .addParameter(PROP_CALL_OPTS, GrpcTypes.Support.ClientCallOptions)
+                                .build()
+                        )
+                        .build()
+                )
                 .build()
         }
     }
 
-    object Tests : AbstractGenerator() {
-        fun generateUnitTests(functions: List<TestableFunSpec>): List<FunSpec> {
+    object UnitTests : AbstractGenerator() {
+        const val VAL_CLIENT = "client"
+        const val MOCK_STREAM_STUB = "streamingStub"
+        const val MOCK_FUTURE_STUB = "futureStub"
+        const val MOCK_OPS_STUB = "operationsStub"
+        val MOCK_TYPE = ClassName("com.nhaarman.mockito_kotlin", "mock")
+
+        fun generate(ctx: GeneratorContext, apiMethods: List<TestableFunSpec>): GeneratedSource? {
+            val name = "${ctx.className.simpleName}Test"
+            val unitTestType = TypeSpec.classBuilder(name)
+
+            // add props
+            //unitTestType.addProperty(PropertySpec.builder(MOCK_STREAM_STUB, MOCK_TYPE.parameterizedBy()))
+
+            // add functions
+            unitTestType.addFunctions(generateFunctions(apiMethods))
+
+            // put it all together
+            return if (unitTestType.funSpecs.isNotEmpty()) {
+                GeneratedSource(
+                    ctx.className.packageName,
+                    name,
+                    types = listOf(unitTestType.build()),
+                    kind = GeneratedSource.Kind.UNIT_TEST
+                )
+            } else {
+                null
+            }
+        }
+
+        private fun generateFunctions(functions: List<TestableFunSpec>): List<FunSpec> {
             return functions
                 .filter { it.unitTestCode != null }
                 .map {
@@ -832,5 +916,20 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                         .build()
                 }
         }
+
+        private fun createClientWithMocks(ctx: GeneratorContext) =
+            CodeBlock.of(
+                """
+                |val %N = %T.fromStubs(object : %N.Factory {
+                |  override fun create(%N: %T, %N, %T) =
+                |    %T(%N, %N, %N)
+                |})
+                |""".trimMargin(),
+                VAL_CLIENT, ctx.className, STUBS_CLASS_TYPE,
+                PROP_CHANNEL, GrpcTypes.ManagedChannel,
+                PROP_CALL_OPTS, GrpcTypes.Support.ClientCallOptions,
+                STUBS_CLASS_TYPE,
+                MOCK_STREAM_STUB, MOCK_FUTURE_STUB, MOCK_OPS_STUB
+            )
     }
 }

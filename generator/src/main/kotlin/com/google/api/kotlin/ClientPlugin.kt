@@ -23,6 +23,7 @@ import com.google.api.kotlin.generator.RetrofitGenerator
 import com.google.devtools.common.options.Option
 import com.google.devtools.common.options.OptionsBase
 import com.google.devtools.common.options.OptionsParser
+import com.google.protobuf.compiler.PluginProtos
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest
 import mu.KotlinLogging
 import java.io.FileInputStream
@@ -34,10 +35,11 @@ private val log = KotlinLogging.logger {}
  * Main entry point.
  */
 fun main(args: Array<String>) {
-    // setup
+    // parse arguments
     val optionParser = OptionsParser.newOptionsParser(CLIOptions::class.java)
     optionParser.parse(*args)
-    val options = optionParser.getOptions(CLIOptions::class.java)!!
+    var options = optionParser.getOptions(CLIOptions::class.java)
+        ?: throw IllegalStateException("Unable to parse options")
 
     // usage
     if (options.help) {
@@ -64,20 +66,17 @@ fun main(args: Array<String>) {
     if (runAsPlugin) {
         log.debug { "parsing plugins options: '${request.parameter}'" }
 
-        val pluginsOpts = request.parameter.split(",").map { "--$it" }
-        val parser = OptionsParser.newOptionsParser(ProtocOptions::class.java)
-        parser.parse(pluginsOpts)
-        val opts = parser.getOptions(ProtocOptions::class.java)!!
-
         // override
-        options.sourceDirectory = opts.sourceDirectory
-        options.outputDirectory = opts.outputDirectory
-        options.fallback = opts.fallback
+        val pluginsOpts = request.parameter.split(",").map { "--$it" }
+        val parser = OptionsParser.newOptionsParser(CLIOptions::class.java)
+        parser.parse(pluginsOpts)
+        options = parser.getOptions(CLIOptions::class.java) ?:
+            throw IllegalStateException("Unable to parse options")
     }
 
     // determine source dir
     val sourceDirectory = options.sourceDirectory ?: request.parameter
-    log.debug { "Using source directory: $sourceDirectory" }
+    log.info { "Using source directory: $sourceDirectory" }
 
     // create & run generator
     val generator = KotlinClientGenerator(
@@ -86,73 +85,49 @@ fun main(args: Array<String>) {
             else -> GRPCGenerator()
         }, ConfigurationMetadataFactory(sourceDirectory), BuilderGenerator()
     )
-    val result = generator.generate(request)
+    val (sourceCode, testCode) = generator.generate(request)
 
-    // write result
+    // utility for creating files
+    val writeFile = { directory: String, file: PluginProtos.CodeGeneratorResponse.File ->
+        val f = Paths.get(directory, file.name).toFile()
+        log.debug { "creating file: ${f.absolutePath}" }
+
+        // ensure directory exists
+        if (!f.parentFile.exists()) {
+            f.parentFile.mkdirs()
+        }
+
+        // ensure file is empty and write data
+        if (f.exists()) {
+            f.delete()
+        }
+        f.createNewFile()
+        f.printWriter().use { it.print(file.content) }
+    }
+
+    // write source code
     try {
         if (options.outputDirectory.isNullOrBlank()) {
-            // pipe to stdout (protoc plugin)
-            result.writeTo(System.out)
+            sourceCode.writeTo(System.out)
         } else {
-            log.debug { "Writing output to: '${options.outputDirectory}'" }
+            log.info { "Writing source code output to: '${options.outputDirectory}'" }
+            sourceCode.fileList.forEach { writeFile(options.outputDirectory!!, it) }
+        }
 
-            // write to disk
-            result.fileList.forEach { fileDesc ->
-                val f = Paths.get(options.outputDirectory, fileDesc.name).toFile()
-                log.debug { "creating file: ${f.absolutePath}" }
-
-                // ensure directory exists
-                if (!f.parentFile.exists()) {
-                    f.parentFile.mkdirs()
-                }
-
-                // ensure file is empty
-                if (f.exists()) {
-                    f.delete()
-                }
-                f.createNewFile()
-
-                f.printWriter().use { it.print(fileDesc.content) }
-            }
+        // write test code
+        if (options.testOutputDirectory != null) {
+            log.info { "Writing test code output to: '${options.testOutputDirectory}'" }
+            testCode.fileList.forEach { writeFile(options.testOutputDirectory!!, it) }
+        } else {
+            log.warn { "Test output directory not specified. Omitted generated tests." }
         }
     } catch (e: Exception) {
         log.error(e) { "Unable to write result" }
     }
 }
 
-open class CommonOptions : OptionsBase() {
-
-    @JvmField
-    @Option(
-        name = "source_directory",
-        abbrev = 's',
-        help = "Source directory (proto files).",
-        category = "io",
-        defaultValue = "null"
-    )
-    var sourceDirectory: String? = null
-
-    @JvmField
-    @Option(
-        name = "output_directory",
-        abbrev = 'o',
-        help = "Output directory.",
-        category = "io",
-        defaultValue = "null"
-    )
-    var outputDirectory: String? = null
-
-    @JvmField
-    @Option(
-        name = "fallback",
-        help = "Use gRPC fallback",
-        defaultValue = "false"
-    )
-    var fallback: Boolean = false
-}
-
 // CLI options
-class CLIOptions : CommonOptions() {
+class CLIOptions : OptionsBase() {
 
     @JvmField
     @Option(
@@ -165,14 +140,49 @@ class CLIOptions : CommonOptions() {
 
     @JvmField
     @Option(
-        name = "input_file",
+        name = "input",
         abbrev = 'i',
-        help = "Input file (code generation request proto).",
+        help = "A serialized code generation request proto (if not set it is read from stdin).",
         category = "io",
         defaultValue = "null"
     )
     var inputFile: String? = null
-}
 
-// protoc plugin options
-class ProtocOptions : CommonOptions()
+    @JvmField
+    @Option(
+        name = "output",
+        abbrev = 'o',
+        help = "Output directory for generated source code (if not set will be written to stdout).",
+        category = "io",
+        defaultValue = "null"
+    )
+    var outputDirectory: String? = null
+
+    @JvmField
+    @Option(
+        name = "test_output",
+        abbrev = 't',
+        help = "Output directory for generated test code (if not set test code will be omitted).",
+        category = "io",
+        defaultValue = "null"
+    )
+    var testOutputDirectory: String? = null
+
+    @JvmField
+    @Option(
+        name = "source",
+        abbrev = 's',
+        help = "Source directory (proto files). This option is deprecated and will be removed once the configuration process is migrated to use proto annotations.",
+        category = "io",
+        defaultValue = "null"
+    )
+    var sourceDirectory: String? = null
+
+    @JvmField
+    @Option(
+        name = "fallback",
+        help = "Use gRPC fallback",
+        defaultValue = "false"
+    )
+    var fallback: Boolean = false
+}
