@@ -30,7 +30,8 @@ internal interface RetrofitTypes {
         val Request = ClassName("okhttp3", "Request")
         val Call = ClassName("retrofit2", "Call")
         val Retrofit = ClassName("retrofit2", "Retrofit")
-        val ProtoConverterFactory = ClassName("retrofit2.converter.protobuf", "ProtoConverterFactory")
+        val ProtoConverterFactory =
+            ClassName("retrofit2.converter.protobuf", "ProtoConverterFactory")
         val Body = ClassName("retrofit2.http", "Body")
         val POST = ClassName("retrofit2.http", "POST")
     }

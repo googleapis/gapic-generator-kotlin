@@ -16,10 +16,10 @@
 
 package com.google.api.kotlin
 
-import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.api.kotlin.config.ConfigurationMetadata
 import com.google.api.kotlin.config.ConfigurationMetadataFactory
 import com.google.api.kotlin.config.ProtobufTypeMapper
+import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.compiler.PluginProtos
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest

@@ -38,39 +38,47 @@ internal class BuilderGenerator {
 
         // generate all the builder functions
         types.getAllKotlinTypes()
-                .map { ClassName.bestGuess(it) }
-                .filter {
-                    !(it.packageName == "com.google.protobuf" &&
-                            (it.canonicalName.contains("DescriptorProtos") || SKIP.contains(it.simpleName))) }
-                .forEach { type ->
-                    val builderType = ClassName.bestGuess("$type.Builder")
+            .map { ClassName.bestGuess(it) }
+            .filter {
+                !(it.packageName == "com.google.protobuf" &&
+                    (it.canonicalName.contains("DescriptorProtos") || SKIP.contains(it.simpleName)))
+            }
+            .forEach { type ->
+                val builderType = ClassName.bestGuess("$type.Builder")
 
-                    // construct function name
-                    var parentType = type.enclosingClassName()
-                    var parentTypes = mutableListOf<String>()
-                    while (parentType != null) {
-                        parentTypes.add(parentType.simpleName)
-                        parentType = parentType.enclosingClassName()
-                    }
-
-                    // create builder function body
-                    val builder = FunSpec.builder(type.simpleName)
-                            .returns(type)
-                            .addParameter("init",
-                                    LambdaTypeName.get(builderType, listOf(), Unit::class.asTypeName()))
-                            .addStatement("return %T.newBuilder().apply(init).build()", type)
-                    if (parentTypes.isNotEmpty()) {
-                        builder.receiver(ClassName(type.packageName, parentTypes.reversed().joinToString(".")))
-                    }
-
-                    // get list of builder functions in this package and append to it
-                    var builders = packagesToBuilders[type.packageName]
-                    if (builders == null) {
-                        builders = mutableListOf()
-                        packagesToBuilders[type.packageName] = builders
-                    }
-                    builders.add(builder.build())
+                // construct function name
+                var parentType = type.enclosingClassName()
+                var parentTypes = mutableListOf<String>()
+                while (parentType != null) {
+                    parentTypes.add(parentType.simpleName)
+                    parentType = parentType.enclosingClassName()
                 }
+
+                // create builder function body
+                val builder = FunSpec.builder(type.simpleName)
+                    .returns(type)
+                    .addParameter(
+                        "init",
+                        LambdaTypeName.get(builderType, listOf(), Unit::class.asTypeName())
+                    )
+                    .addStatement("return %T.newBuilder().apply(init).build()", type)
+                if (parentTypes.isNotEmpty()) {
+                    builder.receiver(
+                        ClassName(
+                            type.packageName,
+                            parentTypes.reversed().joinToString(".")
+                        )
+                    )
+                }
+
+                // get list of builder functions in this package and append to it
+                var builders = packagesToBuilders[type.packageName]
+                if (builders == null) {
+                    builders = mutableListOf()
+                    packagesToBuilders[type.packageName] = builders
+                }
+                builders.add(builder.build())
+            }
 
         // collect the builder functions into types
         return packagesToBuilders.keys.map { packageName ->

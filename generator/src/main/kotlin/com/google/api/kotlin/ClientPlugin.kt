@@ -16,10 +16,10 @@
 
 package com.google.api.kotlin
 
+import com.google.api.kotlin.config.ConfigurationMetadataFactory
 import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.api.kotlin.generator.RetrofitGenerator
-import com.google.api.kotlin.config.ConfigurationMetadataFactory
 import com.google.devtools.common.options.Option
 import com.google.devtools.common.options.OptionsBase
 import com.google.devtools.common.options.OptionsParser
@@ -42,8 +42,11 @@ fun main(args: Array<String>) {
     // usage
     if (options.help) {
         println("Usage: TODO")
-        println(optionParser.describeOptions(
-                mapOf(), OptionsParser.HelpVerbosity.LONG))
+        println(
+            optionParser.describeOptions(
+                mapOf(), OptionsParser.HelpVerbosity.LONG
+            )
+        )
         return
     }
 
@@ -77,10 +80,12 @@ fun main(args: Array<String>) {
     log.debug { "Using source directory: $sourceDirectory" }
 
     // create & run generator
-    val generator = KotlinClientGenerator(when {
-        options.fallback -> RetrofitGenerator()
-        else -> GRPCGenerator()
-    }, ConfigurationMetadataFactory(sourceDirectory), BuilderGenerator())
+    val generator = KotlinClientGenerator(
+        when {
+            options.fallback -> RetrofitGenerator()
+            else -> GRPCGenerator()
+        }, ConfigurationMetadataFactory(sourceDirectory), BuilderGenerator()
+    )
     val result = generator.generate(request)
 
     // write result
@@ -119,27 +124,30 @@ open class CommonOptions : OptionsBase() {
 
     @JvmField
     @Option(
-            name = "source_directory",
-            abbrev = 's',
-            help = "Source directory (proto files).",
-            category = "io",
-            defaultValue = "null")
+        name = "source_directory",
+        abbrev = 's',
+        help = "Source directory (proto files).",
+        category = "io",
+        defaultValue = "null"
+    )
     var sourceDirectory: String? = null
 
     @JvmField
     @Option(
-            name = "output_directory",
-            abbrev = 'o',
-            help = "Output directory.",
-            category = "io",
-            defaultValue = "null")
+        name = "output_directory",
+        abbrev = 'o',
+        help = "Output directory.",
+        category = "io",
+        defaultValue = "null"
+    )
     var outputDirectory: String? = null
 
     @JvmField
     @Option(
-            name = "fallback",
-            help = "Use gRPC fallback",
-            defaultValue = "false")
+        name = "fallback",
+        help = "Use gRPC fallback",
+        defaultValue = "false"
+    )
     var fallback: Boolean = false
 }
 
@@ -148,19 +156,21 @@ class CLIOptions : CommonOptions() {
 
     @JvmField
     @Option(
-            name = "help",
-            abbrev = 'h',
-            help = "Prints usage info.",
-            defaultValue = "false")
+        name = "help",
+        abbrev = 'h',
+        help = "Prints usage info.",
+        defaultValue = "false"
+    )
     var help = false
 
     @JvmField
     @Option(
-            name = "input_file",
-            abbrev = 'i',
-            help = "Input file (code generation request proto).",
-            category = "io",
-            defaultValue = "null")
+        name = "input_file",
+        abbrev = 'i',
+        help = "Input file (code generation request proto).",
+        category = "io",
+        defaultValue = "null"
+    )
     var inputFile: String? = null
 }
 

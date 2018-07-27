@@ -139,7 +139,7 @@ task ktlint(type: JavaExec, group: "verification") {
     description = "Check Kotlin code style."
     main = "com.github.shyiko.ktlint.Main"
     classpath = configurations.ktlint
-    args "src/**/*.kt"
+    args "src/**/*.kt", "test/**/*.kt"
 }
 check.dependsOn ktlint
 
@@ -147,5 +147,5 @@ task ktlintFormat(type: JavaExec, group: "formatting") {
     description = "Fix Kotlin code style deviations."
     main = "com.github.shyiko.ktlint.Main"
     classpath = configurations.ktlint
-    args "-F", "src/**/*.kt"
+    args "-F", "src/**/*.kt", "test/**/*.kt"
 }

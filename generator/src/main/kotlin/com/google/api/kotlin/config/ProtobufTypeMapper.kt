@@ -31,37 +31,40 @@ internal class ProtobufTypeMapper private constructor() {
 
     /** Lookup the Kotlin type given the proto type. */
     fun getKotlinType(protoType: String) =
-            ClassName.bestGuess(typeMap[protoType]
-            ?: throw IllegalArgumentException("proto type: $protoType is not recognized"))
+        ClassName.bestGuess(
+            typeMap[protoType]
+                ?: throw IllegalArgumentException("proto type: $protoType is not recognized")
+        )
 
     /** Lookup the Kotlin type given a proto service */
     fun getKotlinGrpcType(protoService: String, suffix: String) =
-            ClassName.bestGuess("${serviceMap[protoService] ?: ""}$suffix")
+        ClassName.bestGuess("${serviceMap[protoService] ?: ""}$suffix")
+
     fun getKotlinGrpcType(
         proto: DescriptorProtos.FileDescriptorProto,
         service: DescriptorProtos.ServiceDescriptorProto,
         suffix: String
     ) =
-            getKotlinGrpcType(".${proto.`package`}.${service.name}", suffix)
+        getKotlinGrpcType(".${proto.`package`}.${service.name}", suffix)
 
     /** Get all Kotlin types (excluding enums and map types) */
     fun getAllKotlinTypes() = knownProtoTypes.keys
-            .filter { !(knownProtoTypes[it]?.options?.mapEntry ?: false) }
-            .map { typeMap[it] ?: throw IllegalStateException("unknown type: $it") }
+        .filter { !(knownProtoTypes[it]?.options?.mapEntry ?: false) }
+        .map { typeMap[it] ?: throw IllegalStateException("unknown type: $it") }
 
     /** Checks if the message type is in this mapper */
     fun hasProtoTypeDescriptor(type: String) = knownProtoTypes.containsKey(type)
 
     /** Lookup up a known proto message type by name */
     fun getProtoTypeDescriptor(type: String) = knownProtoTypes[type]
-            ?: throw IllegalArgumentException("unknown type: $type")
+        ?: throw IllegalArgumentException("unknown type: $type")
 
     /** Checks if the enum type is in this mapper */
     fun hasProtoEnumDescriptor(type: String) = knownProtoEnums.containsKey(type)
 
     /** Lookup a known proto enum type by name */
     fun getProtoEnumDescriptor(type: String) = knownProtoEnums[type]
-            ?: throw IllegalArgumentException("unknown enum: $type")
+        ?: throw IllegalArgumentException("unknown enum: $type")
 
     override fun toString(): String {
         val ret = StringBuilder("Types:")
@@ -89,23 +92,26 @@ internal class ProtobufTypeMapper private constructor() {
                 fun addMsg(p: DescriptorProtos.DescriptorProto, parent: String) {
                     val key = "$protoPackage$parent.${p.name}"
                     map.typeMap[key] = listOf("$javaPackage$parent", enclosingClassName, p.name)
-                            .filterNotNull()
-                            .joinToString(".")
+                        .filterNotNull()
+                        .joinToString(".")
                     map.knownProtoTypes[key] = p
                 }
+
                 fun addEnum(p: DescriptorProtos.EnumDescriptorProto, parent: String) {
                     val key = "$protoPackage$parent.${p.name}"
                     map.typeMap[key] = listOf("$javaPackage$parent", enclosingClassName, p.name)
-                            .filterNotNull()
-                            .joinToString(".")
+                        .filterNotNull()
+                        .joinToString(".")
                     map.knownProtoEnums[key] = p
                 }
+
                 fun addService(p: DescriptorProtos.ServiceDescriptorProto, parent: String) {
                     map.serviceMap["$protoPackage$parent.${p.name}"] =
-                            listOf("$javaPackage$parent", enclosingClassName, p.name)
-                                    .filterNotNull()
-                                    .joinToString(".")
+                        listOf("$javaPackage$parent", enclosingClassName, p.name)
+                            .filterNotNull()
+                            .joinToString(".")
                 }
+
                 fun addNested(p: DescriptorProtos.DescriptorProto, parent: String) {
                     addMsg(p, parent)
                     p.enumTypeList.forEach { addEnum(it, "$parent.${p.name}") }
@@ -133,8 +139,8 @@ internal class ProtobufTypeMapper private constructor() {
 
             fileName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, fileName)
             if (proto.enumTypeList.any { it.name.equals(fileName) } ||
-                    proto.messageTypeList.any { it.name.equals(fileName) } ||
-                    proto.serviceList.any { it.name.equals(fileName) }) {
+                proto.messageTypeList.any { it.name.equals(fileName) } ||
+                proto.serviceList.any { it.name.equals(fileName) }) {
                 fileName += "OuterClass"
             }
 

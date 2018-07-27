@@ -42,29 +42,45 @@ internal interface GrpcTypes {
 
             val GrpcClient = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "GrpcClient")
             fun GrpcClientStub(type: ClassName) =
-                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "GrpcClientStub").parameterizedBy(type)
+                ClassName(SUPPORT_LIB_GRPC_PACKAGE, "GrpcClientStub").parameterizedBy(type)
 
             val ClientCallOptions = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ClientCallOptions")
-            val ClientCallOptionsBuilder = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ClientCallOptions.Builder")
+            val ClientCallOptionsBuilder =
+                ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ClientCallOptions.Builder")
 
             fun FutureCall(type: ClassName) =
-                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "FutureCall").parameterizedBy(type)
+                ClassName(SUPPORT_LIB_GRPC_PACKAGE, "FutureCall").parameterizedBy(type)
+
             fun CallResult(type: ClassName) =
-                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "CallResult").parameterizedBy(type)
+                ClassName(SUPPORT_LIB_GRPC_PACKAGE, "CallResult").parameterizedBy(type)
+
             fun StreamingCall(requestType: ClassName, responseType: ClassName) =
-                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "StreamingCall").parameterizedBy(requestType, responseType)
+                ClassName(SUPPORT_LIB_GRPC_PACKAGE, "StreamingCall").parameterizedBy(
+                    requestType,
+                    responseType
+                )
+
             fun ClientStreamingCall(requestType: ClassName, responseType: ClassName) =
-                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ClientStreamingCall").parameterizedBy(requestType, responseType)
+                ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ClientStreamingCall").parameterizedBy(
+                    requestType,
+                    responseType
+                )
+
             fun ServerStreamingCall(type: ClassName) =
                 ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ServerStreamingCall").parameterizedBy(type)
 
             fun LongRunningCall(type: TypeName) =
-                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "LongRunningCall").parameterizedBy(type)
+                ClassName(SUPPORT_LIB_GRPC_PACKAGE, "LongRunningCall").parameterizedBy(type)
 
             fun Pager(requestTypeT: TypeName, responseType: TypeName, elementType: TypeName) =
-                    ClassName(SUPPORT_LIB_PACKAGE, "Pager").parameterizedBy(requestTypeT, responseType, elementType)
+                ClassName(SUPPORT_LIB_PACKAGE, "Pager").parameterizedBy(
+                    requestTypeT,
+                    responseType,
+                    elementType
+                )
+
             fun PageResult(type: ClassName) =
-                    ClassName(SUPPORT_LIB_GRPC_PACKAGE, "PageResult").parameterizedBy(type)
+                ClassName(SUPPORT_LIB_GRPC_PACKAGE, "PageResult").parameterizedBy(type)
         }
     }
 
@@ -72,7 +88,8 @@ internal interface GrpcTypes {
         val ManagedChannel = ClassName("io.grpc", "ManagedChannel")
         val OkHttpChannelBuilder = ClassName("io.grpc.okhttp", "OkHttpChannelBuilder")
         val OperationsGrpc = ClassName("com.google.longrunning", "OperationsGrpc")
-        val OperationsFutureStub = ClassName("com.google.longrunning", "OperationsGrpc.OperationsFutureStub")
+        val OperationsFutureStub =
+            ClassName("com.google.longrunning", "OperationsGrpc.OperationsFutureStub")
         val ByteString = ClassName("com.google.protobuf", "ByteString")
     }
 }

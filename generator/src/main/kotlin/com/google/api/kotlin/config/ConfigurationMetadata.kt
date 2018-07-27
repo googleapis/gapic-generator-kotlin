@@ -56,7 +56,7 @@ internal class ConfigurationMetadata constructor(
     }
 
     operator fun get(service: DescriptorProtos.ServiceDescriptorProto) =
-            get("$packageName.${service.name}")
+        get("$packageName.${service.name}")
 
     /**
      * Get the scopes as a formatted literal string (for use with $L).
@@ -97,24 +97,28 @@ internal class ConfigurationMetadataFactory(val rootDirectory: String = "") {
             FilenameUtils.wildcardMatch(name, pattern, IOCase.INSENSITIVE)
         }
         val serviceConfig = Files.list(protoPath.parent?.parent)
-                .map { it.toFile() }
-                .filter { it.isFile }
-                .filter { matcher(it.name, "*_$version.yaml") }
-                .findFirst()
-                .orElse(null)
+            .map { it.toFile() }
+            .filter { it.isFile }
+            .filter { matcher(it.name, "*_$version.yaml") }
+            .findFirst()
+            .orElse(null)
         val clientConfig = Files.list(protoPath.parent)
-                .map { it.toFile() }
-                .filter { it.isFile }
-                .filter { matcher(it.name, "*_gapic.yaml") }
-                .findFirst()
-                .orElse(null)
+            .map { it.toFile() }
+            .filter { it.isFile }
+            .filter { matcher(it.name, "*_gapic.yaml") }
+            .findFirst()
+            .orElse(null)
 
         // parse them
         return parse(proto.`package`, serviceConfig, clientConfig)
     }
 
     // Parses the configuration (service yaml) files.
-    private fun parse(packageName: String, serviceFile: File?, clientFile: File?): ConfigurationMetadata {
+    private fun parse(
+        packageName: String,
+        serviceFile: File?,
+        clientFile: File?
+    ): ConfigurationMetadata {
         val apiConfig = if (clientFile != null) {
             log.debug { "parsing config file: ${clientFile.absolutePath}" }
             parseClient(clientFile)
@@ -130,28 +134,32 @@ internal class ConfigurationMetadataFactory(val rootDirectory: String = "") {
                 // parse out the useful info
                 val name = config.title
                 val summary = config.documentation?.summary
-                        ?: "Client library for a wonderful product!"
+                    ?: "Client library for a wonderful product!"
                 val host = config.name
                 val scopes = config.authentication?.rules
-                        ?.filter { it.oauth != null }
-                        ?.map { it.oauth!! }
-                        ?.map { it.canonical_scopes }
-                        ?.map { it.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray() }
-                        ?.flatMap { it.asIterable() }
-                        ?.map { it.replace("\n".toRegex(), "").trim { it <= ' ' } }
-                        ?.toSet() ?: setOf()
+                    ?.filter { it.oauth != null }
+                    ?.map { it.oauth!! }
+                    ?.map { it.canonical_scopes }
+                    ?.map { it.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray() }
+                    ?.flatMap { it.asIterable() }
+                    ?.map { it.replace("\n".toRegex(), "").trim { it <= ' ' } }
+                    ?.toSet() ?: setOf()
 
                 // put it all together
-                return ConfigurationMetadata(host, scopes.toList(),
-                        BrandingOptions(name, summary),
-                        packageName, apiConfig)
+                return ConfigurationMetadata(
+                    host, scopes.toList(),
+                    BrandingOptions(name, summary),
+                    packageName, apiConfig
+                )
             }
         } else {
             // use defaults
             log.warn { "No gapic configuration found for package: $packageName (using defaults)" }
-            return ConfigurationMetadata("service.example.com", listOf("https://example.com/auth/scope"),
-                    BrandingOptions("Example API", "No configuration was provided for this API!"),
-                    packageName, apiConfig)
+            return ConfigurationMetadata(
+                "service.example.com", listOf("https://example.com/auth/scope"),
+                BrandingOptions("Example API", "No configuration was provided for this API!"),
+                packageName, apiConfig
+            )
         }
     }
 
@@ -164,14 +172,16 @@ internal class ConfigurationMetadataFactory(val rootDirectory: String = "") {
             val services = mutableMapOf<String, ServiceOptions>()
             config.interfaces.forEach { service ->
                 services[service.name] = ServiceOptions(service.methods.map { method ->
-                    val flattening = method.flattening?.groups?.map { FlattenedMethod(it.parameters) } ?: listOf()
+                    val flattening =
+                        method.flattening?.groups?.map { FlattenedMethod(it.parameters) }
+                            ?: listOf()
 
                     // collect samples
                     val samples = mutableListOf<SampleMethod>()
                     val sample = method.sample_code_init_fields
-                            .map { it.split("=".toRegex(), 2) }
-                            .filter { it.size == 2 }
-                            .map { SampleParameterAndValue(it[0], it[1]) }
+                        .map { it.split("=".toRegex(), 2) }
+                        .filter { it.size == 2 }
+                        .map { SampleParameterAndValue(it[0], it[1]) }
                     if (sample.isNotEmpty()) {
                         samples.add(SampleMethod(sample))
                     }
@@ -179,11 +189,18 @@ internal class ConfigurationMetadataFactory(val rootDirectory: String = "") {
                     // parse paging setup
                     val paging = method.page_streaming?.let {
                         PagedResponse(
-                                it.request.page_size_field, it.request.token_field,
-                                it.response.token_field, it.response.resources_field)
+                            it.request.page_size_field, it.request.token_field,
+                            it.response.token_field, it.response.resources_field
+                        )
                     }
 
-                    MethodOptions(method.name, flattening, method.request_object_method, paging, samples)
+                    MethodOptions(
+                        method.name,
+                        flattening,
+                        method.request_object_method,
+                        paging,
+                        samples
+                    )
                 })
             }
             return services.toMap()

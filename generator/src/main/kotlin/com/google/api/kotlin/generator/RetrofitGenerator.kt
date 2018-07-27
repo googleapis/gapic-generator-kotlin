@@ -16,6 +16,7 @@
 
 package com.google.api.kotlin.generator
 
+import com.google.api.kotlin.ClientGenerator
 import com.google.api.kotlin.GeneratedArtifact
 import com.google.api.kotlin.GeneratedSource
 import com.google.api.kotlin.GeneratorContext
@@ -45,7 +46,7 @@ private const val RETROFIT_INTERFACE_NAME = "RPC"
  *
  * @author jbolinger
  */
-internal class RetrofitGenerator : AbstractGenerator() {
+internal class RetrofitGenerator : AbstractGenerator(), ClientGenerator {
 
     override fun generateServiceClient(ctx: GeneratorContext): List<GeneratedArtifact> {
         val type = TypeSpec.classBuilder(ctx.className)
@@ -56,9 +57,11 @@ internal class RetrofitGenerator : AbstractGenerator() {
         type.addProperties(createParameters(ctx))
         type.addFunctions(createMethods(ctx))
         type.addType(createRetrofitType(ctx))
-        type.addType(TypeSpec.companionObjectBuilder()
+        type.addType(
+            TypeSpec.companionObjectBuilder()
                 .addFunctions(createClientFactories(ctx))
-                .build())
+                .build()
+        )
 
         // all done!
         return listOf(GeneratedSource(ctx.className.packageName, type.build()))
@@ -67,17 +70,19 @@ internal class RetrofitGenerator : AbstractGenerator() {
     /** constructor for the client  */
     private fun createPrimaryConstructor(ctx: GeneratorContext): FunSpec {
         return FunSpec.constructorBuilder()
-                .addModifiers(KModifier.PRIVATE)
-                .addParameter(PROP_CLIENT, ClassName("", RETROFIT_INTERFACE_NAME))
-                .build()
+            .addModifiers(KModifier.PRIVATE)
+            .addParameter(PROP_CLIENT, ClassName("", RETROFIT_INTERFACE_NAME))
+            .build()
     }
 
     /** parameters for the client */
     private fun createParameters(ctx: GeneratorContext): List<PropertySpec> {
-        val client = PropertySpec.builder(PROP_CLIENT,
-                ClassName("", RETROFIT_INTERFACE_NAME))
-                .initializer(PROP_CLIENT)
-                .build()
+        val client = PropertySpec.builder(
+            PROP_CLIENT,
+            ClassName("", RETROFIT_INTERFACE_NAME)
+        )
+            .initializer(PROP_CLIENT)
+            .build()
 
         return listOf(client)
     }
@@ -87,7 +92,10 @@ internal class RetrofitGenerator : AbstractGenerator() {
         return ctx.service.methodList.flatMap {
             log.debug { "processing proto method: ${it.name}" }
             when {
-                it.hasClientStreaming() || it.hasServerStreaming() -> createStreamingMethods(it, ctx)
+                it.hasClientStreaming() || it.hasServerStreaming() -> createStreamingMethods(
+                    it,
+                    ctx
+                )
                 else -> createUnaryMethods(it, ctx)
             }
         }
@@ -100,10 +108,10 @@ internal class RetrofitGenerator : AbstractGenerator() {
         // unchanged method
         val methodName = method.name.decapitalize()
         val normal = FunSpec.builder(methodName)
-                .addParameter(PARAM_REQUEST, ctx.typeMap.getKotlinType(method.inputType))
-                .returns(RetrofitTypes.Call.parameterizedBy(ctx.typeMap.getKotlinType(method.outputType)))
-                .addStatement("return %N.%L(%N)", PROP_CLIENT, methodName, PARAM_REQUEST)
-                .build()
+            .addParameter(PARAM_REQUEST, ctx.typeMap.getKotlinType(method.inputType))
+            .returns(RetrofitTypes.Call.parameterizedBy(ctx.typeMap.getKotlinType(method.outputType)))
+            .addStatement("return %N.%L(%N)", PROP_CLIENT, methodName, PARAM_REQUEST)
+            .build()
 
         return listOf(normal)
     }
@@ -119,62 +127,82 @@ internal class RetrofitGenerator : AbstractGenerator() {
     /** retrofit interface for the api */
     private fun createRetrofitType(ctx: GeneratorContext): TypeSpec {
         return TypeSpec.interfaceBuilder(RETROFIT_INTERFACE_NAME)
-                .addFunctions(
-                        ctx.service.methodList
-                                .filter { !it.hasClientStreaming() }
-                                .filter { !it.hasServerStreaming() }
-                                .map {
-                                    FunSpec.builder(it.name.decapitalize())
-                                            .addModifiers(KModifier.ABSTRACT)
-                                            .addParameter(ParameterSpec.builder(
-                                                    PARAM_REQUEST, ctx.typeMap.getKotlinType(it.inputType))
-                                                    .addAnnotation(RetrofitTypes.Body)
-                                                    .build())
-                                            .returns(RetrofitTypes.Call.parameterizedBy(ctx.typeMap.getKotlinType(it.outputType)))
-                                            .addAnnotation(AnnotationSpec.builder(RetrofitTypes.POST)
-                                                    .addMember("\"/\\\$rpc/${ctx.proto.`package`}.${ctx.service.name}/${it.name}\"")
-                                                    .build())
-                                            .build()
-                                }).build()
+            .addFunctions(
+                ctx.service.methodList
+                    .filter { !it.hasClientStreaming() }
+                    .filter { !it.hasServerStreaming() }
+                    .map {
+                        FunSpec.builder(it.name.decapitalize())
+                            .addModifiers(KModifier.ABSTRACT)
+                            .addParameter(
+                                ParameterSpec.builder(
+                                    PARAM_REQUEST, ctx.typeMap.getKotlinType(it.inputType)
+                                )
+                                    .addAnnotation(RetrofitTypes.Body)
+                                    .build()
+                            )
+                            .returns(RetrofitTypes.Call.parameterizedBy(ctx.typeMap.getKotlinType(it.outputType)))
+                            .addAnnotation(
+                                AnnotationSpec.builder(RetrofitTypes.POST)
+                                    .addMember("\"/\\\$rpc/${ctx.proto.`package`}.${ctx.service.name}/${it.name}\"")
+                                    .build()
+                            )
+                            .build()
+                    }).build()
     }
 
     /** client factory */
     private fun createClientFactories(ctx: GeneratorContext): List<FunSpec> {
         val serviceAccount = FunSpec.builder("fromServiceAccount")
-                .addAnnotation(JvmStatic::class)
-                .addAnnotation(JvmOverloads::class)
-                .addParameter("keyFile", InputStream::class)
-                .addParameter(ParameterSpec.builder("host", String::class)
-                        .defaultValue("%S", "https://${ctx.metadata.host}")
-                        .build())
-                .addParameter(ParameterSpec.builder("scopes",
-                        List::class.parameterizedBy(String::class))
-                        .defaultValue("listOf(%L)", ctx.metadata.scopesAsLiteral)
-                        .build())
-                .returns(ctx.className)
-                .addStatement("return %T(%T.createClient(keyFile, host, scopes))",
-                        ctx.className, ctx.className)
-                .build()
+            .addAnnotation(JvmStatic::class)
+            .addAnnotation(JvmOverloads::class)
+            .addParameter("keyFile", InputStream::class)
+            .addParameter(
+                ParameterSpec.builder("host", String::class)
+                    .defaultValue("%S", "https://${ctx.metadata.host}")
+                    .build()
+            )
+            .addParameter(
+                ParameterSpec.builder(
+                    "scopes",
+                    List::class.parameterizedBy(String::class)
+                )
+                    .defaultValue("listOf(%L)", ctx.metadata.scopesAsLiteral)
+                    .build()
+            )
+            .returns(ctx.className)
+            .addStatement(
+                "return %T(%T.createClient(keyFile, host, scopes))",
+                ctx.className, ctx.className
+            )
+            .build()
 
         val main = FunSpec.builder("createClient")
-                .addAnnotation(JvmStatic::class)
-                .addParameter("keyFile", InputStream::class)
-                .addParameter("host", String::class)
-                .addParameter("scopes", List::class.parameterizedBy(String::class))
-                .returns(ClassName("", RETROFIT_INTERFACE_NAME))
-                .addStatement("val keyContent = keyFile.readBytes()")
-                .addStatement("val httpClient = %T.Builder().addInterceptor { chain ->", RetrofitTypes.OkHttpClient)
-                .addStatement("  val headers = %T.fromStream(keyContent.inputStream()).createScoped(scopes).getRequestMetadata()",
-                        GrpcTypes.Auth.GoogleCredentials)
-                .addStatement("  val r = chain.request().newBuilder()")
-                .addStatement("  headers.entries.forEach { e -> headers.get(e.key)?.forEach { r.addHeader(e.key, it) } }")
-                .addStatement("  chain.proceed(r.build())")
-                .addStatement("}.build()")
-                .addStatement("val retrofit = %T.Builder().baseUrl(host).addConverterFactory(%T.create()).client(httpClient).build()",
-                        RetrofitTypes.Retrofit,
-                        RetrofitTypes.ProtoConverterFactory)
-                .addStatement("return retrofit.create(%N::class.java)", RETROFIT_INTERFACE_NAME)
-                .build()
+            .addAnnotation(JvmStatic::class)
+            .addParameter("keyFile", InputStream::class)
+            .addParameter("host", String::class)
+            .addParameter("scopes", List::class.parameterizedBy(String::class))
+            .returns(ClassName("", RETROFIT_INTERFACE_NAME))
+            .addStatement("val keyContent = keyFile.readBytes()")
+            .addStatement(
+                "val httpClient = %T.Builder().addInterceptor { chain ->",
+                RetrofitTypes.OkHttpClient
+            )
+            .addStatement(
+                "  val headers = %T.fromStream(keyContent.inputStream()).createScoped(scopes).getRequestMetadata()",
+                GrpcTypes.Auth.GoogleCredentials
+            )
+            .addStatement("  val r = chain.request().newBuilder()")
+            .addStatement("  headers.entries.forEach { e -> headers.get(e.key)?.forEach { r.addHeader(e.key, it) } }")
+            .addStatement("  chain.proceed(r.build())")
+            .addStatement("}.build()")
+            .addStatement(
+                "val retrofit = %T.Builder().baseUrl(host).addConverterFactory(%T.create()).client(httpClient).build()",
+                RetrofitTypes.Retrofit,
+                RetrofitTypes.ProtoConverterFactory
+            )
+            .addStatement("return retrofit.create(%N::class.java)", RETROFIT_INTERFACE_NAME)
+            .build()
 
         return listOf(serviceAccount, main)
     }
