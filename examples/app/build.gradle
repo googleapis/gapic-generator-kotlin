@@ -42,6 +42,13 @@ android {
         // TODO: find a better way than excluding this here
         exclude 'META-INF/main.kotlin_module'
     }
+    sourceSets {
+        test.java.srcDirs += "${project.buildDir}/generated/source/protoTest/debugUnitTest/client"
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 configurations {
@@ -62,6 +69,7 @@ dependencies {
     //implementation 'com.squareup.retrofit2:converter-protobuf:2.4.0'
 
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
+    testImplementation 'com.nhaarman:mockito-kotlin:1.6.0'
     androidTestImplementation 'com.android.support.test:rules:1.0.2'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
@@ -99,7 +107,8 @@ protobuf {
                 }
                 client {
                     option "source=${projectDir}/src/main/proto"
-                    option "test_output=${project.buildDir}/generated/source/proto/debugUnitTest/client"
+                    option "test_output=${project.buildDir}/generated/source/protoTest/debugUnitTest/client"
+                    //option "test_output=${projectDir}/src/test/java"
                     //option "fallback"
                 }
             }
@@ -117,13 +126,6 @@ task ktlint(type: JavaExec, group: "verification") {
     description = "Check Kotlin code style."
     classpath = configurations.ktlint
     main = "com.github.shyiko.ktlint.Main"
-    args "src/**/*.kt"
+    args "src/main/**/*.kt"
 }
 check.dependsOn ktlint
-
-task ktlintFormat(type: JavaExec, group: "formatting") {
-    description = "Fix Kotlin code style deviations."
-    classpath = configurations.ktlint
-    main = "com.github.shyiko.ktlint.Main"
-    args "-F", "src/**/*.kt"
-}

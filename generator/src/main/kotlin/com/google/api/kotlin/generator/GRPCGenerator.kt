@@ -280,8 +280,7 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                     ParameterSpec.builder(
                         PARAM_REQUEST,
                         ctx.typeMap.getKotlinType(method.inputType)
-                    )
-                        .build()
+                    ).build()
                 )
                 methods.add(
                     createUnaryMethod(
@@ -321,6 +320,21 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                     )
                 )
             }
+
+            // TODO: placeholder for now...
+            // inputs/method call are always the same (mocks of all inputs)
+            val unitTestGivens = parameters.map {
+                val name = "the${it.name.capitalize()}"
+                Pair(name, CodeBlock.of("val $name: %T = mock()", it.type))
+            }
+            val unitTestWhen = CodeBlock.of(
+                """
+                |val client = %N()
+                |client.%N(${parameters.joinToString(", ") { "%N" }})
+                |""".trimMargin(),
+                UnitTests.FUN_GET_CLIENT,
+                methodName, *unitTestGivens.map { it.first }.toTypedArray())
+            var unitTestThen = CodeBlock.of("throw Exception()")
 
             // build method body
             when {
@@ -402,7 +416,9 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                     )
                 }
                 else -> {
-                    m.returns(GrpcTypes.Support.FutureCall(ctx.typeMap.getKotlinType(method.outputType)))
+                    val originalReturnType = ctx.typeMap.getKotlinType(method.outputType)
+
+                    m.returns(GrpcTypes.Support.FutureCall(originalReturnType))
                     m.addCode(
                         """
                         |return %N.%N.executeFuture {
@@ -412,11 +428,28 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                         PROP_STUBS, PROP_STUBS_FUTURE,
                         methodName, requestObject
                     )
+
+                    unitTestThen = if (flatteningConfig != null) {
+                        CodeBlock.of("")
+                    } else {
+                        CodeBlock.of(
+                            """
+                            |verify(%N).executeFuture<%T>(check {
+                            |    val mock: %T = mock()
+                            |    it(mock)
+                            |    verify(mock).%N(eq(%N))
+                            |})
+                            |""".trimMargin(),
+                            UnitTests.MOCK_FUTURE_STUB, originalReturnType,
+                            Stubs.getFutureStubType(ctx).typeArguments.first(),
+                            methodName,
+                            unitTestGivens.first().first)
+                    }
                 }
             }
 
-            // finish up and add documentation
-            val mDoc = createMethodDoc(
+            // add documentation
+            m.addKdoc(createMethodDoc(
                 ctx,
                 method,
                 methodName,
@@ -424,8 +457,20 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                 flatteningConfig,
                 parameters,
                 extraParamDocs
-            )
-            return TestableFunSpec(m.addKdoc(mDoc).build(), CodeBlock.of("throw Exception()"))
+            ))
+
+            // create unit test
+            val unitTest = CodeBlock.of(
+                """
+                |${unitTestGivens.joinToString("\n") { "%L" }}
+                |
+                |%L
+                |%L""".trimMargin(),
+                *unitTestGivens.map { it.second }.toTypedArray(),
+                unitTestWhen,
+                unitTestThen)
+
+            return TestableFunSpec(m.build(), unitTest)
         }
 
         private fun createStreamingMethods(
@@ -825,17 +870,9 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
     // creates a nested type that will be used to hold the gRPC stubs used by the client
     object Stubs : AbstractGenerator() {
         fun generateHolderType(ctx: GeneratorContext): TypeSpec {
-            val streamType = GrpcTypes.Support.GrpcClientStub(
-                ctx.typeMap.getKotlinGrpcType(
-                    ctx.proto, ctx.service, "Grpc.${ctx.service.name}Stub"
-                )
-            )
-            val futureType = GrpcTypes.Support.GrpcClientStub(
-                ctx.typeMap.getKotlinGrpcType(
-                    ctx.proto, ctx.service, "Grpc.${ctx.service.name}FutureStub"
-                )
-            )
-            val opType = GrpcTypes.Support.GrpcClientStub(GrpcTypes.OperationsFutureStub)
+            val streamType = getStreamStubType(ctx)
+            val futureType = getFutureStubType(ctx)
+            val opType = getOperationsStubType(ctx)
 
             return TypeSpec.classBuilder(STUBS_CLASS_TYPE)
                 .primaryConstructor(
@@ -874,23 +911,77 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                 )
                 .build()
         }
+
+        fun getStreamStubType(ctx: GeneratorContext) = GrpcTypes.Support.GrpcClientStub(
+            ctx.typeMap.getKotlinGrpcTypeInnerClass(
+                ctx.proto, ctx.service, "Grpc", "${ctx.service.name}Stub"
+            )
+        )
+
+        fun getFutureStubType(ctx: GeneratorContext) = GrpcTypes.Support.GrpcClientStub(
+            ctx.typeMap.getKotlinGrpcTypeInnerClass(
+                ctx.proto, ctx.service, "Grpc", "${ctx.service.name}FutureStub"
+            )
+        )
+
+        fun getOperationsStubType(ctx: GeneratorContext) =
+            GrpcTypes.Support.GrpcClientStub(GrpcTypes.OperationsFutureStub)
     }
 
     object UnitTests : AbstractGenerator() {
         const val VAL_CLIENT = "client"
+        const val FUN_GET_CLIENT = "getClient"
         const val MOCK_STREAM_STUB = "streamingStub"
         const val MOCK_FUTURE_STUB = "futureStub"
         const val MOCK_OPS_STUB = "operationsStub"
-        val MOCK_TYPE = ClassName("com.nhaarman.mockito_kotlin", "mock")
+        const val MOCK_CHANNEL = "channel"
+        const val MOCK_CALL_OPTS = "options"
 
         fun generate(ctx: GeneratorContext, apiMethods: List<TestableFunSpec>): GeneratedSource? {
             val name = "${ctx.className.simpleName}Test"
             val unitTestType = TypeSpec.classBuilder(name)
 
-            // add props
-            //unitTestType.addProperty(PropertySpec.builder(MOCK_STREAM_STUB, MOCK_TYPE.parameterizedBy()))
+            // add props (mocks)
+            val mocks = mapOf(
+                MOCK_STREAM_STUB to Stubs.getStreamStubType(ctx),
+                MOCK_FUTURE_STUB to Stubs.getFutureStubType(ctx),
+                MOCK_OPS_STUB to Stubs.getOperationsStubType(ctx),
+                MOCK_CHANNEL to GrpcTypes.ManagedChannel,
+                MOCK_CALL_OPTS to GrpcTypes.Support.ClientCallOptions
+            )
+            for ((name, type) in mocks) {
+                unitTestType.addProperty(
+                    PropertySpec.builder(name, type)
+                        .initializer("mock()")
+                        .build()
+                )
+            }
 
             // add functions
+            unitTestType.addFunction(
+                FunSpec.builder("resetMocks")
+                    .addAnnotation(ClassName("kotlin.test", "BeforeTest"))
+                    .addStatement(
+                        "reset(%N, %N, %N, %N, %N)", *mocks.keys.toTypedArray())
+                    .build()
+            )
+            unitTestType.addFunction(
+                FunSpec.builder(FUN_GET_CLIENT)
+                    .returns(ctx.className)
+                    .addStatement(
+                        """
+                        |return %T.fromStubs(object: %T.%L.Factory {
+                        |    override fun create(channel: %T, options: %T) =
+                        |        %T.%L(%N, %N, %N)
+                        |}, %N, %N)
+                        |""".trimMargin(),
+                        ctx.className, ctx.className, STUBS_CLASS_TYPE,
+                        GrpcTypes.ManagedChannel, GrpcTypes.Support.ClientCallOptions,
+                        ctx.className, STUBS_CLASS_TYPE,
+                        MOCK_STREAM_STUB, MOCK_FUTURE_STUB, MOCK_OPS_STUB,
+                        MOCK_CHANNEL, MOCK_CALL_OPTS)
+                    .build()
+            )
             unitTestType.addFunctions(generateFunctions(apiMethods))
 
             // put it all together
@@ -899,6 +990,14 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
                     ctx.className.packageName,
                     name,
                     types = listOf(unitTestType.build()),
+                    imports = listOf(
+                        ClassName("kotlin.test", "assertEquals"),
+                        ClassName("com.nhaarman.mockito_kotlin", "reset"),
+                        ClassName("com.nhaarman.mockito_kotlin", "mock"),
+                        ClassName("com.nhaarman.mockito_kotlin", "verify"),
+                        ClassName("com.nhaarman.mockito_kotlin", "check"),
+                        ClassName("com.nhaarman.mockito_kotlin", "eq")
+                    ),
                     kind = GeneratedSource.Kind.UNIT_TEST
                 )
             } else {
@@ -907,29 +1006,25 @@ internal class GRPCGenerator : AbstractGenerator(), ClientGenerator {
         }
 
         private fun generateFunctions(functions: List<TestableFunSpec>): List<FunSpec> {
+            val nameCounter = mutableMapOf<String, Int>()
+
             return functions
                 .filter { it.unitTestCode != null }
                 .map {
-                    FunSpec.builder("test${it.function.name.capitalize()}")
+                    // add a numbered suffix to the name if there are overloads
+                    var name = "test${it.function.name.capitalize()}"
+                    val suffix = nameCounter[name] ?: 0
+                    nameCounter[name] = suffix + 1
+                    if (suffix > 0) {
+                        name += suffix
+                    }
+
+                    // create fun!
+                    FunSpec.builder(name)
                         .addAnnotation(ClassName("kotlin.test", "Test"))
                         .addCode(it.unitTestCode!!)
                         .build()
                 }
         }
-
-        private fun createClientWithMocks(ctx: GeneratorContext) =
-            CodeBlock.of(
-                """
-                |val %N = %T.fromStubs(object : %N.Factory {
-                |  override fun create(%N: %T, %N, %T) =
-                |    %T(%N, %N, %N)
-                |})
-                |""".trimMargin(),
-                VAL_CLIENT, ctx.className, STUBS_CLASS_TYPE,
-                PROP_CHANNEL, GrpcTypes.ManagedChannel,
-                PROP_CALL_OPTS, GrpcTypes.Support.ClientCallOptions,
-                STUBS_CLASS_TYPE,
-                MOCK_STREAM_STUB, MOCK_FUTURE_STUB, MOCK_OPS_STUB
-            )
     }
 }

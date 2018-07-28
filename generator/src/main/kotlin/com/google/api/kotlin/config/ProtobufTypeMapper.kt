@@ -40,6 +40,17 @@ internal class ProtobufTypeMapper private constructor() {
     fun getKotlinGrpcType(protoService: String, suffix: String) =
         ClassName.bestGuess("${serviceMap[protoService] ?: ""}$suffix")
 
+    fun getKotlinGrpcTypeInnerClass(protoService: String, suffix: String, innerClassName: String) =
+        ClassName("${serviceMap[protoService] ?: ""}$suffix", innerClassName)
+
+    fun getKotlinGrpcTypeInnerClass(
+        proto: DescriptorProtos.FileDescriptorProto,
+        service: DescriptorProtos.ServiceDescriptorProto,
+        suffix: String,
+        innerClassName: String
+    ) =
+        getKotlinGrpcTypeInnerClass(".${proto.`package`}.${service.name}", suffix, innerClassName)
+
     fun getKotlinGrpcType(
         proto: DescriptorProtos.FileDescriptorProto,
         service: DescriptorProtos.ServiceDescriptorProto,

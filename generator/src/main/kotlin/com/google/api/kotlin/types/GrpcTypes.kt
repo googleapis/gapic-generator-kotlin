@@ -89,7 +89,7 @@ internal interface GrpcTypes {
         val OkHttpChannelBuilder = ClassName("io.grpc.okhttp", "OkHttpChannelBuilder")
         val OperationsGrpc = ClassName("com.google.longrunning", "OperationsGrpc")
         val OperationsFutureStub =
-            ClassName("com.google.longrunning", "OperationsGrpc.OperationsFutureStub")
+            ClassName("com.google.longrunning.OperationsGrpc", "OperationsFutureStub")
         val ByteString = ClassName("com.google.protobuf", "ByteString")
     }
 }
