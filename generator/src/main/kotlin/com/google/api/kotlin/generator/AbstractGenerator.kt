@@ -158,8 +158,8 @@ internal abstract class AbstractGenerator {
                 .add("%T.newBuilder()\n", context.typeMap.getKotlinType(method.inputType))
                 .indent()
 
-            override fun onBegin(p: List<ParameterInfo>) {
-                parameters = p
+            override fun onBegin(params: List<ParameterInfo>) {
+                parameters = params
             }
 
             override fun onTerminalParam(currentPath: List<String>, fieldInfo: ProtoFieldInfo) {
@@ -212,7 +212,7 @@ internal abstract class AbstractGenerator {
     }
 
     protected abstract class Visitor {
-        open fun onBegin(parameters: List<ParameterInfo>) {}
+        open fun onBegin(params: List<ParameterInfo>) {}
         open fun onEnd() {}
         open fun onNestedParam(currentPath: List<String>, fieldInfo: ProtoFieldInfo) {}
         open fun onTerminalParam(currentPath: List<String>, fieldInfo: ProtoFieldInfo) {}
