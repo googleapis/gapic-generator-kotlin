@@ -361,7 +361,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
                 """
                 |return stubs.future.executeFuture {
                 |  it.nestedFlat($namespace.TestRequest.newBuilder()
-                |    .addMoreDetails($namespace.Detail.newBuilder()
+                |    .addMoreDetails(0, $namespace.Detail.newBuilder()
                 |      .setEvenMore(evenMore)
                 |      .build()
                 |    )
