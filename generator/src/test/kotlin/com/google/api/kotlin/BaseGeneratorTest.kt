@@ -66,6 +66,8 @@ abstract class BaseGeneratorTest {
         return mock {
             on { getKotlinGrpcType(any(), any()) }.doReturn(ClassName(namespace, "TestStub"))
             on { getKotlinGrpcType(any(), any(), any()) }.doReturn(ClassName(namespace, "TestStub"))
+            on { getKotlinGrpcTypeInnerClass(any(), any(), any()) }.doReturn(ClassName(namespace, "TestStub"))
+            on { getKotlinGrpcTypeInnerClass(any(), any(), any(), any()) }.doReturn(ClassName(namespace, "TestStub"))
             on { getKotlinType(any()) }.thenAnswer {
                 typesOfMessages[it.arguments[0]]
                         ?: throw RuntimeException("unknown type (forget to add it?)")
@@ -131,3 +133,4 @@ internal fun List<GeneratedArtifact>.sources(): List<GeneratedSource> = this
 
 // first non-test source
 internal fun List<GeneratedArtifact>.firstSource() = this.sources().first()
+internal fun List<GeneratedArtifact>.firstType() = this.sources().first().types.first()

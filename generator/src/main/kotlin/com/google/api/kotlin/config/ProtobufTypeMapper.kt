@@ -40,6 +40,7 @@ internal class ProtobufTypeMapper private constructor() {
     fun getKotlinGrpcType(protoService: String, suffix: String) =
         ClassName.bestGuess("${serviceMap[protoService] ?: ""}$suffix")
 
+    /** Same as [getKotlinGrpcType] but changes the output code to use InnerClass instead off Foo.InnerClass  */
     fun getKotlinGrpcTypeInnerClass(protoService: String, suffix: String, innerClassName: String) =
         ClassName("${serviceMap[protoService] ?: ""}$suffix", innerClassName)
 

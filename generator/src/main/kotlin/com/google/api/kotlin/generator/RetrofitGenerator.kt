@@ -77,7 +77,10 @@ internal class RetrofitGenerator : AbstractGenerator(), ClientGenerator {
     private fun createPrimaryConstructor(ctx: GeneratorContext): FunSpec {
         return FunSpec.constructorBuilder()
             .addModifiers(KModifier.PRIVATE)
-            .addParameter(PROP_CLIENT, ClassName("", RETROFIT_INTERFACE_NAME))
+            .addParameter(
+                PROP_CLIENT, ClassName("",
+                    RETROFIT_INTERFACE_NAME
+                ))
             .build()
     }
 
@@ -116,7 +119,10 @@ internal class RetrofitGenerator : AbstractGenerator(), ClientGenerator {
         val normal = FunSpec.builder(methodName)
             .addParameter(PARAM_REQUEST, ctx.typeMap.getKotlinType(method.inputType))
             .returns(RetrofitTypes.Call.parameterizedBy(ctx.typeMap.getKotlinType(method.outputType)))
-            .addStatement("return %N.%L(%N)", PROP_CLIENT, methodName, PARAM_REQUEST)
+            .addStatement("return %N.%L(%N)",
+                PROP_CLIENT, methodName,
+                PARAM_REQUEST
+            )
             .build()
 
         return listOf(normal)
@@ -207,7 +213,9 @@ internal class RetrofitGenerator : AbstractGenerator(), ClientGenerator {
                 RetrofitTypes.Retrofit,
                 RetrofitTypes.ProtoConverterFactory
             )
-            .addStatement("return retrofit.create(%N::class.java)", RETROFIT_INTERFACE_NAME)
+            .addStatement("return retrofit.create(%N::class.java)",
+                RETROFIT_INTERFACE_NAME
+            )
             .build()
 
         return listOf(serviceAccount, main)

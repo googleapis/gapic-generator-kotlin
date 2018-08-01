@@ -40,9 +40,9 @@ class BuilderGeneratorTest {
         assertThat(files).hasSize(1)
         val file = files.first()
         assertThat(file.packageName).isEqualTo("com.google.api")
-        assertThat(file.type.name).isEqualTo("KotlinBuilders")
+        assertThat(file.name).isEqualTo("KotlinBuilders")
 
-        val funs = file.type.funSpecs
+        val funs = file.functions
         assertThat(funs).hasSize(2)
 
         fun methodBody(type: String) = "return com.google.api.$type.newBuilder().apply(init).build()"
@@ -76,9 +76,9 @@ class BuilderGeneratorTest {
         assertThat(files).hasSize(1)
         val file = files.first()
         assertThat(file.packageName).isEqualTo("com.google.api")
-        assertThat(file.type.name).isEqualTo("KotlinBuilders")
+        assertThat(file.name).isEqualTo("KotlinBuilders")
 
-        val funs = file.type.funSpecs
+        val funs = file.functions
         assertThat(funs).hasSize(9)
 
         fun methodBody(type: String) = "return com.google.api.$type.newBuilder().apply(init).build()"
@@ -126,9 +126,9 @@ class BuilderGeneratorTest {
         assertThat(files).hasSize(1)
         val file = files.first()
         assertThat(file.packageName).isEqualTo("com.google.protobuf")
-        assertThat(file.type.name).isEqualTo("KotlinBuilders")
+        assertThat(file.name).isEqualTo("KotlinBuilders")
 
-        val funs = file.type.funSpecs
+        val funs = file.functions
         assertThat(funs).hasSize(1)
         assertThat(funs.first().name).isEqualTo("Surprise")
     }

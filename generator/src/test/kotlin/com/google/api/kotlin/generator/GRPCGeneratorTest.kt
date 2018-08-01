@@ -18,10 +18,11 @@ package com.google.api.kotlin.generator
 
 import com.google.api.kotlin.BaseGeneratorTest
 import com.google.api.kotlin.asNormalizedString
-import com.google.api.kotlin.firstSource
 import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.MethodOptions
 import com.google.api.kotlin.config.ServiceOptions
+import com.google.api.kotlin.firstSource
+import com.google.api.kotlin.firstType
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.common.truth.Truth.assertThat
 import com.squareup.kotlinpoet.ClassName
@@ -35,7 +36,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
     fun `Generates with class documentation`() {
         val opts = ServiceOptions(listOf())
 
-        assertThat(generate(opts).firstSource().type.kdoc.toString()).isNotEmpty()
+        assertThat(generate(opts).firstType().kdoc.toString()).isNotEmpty()
     }
 
     @Test
@@ -44,15 +45,16 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
 
         val imports = generate(opts).firstSource().imports
         assertThat(imports).containsExactly(
-                ClassName(GrpcTypes.Support.SUPPORT_LIB_PACKAGE, "pager"),
-                ClassName(GrpcTypes.Support.SUPPORT_LIB_GRPC_PACKAGE, "prepare"))
+            ClassName(GrpcTypes.Support.SUPPORT_LIB_PACKAGE, "pager"),
+            ClassName(GrpcTypes.Support.SUPPORT_LIB_GRPC_PACKAGE, "prepare")
+        )
     }
 
     @Test
     fun `Generates the test method`() {
         val opts = ServiceOptions(listOf(MethodOptions(name = "Test")))
 
-        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "test" }
+        val methods = generate(opts).firstType().funSpecs.filter { it.name == "test" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
@@ -60,18 +62,20 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(method.parameters).hasSize(1)
         assertThat(method.parameters.first().name).isEqualTo("request")
         assertThat(method.parameters.first().type).isEqualTo(messageType("TestRequest"))
-        assertThat(method.body.asNormalizedString()).isEqualTo("""
+        assertThat(method.body.asNormalizedString()).isEqualTo(
+            """
                 |return stubs.future.executeFuture {
                 |  it.test(request)
                 |}
-            """.asNormalizedString())
+            """.asNormalizedString()
+        )
     }
 
     @Test
     fun `Generates the LRO test method`() {
         val opts = ServiceOptions(listOf(MethodOptions(name = "OperationTest")))
 
-        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "operationTest" }
+        val methods = generate(opts).firstType().funSpecs.filter { it.name == "operationTest" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
@@ -79,50 +83,56 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(method.parameters).hasSize(1)
         assertThat(method.parameters.first().name).isEqualTo("request")
         assertThat(method.parameters.first().type).isEqualTo(messageType("TestRequest"))
-        assertThat(method.body.asNormalizedString()).isEqualTo("""
+        assertThat(method.body.asNormalizedString()).isEqualTo(
+            """
                 |return ${longRunning("TestResponse")}(
                 |  stubs.operation,
                 |  stubs.future.executeFuture {
                 |    it.operationTest(request)
                 |  }, ${messageType("TestResponse")}::class.java)
-            """.asNormalizedString())
+            """.asNormalizedString()
+        )
     }
 
     @Test
     fun `Generates the streamTest method`() {
         val opts = ServiceOptions(listOf(MethodOptions(name = "StreamTest")))
 
-        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "streamTest" }
+        val methods = generate(opts).firstType().funSpecs.filter { it.name == "streamTest" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
         assertThat(method.returnType).isEqualTo(stream("TestRequest", "TestResponse"))
         assertThat(method.parameters).isEmpty()
-        assertThat(method.body.asNormalizedString()).isEqualTo("""
+        assertThat(method.body.asNormalizedString()).isEqualTo(
+            """
                 |return stubs.stream.executeStreaming { it::streamTest }
-            """.asNormalizedString())
+            """.asNormalizedString()
+        )
     }
 
     @Test
     fun `Generates the streamClientTest method`() {
         val opts = ServiceOptions(listOf(MethodOptions(name = "StreamTest")))
 
-        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "streamClientTest" }
+        val methods = generate(opts).firstType().funSpecs.filter { it.name == "streamClientTest" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
         assertThat(method.returnType).isEqualTo(clientStream("TestRequest", "TestResponse"))
         assertThat(method.parameters).isEmpty()
-        assertThat(method.body.asNormalizedString()).isEqualTo("""
+        assertThat(method.body.asNormalizedString()).isEqualTo(
+            """
                 |return stubs.stream.executeClientStreaming { it::streamClientTest }
-            """.asNormalizedString())
+            """.asNormalizedString()
+        )
     }
 
     @Test
     fun `Generates the streamServerTest method`() {
         val opts = ServiceOptions(listOf(MethodOptions(name = "StreamTest")))
 
-        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "streamServerTest" }
+        val methods = generate(opts).firstType().funSpecs.filter { it.name == "streamServerTest" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
@@ -130,39 +140,51 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(method.parameters).hasSize(1)
         assertThat(method.parameters.first().name).isEqualTo("request")
         assertThat(method.parameters.first().type).isEqualTo(messageType("TestRequest"))
-        assertThat(method.body.asNormalizedString()).isEqualTo("""
+        assertThat(method.body.asNormalizedString()).isEqualTo(
+            """
                 |return stubs.stream.executeServerStreaming { stub, observer ->
                 |  stub.streamServerTest(request, observer)
                 |}
-            """.asNormalizedString())
+            """.asNormalizedString()
+        )
     }
 
     @Test
     fun `Generates the testFlat methods`() {
-        val opts = ServiceOptions(listOf(
-                MethodOptions(name = "TestFlat",
-                        flattenedMethods = listOf(
-                                FlattenedMethod(listOf("query")),
-                                FlattenedMethod(listOf("query", "main_detail"))),
-                        keepOriginalMethod = true)))
+        val opts = ServiceOptions(
+            listOf(
+                MethodOptions(
+                    name = "TestFlat",
+                    flattenedMethods = listOf(
+                        FlattenedMethod(listOf("query")),
+                        FlattenedMethod(listOf("query", "main_detail"))
+                    ),
+                    keepOriginalMethod = true
+                )
+            )
+        )
 
-        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "testFlat" }
+        val methods = generate(opts).firstType().funSpecs.filter { it.name == "testFlat" }
         assertThat(methods).hasSize(3)
         assertThat(methods.map { it.returnType }).containsExactly(
-                futureCall("TestResponse"),
-                futureCall("TestResponse"),
-                futureCall("TestResponse"))
+            futureCall("TestResponse"),
+            futureCall("TestResponse"),
+            futureCall("TestResponse")
+        )
 
-        val original = methods.find { it.parameters.size == 1 && it.parameters[0].name == "request" }
+        val original =
+            methods.find { it.parameters.size == 1 && it.parameters[0].name == "request" }
         assertThat(original).isNotNull()
         original?.apply {
             assertThat(parameters.first().name).isEqualTo("request")
             assertThat(parameters.first().type).isEqualTo(messageType("TestRequest"))
-            assertThat(this.body.asNormalizedString()).isEqualTo("""
+            assertThat(this.body.asNormalizedString()).isEqualTo(
+                """
                 |return stubs.future.executeFuture {
                 |  it.testFlat(request)
                 |}
-            """.asNormalizedString())
+            """.asNormalizedString()
+            )
         }
 
         val oneArg = methods.find { it.parameters.size == 1 && it.parameters[0].name != "request" }
@@ -170,13 +192,15 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         oneArg?.apply {
             assertThat(parameters.first().name).isEqualTo("query")
             assertThat(parameters.first().type).isEqualTo(String::class.asTypeName())
-            assertThat(this.body.asNormalizedString()).isEqualTo("""
+            assertThat(this.body.asNormalizedString()).isEqualTo(
+                """
                 |return stubs.future.executeFuture {
                 |  it.testFlat($namespace.TestRequest.newBuilder()
                 |    .setQuery(query)
                 |    .build())
                 |}
-            """.asNormalizedString())
+            """.asNormalizedString()
+            )
         }
 
         val twoArg = methods.find { it.parameters.size == 2 }
@@ -186,26 +210,35 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
             assertThat(parameters[0].type).isEqualTo(String::class.asTypeName())
             assertThat(parameters[1].name).isEqualTo("mainDetail")
             assertThat(parameters[1].type).isEqualTo(messageType("Detail"))
-            assertThat(this.body.asNormalizedString()).isEqualTo("""
+            assertThat(this.body.asNormalizedString()).isEqualTo(
+                """
                 |return stubs.future.executeFuture {
                 |  it.testFlat($namespace.TestRequest.newBuilder()
                 |    .setQuery(query)
                 |    .setMainDetail(mainDetail)
                 |    .build())
                 |}
-            """.asNormalizedString())
+            """.asNormalizedString()
+            )
         }
     }
 
     @Test
     fun `Generates the TestFlatWithoutOriginal methods`() {
-        val opts = ServiceOptions(listOf(
-                MethodOptions(name = "TestFlatWithoutOriginal",
-                        flattenedMethods = listOf(
-                                FlattenedMethod(listOf("main_detail"))),
-                        keepOriginalMethod = false)))
+        val opts = ServiceOptions(
+            listOf(
+                MethodOptions(
+                    name = "TestFlatWithoutOriginal",
+                    flattenedMethods = listOf(
+                        FlattenedMethod(listOf("main_detail"))
+                    ),
+                    keepOriginalMethod = false
+                )
+            )
+        )
 
-        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "testFlatWithoutOriginal" }
+        val methods =
+            generate(opts).firstType().funSpecs.filter { it.name == "testFlatWithoutOriginal" }
         assertThat(methods).hasSize(1)
         assertThat(methods.map { it.returnType }).containsExactly(futureCall("TestResponse"))
 
@@ -214,25 +247,33 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         oneArg?.apply {
             assertThat(parameters.first().name).isEqualTo("mainDetail")
             assertThat(parameters.first().type).isEqualTo(messageType("Detail"))
-            assertThat(this.body.asNormalizedString()).isEqualTo("""
+            assertThat(this.body.asNormalizedString()).isEqualTo(
+                """
                 |return stubs.future.executeFuture {
                 |  it.testFlatWithoutOriginal($namespace.TestRequest.newBuilder()
                 |    .setMainDetail(mainDetail)
                 |    .build())
                 |}
-            """.asNormalizedString())
+            """.asNormalizedString()
+            )
         }
     }
 
     @Test
     fun `Generates the NestedFlat methods`() {
-        val opts = ServiceOptions(listOf(
-                MethodOptions(name = "NestedFlat",
-                        flattenedMethods = listOf(
-                                FlattenedMethod(listOf("main_detail.even_more"))),
-                        keepOriginalMethod = false)))
+        val opts = ServiceOptions(
+            listOf(
+                MethodOptions(
+                    name = "NestedFlat",
+                    flattenedMethods = listOf(
+                        FlattenedMethod(listOf("main_detail.even_more"))
+                    ),
+                    keepOriginalMethod = false
+                )
+            )
+        )
 
-        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "nestedFlat" }
+        val methods = generate(opts).firstType().funSpecs.filter { it.name == "nestedFlat" }
         assertThat(methods).hasSize(1)
         assertThat(methods.map { it.returnType }).containsExactly(futureCall("TestResponse"))
 
@@ -241,7 +282,8 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         method?.apply {
             assertThat(parameters.first().name).isEqualTo("evenMore")
             assertThat(parameters.first().type).isEqualTo(messageType("MoreDetail"))
-            assertThat(this.body.asNormalizedString()).isEqualTo("""
+            assertThat(this.body.asNormalizedString()).isEqualTo(
+                """
                 |return stubs.future.executeFuture {
                 |  it.nestedFlat($namespace.TestRequest.newBuilder()
                 |    .setMainDetail($namespace.Detail.newBuilder()
@@ -250,19 +292,26 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
                 |    )
                 |    .build())
                 |}
-            """.asNormalizedString())
+            """.asNormalizedString()
+            )
         }
     }
 
     @Test
     fun `Generates the NestedFlat methods with repeated fields`() {
-        val opts = ServiceOptions(listOf(
-                MethodOptions(name = "NestedFlat",
-                        flattenedMethods = listOf(
-                                FlattenedMethod(listOf("more_details"))),
-                        keepOriginalMethod = false)))
+        val opts = ServiceOptions(
+            listOf(
+                MethodOptions(
+                    name = "NestedFlat",
+                    flattenedMethods = listOf(
+                        FlattenedMethod(listOf("more_details"))
+                    ),
+                    keepOriginalMethod = false
+                )
+            )
+        )
 
-        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "nestedFlat" }
+        val methods = generate(opts).firstType().funSpecs.filter { it.name == "nestedFlat" }
         assertThat(methods).hasSize(1)
         assertThat(methods.map { it.returnType }).containsExactly(futureCall("TestResponse"))
 
@@ -271,26 +320,35 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         method?.apply {
             assertThat(parameters.first().name).isEqualTo("moreDetails")
             assertThat(parameters.first().type).isEqualTo(
-                    List::class.asTypeName().parameterizedBy(messageType("Detail")))
-            assertThat(this.body.asNormalizedString()).isEqualTo("""
+                List::class.asTypeName().parameterizedBy(messageType("Detail"))
+            )
+            assertThat(this.body.asNormalizedString()).isEqualTo(
+                """
                 |return stubs.future.executeFuture {
                 |  it.nestedFlat($namespace.TestRequest.newBuilder()
                 |    .addAllMoreDetails(moreDetails)
                 |    .build())
                 |}
-            """.asNormalizedString())
+            """.asNormalizedString()
+            )
         }
     }
 
     @Test
     fun `Generates the NestedFlat methods with repeated nested fields`() {
-        val opts = ServiceOptions(listOf(
-                MethodOptions(name = "NestedFlat",
-                        flattenedMethods = listOf(
-                                FlattenedMethod(listOf("more_details[0].even_more"))),
-                        keepOriginalMethod = false)))
+        val opts = ServiceOptions(
+            listOf(
+                MethodOptions(
+                    name = "NestedFlat",
+                    flattenedMethods = listOf(
+                        FlattenedMethod(listOf("more_details[0].even_more"))
+                    ),
+                    keepOriginalMethod = false
+                )
+            )
+        )
 
-        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "nestedFlat" }
+        val methods = generate(opts).firstType().funSpecs.filter { it.name == "nestedFlat" }
         assertThat(methods).hasSize(1)
         assertThat(methods.map { it.returnType }).containsExactly(futureCall("TestResponse"))
 
@@ -299,7 +357,8 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         method?.apply {
             assertThat(parameters.first().name).isEqualTo("evenMore")
             assertThat(parameters.first().type).isEqualTo(messageType("MoreDetail"))
-            assertThat(this.body.asNormalizedString()).isEqualTo("""
+            assertThat(this.body.asNormalizedString()).isEqualTo(
+                """
                 |return stubs.future.executeFuture {
                 |  it.nestedFlat($namespace.TestRequest.newBuilder()
                 |    .addMoreDetails($namespace.Detail.newBuilder()
@@ -308,19 +367,27 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
                 |    )
                 |    .build())
                 |}
-            """.asNormalizedString())
+            """.asNormalizedString()
+            )
         }
     }
 
     @Test
     fun `Generates the NestedFlatPrimitive methods`() {
-        val opts = ServiceOptions(listOf(
-                MethodOptions(name = "NestedFlatPrimitive",
-                        flattenedMethods = listOf(
-                                FlattenedMethod(listOf("main_detail.useful"))),
-                        keepOriginalMethod = false)))
+        val opts = ServiceOptions(
+            listOf(
+                MethodOptions(
+                    name = "NestedFlatPrimitive",
+                    flattenedMethods = listOf(
+                        FlattenedMethod(listOf("main_detail.useful"))
+                    ),
+                    keepOriginalMethod = false
+                )
+            )
+        )
 
-        val methods = generate(opts).firstSource().type.funSpecs.filter { it.name == "nestedFlatPrimitive" }
+        val methods =
+            generate(opts).firstType().funSpecs.filter { it.name == "nestedFlatPrimitive" }
         assertThat(methods).hasSize(1)
         assertThat(methods.map { it.returnType }).containsExactly(futureCall("TestResponse"))
 
@@ -329,7 +396,8 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         method?.apply {
             assertThat(parameters.first().name).isEqualTo("useful")
             assertThat(parameters.first().type).isEqualTo(Boolean::class.asTypeName())
-            assertThat(this.body.asNormalizedString()).isEqualTo("""
+            assertThat(this.body.asNormalizedString()).isEqualTo(
+                """
                 |return stubs.future.executeFuture {
                 |  it.nestedFlatPrimitive($namespace.TestRequest.newBuilder()
                 |    .setMainDetail($namespace.Detail.newBuilder()
@@ -338,7 +406,8 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
                 |    )
                 |    .build())
                 |}
-            """.asNormalizedString())
+            """.asNormalizedString()
+            )
         }
     }
 }

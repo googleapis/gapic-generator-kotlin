@@ -16,9 +16,9 @@
 
 package com.google.api.kotlin
 
-import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.api.kotlin.config.ConfigurationMetadataFactory
 import com.google.api.kotlin.config.ServiceOptions
+import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.common.truth.Truth.assertThat
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.check
@@ -35,7 +35,13 @@ class KotlinClientGeneratorTest : BaseGeneratorTest() {
     fun `generates a class with context and a license`() {
         val clientGenerator: ClientGenerator = mock {
             on { generateServiceClient(any()) }.doReturn(
-                listOf(GeneratedSource("google.example", TypeSpec.classBuilder("TestServiceClient").build()))
+                listOf(
+                    GeneratedSource(
+                        "google.example",
+                        "TestServiceClient",
+                        listOf(TypeSpec.classBuilder("TestServiceClient").build())
+                    )
+                )
             )
         }
         val config = getMockedConfig(ServiceOptions())
@@ -46,8 +52,8 @@ class KotlinClientGeneratorTest : BaseGeneratorTest() {
         val generator = KotlinClientGenerator(clientGenerator, clientConfigFactory)
         val result = generator.generate(generatorRequest)
 
-        assertThat(result.fileCount).isEqualTo(1)
-        val file = result.fileList.first()
+        assertThat(result.sourceCode.fileCount).isEqualTo(1)
+        val file = result.sourceCode.fileList.first()
         assertThat(file.name).isEqualTo("google/example/TestServiceClient.kt")
         assertThat(file.content).contains("Copyright")
         assertThat(file.content).contains("class TestServiceClient")
@@ -65,12 +71,24 @@ class KotlinClientGeneratorTest : BaseGeneratorTest() {
     fun `generates builders along with class`() {
         val clientGenerator: ClientGenerator = mock {
             on { generateServiceClient(any()) }.doReturn(
-                    listOf(GeneratedSource("google.example", TypeSpec.classBuilder("FooService").build()))
+                listOf(
+                    GeneratedSource(
+                        "google.example",
+                        "FooService",
+                        listOf(TypeSpec.classBuilder("FooService").build())
+                    )
+                )
             )
         }
         val builderGenerator: BuilderGenerator = mock {
             on { generate(any()) }.doReturn(
-                listOf(GeneratedSource("foo.bar", TypeSpec.classBuilder("Baz").build()))
+                listOf(
+                    GeneratedSource(
+                        "foo.bar",
+                        "Baz",
+                        listOf(TypeSpec.classBuilder("Baz").build())
+                    )
+                )
             )
         }
         val config = getMockedConfig(ServiceOptions())
@@ -78,13 +96,15 @@ class KotlinClientGeneratorTest : BaseGeneratorTest() {
             on { find(any()) }.doReturn(config)
         }
 
-        val generator = KotlinClientGenerator(clientGenerator, clientConfigFactory, builderGenerator)
+        val generator =
+            KotlinClientGenerator(clientGenerator, clientConfigFactory, builderGenerator)
         val result = generator.generate(generatorRequest)
 
-        assertThat(result.fileCount).isEqualTo(2)
-        assertThat(result.fileList.map { it.name }).containsExactly(
-                "google/example/FooService.kt", "foo/bar/Baz.kt")
-        result.fileList.forEach {
+        assertThat(result.sourceCode.fileCount).isEqualTo(2)
+        assertThat(result.sourceCode.fileList.map { it.name }).containsExactly(
+            "google/example/FooService.kt", "foo/bar/Baz.kt"
+        )
+        result.sourceCode.fileList.forEach {
             assertThat(it.content).contains("Copyright")
         }
     }
