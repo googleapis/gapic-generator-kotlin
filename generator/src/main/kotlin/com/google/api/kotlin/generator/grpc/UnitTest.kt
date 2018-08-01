@@ -44,9 +44,42 @@ internal const val MOCK_OPS_STUB = "operationsStub"
 internal const val MOCK_CHANNEL = "channel"
 internal const val MOCK_CALL_OPTS = "options"
 
-internal class UnitTest(val stubs: Stubs) : AbstractGenerator() {
+/** Generates the unit tests for the client methods. */
+internal interface UnitTest {
+    fun generate(ctx: GeneratorContext, apiMethods: List<TestableFunSpec>): GeneratedSource?
 
-    fun generate(ctx: GeneratorContext, apiMethods: List<TestableFunSpec>): GeneratedSource? {
+    /**
+     * Create a unit test for a unary method with variations for paging, flattening,
+     * and long running operations.
+     */
+    fun createUnaryMethodUnitTest(
+        ctx: GeneratorContext,
+        method: DescriptorProtos.MethodDescriptorProto,
+        methodName: String,
+        parameters: List<AbstractGenerator.ParameterInfo>,
+        flatteningConfig: FlattenedMethod?,
+        paging: PagedResponse?
+    ): CodeBlock
+
+    /**
+     * Create a unit test for a client, server, or bi-directional streaming method
+     * with variations for paging, flattening, and long running operations.
+     */
+    fun createStreamingMethodTest(
+        ctx: GeneratorContext,
+        method: DescriptorProtos.MethodDescriptorProto,
+        methodName: String,
+        parameters: List<AbstractGenerator.ParameterInfo>,
+        flatteningConfig: FlattenedMethod?
+    ): CodeBlock
+}
+
+internal class UnitTestImpl(val stubs: Stubs) : AbstractGenerator(), UnitTest {
+
+    override fun generate(
+        ctx: GeneratorContext,
+        apiMethods: List<TestableFunSpec>
+    ): GeneratedSource? {
         val name = "${ctx.className.simpleName}Test"
         val unitTestType = TypeSpec.classBuilder(name)
 
@@ -87,16 +120,10 @@ internal class UnitTest(val stubs: Stubs) : AbstractGenerator() {
                         |        %T.%L(%N, %N, %N)
                         |}, %N, %N)
                         |""".trimMargin(),
-                    ctx.className, ctx.className,
-                    CLASS_STUBS,
+                    ctx.className, ctx.className, CLASS_STUBS,
                     GrpcTypes.ManagedChannel, GrpcTypes.Support.ClientCallOptions,
-                    ctx.className,
-                    CLASS_STUBS,
-                    MOCK_STREAM_STUB,
-                    MOCK_FUTURE_STUB,
-                    MOCK_OPS_STUB,
-                    MOCK_CHANNEL,
-                    MOCK_CALL_OPTS
+                    ctx.className, CLASS_STUBS, MOCK_STREAM_STUB, MOCK_FUTURE_STUB, MOCK_OPS_STUB,
+                    MOCK_CHANNEL, MOCK_CALL_OPTS
                 )
                 .build()
         )
@@ -152,11 +179,7 @@ internal class UnitTest(val stubs: Stubs) : AbstractGenerator() {
             }
     }
 
-    /**
-     * Create a unit test for a unary method with variations for paging, flattening,
-     * and long running operations.
-     */
-    fun createUnaryMethodUnitTest(
+    override fun createUnaryMethodUnitTest(
         ctx: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
         methodName: String,
@@ -255,11 +278,7 @@ internal class UnitTest(val stubs: Stubs) : AbstractGenerator() {
         return createUnitTest(givenBlock, whenBlock, thenBlock)
     }
 
-    /**
-     * Create a unit test for a client, server, or bi-directional streaming method
-     * with variations for paging, flattening, and long running operations.
-     */
-    fun createStreamingMethodTest(
+    override fun createStreamingMethodTest(
         ctx: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
         methodName: String,

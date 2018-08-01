@@ -29,9 +29,17 @@ import java.io.InputStream
 
 internal const val VAL_ALL_SCOPES = "ALL_SCOPES"
 
-internal class CompanionObject : AbstractGenerator() {
+/**
+ * Generates a companion object for the client, which is responsible for
+ * creating instances of the client (i.e. a factory).
+ */
+internal interface CompanionObject {
+    fun generate(ctx: GeneratorContext): TypeSpec
+}
 
-    fun generate(ctx: GeneratorContext): TypeSpec {
+internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
+
+    override fun generate(ctx: GeneratorContext): TypeSpec {
         return TypeSpec.companionObjectBuilder()
             .addKdoc(
                 "Utilities for creating a fully configured %N.\n",
@@ -172,7 +180,8 @@ internal class CompanionObject : AbstractGenerator() {
             )
             .addAnnotation(JvmStatic::class)
             .addAnnotation(JvmOverloads::class)
-            .addParameter("factory", ClassName("", CLASS_STUBS, "Factory")
+            .addParameter(
+                "factory", ClassName("", CLASS_STUBS, "Factory")
             )
             .addParameter(
                 ParameterSpec.builder(

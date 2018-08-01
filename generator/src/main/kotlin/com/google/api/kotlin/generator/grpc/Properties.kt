@@ -33,11 +33,16 @@ internal const val PROP_STUBS = "stubs"
 internal const val PARAM_FACTORY = "factory"
 
 /**
- * Generates the properties for the client
+ * Generates the properties and constructors for the client.
  */
-internal class Properties : AbstractGenerator() {
+internal interface Properties {
+    fun generate(ctx: GeneratorContext): List<PropertySpec>
+    fun generatePrimaryConstructor(): FunSpec
+}
 
-    fun generate(ctx: GeneratorContext): List<PropertySpec> {
+internal class PropertiesImpl : AbstractGenerator(), Properties {
+
+    override fun generate(ctx: GeneratorContext): List<PropertySpec> {
         val grpcType = ctx.typeMap.getKotlinGrpcType(
             ctx.proto, ctx.service, "Grpc"
         )
@@ -80,7 +85,7 @@ internal class Properties : AbstractGenerator() {
         return listOf(stub)
     }
 
-    fun generatePrimaryConstructor(): FunSpec {
+    override fun generatePrimaryConstructor(): FunSpec {
         return FunSpec.constructorBuilder()
             .addModifiers(KModifier.PRIVATE)
             .addParameter(PROP_CHANNEL, GrpcTypes.ManagedChannel)
@@ -92,5 +97,4 @@ internal class Properties : AbstractGenerator() {
                 ).defaultValue("null").build()
             ).build()
     }
-
 }

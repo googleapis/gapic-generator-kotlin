@@ -22,6 +22,7 @@ import com.google.api.kotlin.types.GrpcTypes
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 
@@ -31,10 +32,29 @@ internal const val PROP_STUBS_OPERATION = "operation"
 
 internal const val CLASS_STUBS = "Stubs"
 
-// creates a nested type that will be used to hold the gRPC stubs used by the client
-internal class Stubs : AbstractGenerator() {
+/**
+ * Generates a type that holder the gRPC stubs that will be used by the client.
+ *
+ * The client will the use [PROP_STUBS_STREAM], [PROP_STUBS_FUTURE], and [PROP_STUBS_OPERATION]
+ * to make API calls.
+ */
+internal interface Stubs {
+    /** Creates a nested type that will be used to hold the gRPC stubs used by the client */
+    fun generateHolderType(ctx: GeneratorContext): TypeSpec
 
-    fun generateHolderType(ctx: GeneratorContext): TypeSpec {
+    /** Gets the streaming stub type */
+    fun getStreamStubType(ctx: GeneratorContext): ParameterizedTypeName
+
+    /** Gets the future stub type */
+    fun getFutureStubType(ctx: GeneratorContext): ParameterizedTypeName
+
+    /** Gets the operations stub type */
+    fun getOperationsStubType(ctx: GeneratorContext): ParameterizedTypeName
+}
+
+internal class StubsImpl : AbstractGenerator(), Stubs {
+
+    override fun generateHolderType(ctx: GeneratorContext): TypeSpec {
         val streamType = getStreamStubType(ctx)
         val futureType = getFutureStubType(ctx)
         val opType = getOperationsStubType(ctx)
@@ -67,11 +87,7 @@ internal class Stubs : AbstractGenerator() {
                     .addFunction(
                         FunSpec.builder("create")
                             .addModifiers(KModifier.ABSTRACT)
-                            .returns(
-                                ClassName("",
-                                    CLASS_STUBS
-                                )
-                            )
+                            .returns(ClassName("", CLASS_STUBS))
                             .addParameter(PROP_CHANNEL, GrpcTypes.ManagedChannel)
                             .addParameter(PROP_CALL_OPTS, GrpcTypes.Support.ClientCallOptions)
                             .build()
@@ -81,18 +97,18 @@ internal class Stubs : AbstractGenerator() {
             .build()
     }
 
-    fun getStreamStubType(ctx: GeneratorContext) = GrpcTypes.Support.GrpcClientStub(
+    override fun getStreamStubType(ctx: GeneratorContext) = GrpcTypes.Support.GrpcClientStub(
         ctx.typeMap.getKotlinGrpcTypeInnerClass(
             ctx.proto, ctx.service, "Grpc", "${ctx.service.name}Stub"
         )
     )
 
-    fun getFutureStubType(ctx: GeneratorContext) = GrpcTypes.Support.GrpcClientStub(
+    override fun getFutureStubType(ctx: GeneratorContext) = GrpcTypes.Support.GrpcClientStub(
         ctx.typeMap.getKotlinGrpcTypeInnerClass(
             ctx.proto, ctx.service, "Grpc", "${ctx.service.name}FutureStub"
         )
     )
 
-    fun getOperationsStubType(ctx: GeneratorContext) =
+    override fun getOperationsStubType(ctx: GeneratorContext) =
         GrpcTypes.Support.GrpcClientStub(GrpcTypes.OperationsFutureStub)
 }

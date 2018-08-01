@@ -28,10 +28,12 @@ class BuilderGeneratorTest {
     @Test
     fun `generates builders`() {
         val typeMap: ProtobufTypeMapper = mock {
-            on { getAllKotlinTypes() }.thenReturn(listOf(
+            on { getAllKotlinTypes() }.thenReturn(
+                listOf(
                     "com.google.api.Foo",
                     "com.google.api.Bar"
-            ))
+                )
+            )
         }
 
         // build types
@@ -45,7 +47,8 @@ class BuilderGeneratorTest {
         val funs = file.functions
         assertThat(funs).hasSize(2)
 
-        fun methodBody(type: String) = "return com.google.api.$type.newBuilder().apply(init).build()"
+        fun methodBody(type: String) =
+            "return com.google.api.$type.newBuilder().apply(init).build()"
         listOf("Foo", "Bar").forEach { name ->
             val f = funs.find { it.name == name } ?: throw Exception("fun not found $name")
             assertThat(f.body.asNormalizedString()).isEqualTo(methodBody(name))
@@ -57,17 +60,19 @@ class BuilderGeneratorTest {
     @Test
     fun `generates nested builders`() {
         val typeMap: ProtobufTypeMapper = mock {
-            on { getAllKotlinTypes() }.thenReturn(listOf(
-                "com.google.api.Foo",
-                "com.google.api.Foo.A",
-                "com.google.api.Foo.A.B",
-                "com.google.api.Foo.A.B.C",
-                "com.google.api.Bar",
-                "com.google.api.Bar.X",
-                "com.google.api.Bar.Y",
-                "com.google.api.Bar.Z",
-                "com.google.api.Baz"
-            ))
+            on { getAllKotlinTypes() }.thenReturn(
+                listOf(
+                    "com.google.api.Foo",
+                    "com.google.api.Foo.A",
+                    "com.google.api.Foo.A.B",
+                    "com.google.api.Foo.A.B.C",
+                    "com.google.api.Bar",
+                    "com.google.api.Bar.X",
+                    "com.google.api.Bar.Y",
+                    "com.google.api.Bar.Z",
+                    "com.google.api.Baz"
+                )
+            )
         }
 
         // build types
@@ -81,16 +86,32 @@ class BuilderGeneratorTest {
         val funs = file.functions
         assertThat(funs).hasSize(9)
 
-        fun methodBody(type: String) = "return com.google.api.$type.newBuilder().apply(init).build()"
-        listOf("Foo", "Foo.A", "Foo.A.B", "Foo.A.B.C", "Bar", "Bar.X", "Bar.Y", "Bar.Z", "Baz").forEach { qualifiedName ->
+        fun methodBody(type: String) =
+            "return com.google.api.$type.newBuilder().apply(init).build()"
+        listOf(
+            "Foo",
+            "Foo.A",
+            "Foo.A.B",
+            "Foo.A.B.C",
+            "Bar",
+            "Bar.X",
+            "Bar.Y",
+            "Bar.Z",
+            "Baz"
+        ).forEach { qualifiedName ->
             val path = qualifiedName.split(".")
-            val f = funs.find { it.name == path.last() } ?: throw Exception("fun not found $qualifiedName")
+            val f = funs.find { it.name == path.last() }
+                ?: throw Exception("fun not found $qualifiedName")
             assertThat(f.body.asNormalizedString()).isEqualTo(methodBody(qualifiedName))
             assertThat(f.parameters).hasSize(1)
             assertThat(f.parameters.first().name).isEqualTo("init")
             if (path.size > 1) {
-                assertThat(f.receiverType).isEqualTo(ClassName("com.google.api",
-                    path.subList(0, path.size - 1).joinToString(".")))
+                assertThat(f.receiverType).isEqualTo(
+                    ClassName(
+                        "com.google.api",
+                        path.subList(0, path.size - 1).joinToString(".")
+                    )
+                )
             }
         }
     }
@@ -98,10 +119,12 @@ class BuilderGeneratorTest {
     @Test
     fun `skips descriptor types`() {
         val typeMap: ProtobufTypeMapper = mock {
-            on { getAllKotlinTypes() }.thenReturn(listOf(
+            on { getAllKotlinTypes() }.thenReturn(
+                listOf(
                     "com.google.protobuf.DescriptorProtos",
                     "com.google.protobuf.FileDescriptorProtos"
-            ))
+                )
+            )
         }
 
         // build types
@@ -113,11 +136,13 @@ class BuilderGeneratorTest {
     @Test
     fun `skips Any and Empty`() {
         val typeMap: ProtobufTypeMapper = mock {
-            on { getAllKotlinTypes() }.thenReturn(listOf(
+            on { getAllKotlinTypes() }.thenReturn(
+                listOf(
                     "com.google.protobuf.Any",
                     "com.google.protobuf.Empty",
                     "com.google.protobuf.Surprise"
-            ))
+                )
+            )
         }
 
         // build types

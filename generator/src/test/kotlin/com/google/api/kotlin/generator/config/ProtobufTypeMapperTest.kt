@@ -30,11 +30,12 @@ class ProtobufTypeMapperTest : BaseGeneratorTest() {
         val mapper = ProtobufTypeMapper.fromProtos(listOf(testProto, testTypesProto))
 
         assertThat(mapper.getAllKotlinTypes()).containsExactly(
-                "google.example.TestRequest",
-                "google.example.TestResponse",
-                "google.example.Result",
-                "google.example.Detail",
-                "google.example.MoreDetail")
+            "google.example.TestRequest",
+            "google.example.TestResponse",
+            "google.example.Result",
+            "google.example.Detail",
+            "google.example.MoreDetail"
+        )
     }
 
     @Test
@@ -43,10 +44,10 @@ class ProtobufTypeMapperTest : BaseGeneratorTest() {
 
         assertThat(mapper.hasProtoEnumDescriptor(".google.example.MoreDetail.HowMuchMore")).isTrue()
         assertThat(mapper.getProtoEnumDescriptor(".google.example.MoreDetail.HowMuchMore").name)
-                .isEqualTo("HowMuchMore")
+            .isEqualTo("HowMuchMore")
         assertThat(mapper.hasProtoEnumDescriptor(".google.example.AnEnum")).isTrue()
         assertThat(mapper.getProtoEnumDescriptor(".google.example.AnEnum").name)
-                .isEqualTo("AnEnum")
+            .isEqualTo("AnEnum")
     }
 
     @Test
@@ -55,7 +56,7 @@ class ProtobufTypeMapperTest : BaseGeneratorTest() {
 
         assertThat(mapper.hasProtoTypeDescriptor(".google.example.Result")).isTrue()
         assertThat(mapper.getProtoTypeDescriptor(".google.example.Result").name)
-                .isEqualTo("Result")
+            .isEqualTo("Result")
     }
 
     @Test
@@ -83,11 +84,11 @@ class ProtobufTypeMapperTest : BaseGeneratorTest() {
         val mapper = ProtobufTypeMapper.fromProtos(listOf(testProto, testTypesProto))
 
         assertThat(mapper.getKotlinType(".google.example.MoreDetail"))
-                .isEqualTo(ClassName("google.example", "MoreDetail"))
+            .isEqualTo(ClassName("google.example", "MoreDetail"))
         assertThat(mapper.getKotlinType(".google.example.AnEnum"))
-                .isEqualTo(ClassName("google.example", "AnEnum"))
+            .isEqualTo(ClassName("google.example", "AnEnum"))
         assertThat(mapper.getKotlinType(".google.example.MoreDetail.HowMuchMore"))
-                .isEqualTo(ClassName("google.example", "MoreDetail.HowMuchMore"))
+            .isEqualTo(ClassName("google.example", "MoreDetail.HowMuchMore"))
     }
 
     @Test
@@ -104,9 +105,9 @@ class ProtobufTypeMapperTest : BaseGeneratorTest() {
         val mapper = ProtobufTypeMapper.fromProtos(listOf(testProto, testTypesProto))
 
         assertThat(mapper.getKotlinGrpcType(".google.example.TestService", ""))
-                .isEqualTo(ClassName("google.example", "TestService"))
+            .isEqualTo(ClassName("google.example", "TestService"))
         assertThat(mapper.getKotlinGrpcType(".google.example.TestService", "Hi There"))
-                .isEqualTo(ClassName("google.example", "TestServiceHi There"))
+            .isEqualTo(ClassName("google.example", "TestServiceHi There"))
     }
 
     @Test

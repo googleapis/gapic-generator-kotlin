@@ -21,13 +21,19 @@ import com.google.api.kotlin.GeneratedArtifact
 import com.google.api.kotlin.GeneratedSource
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.generator.grpc.CompanionObject
+import com.google.api.kotlin.generator.grpc.CompanionObjectImpl
 import com.google.api.kotlin.generator.grpc.Documentation
+import com.google.api.kotlin.generator.grpc.DocumentationImpl
 import com.google.api.kotlin.generator.grpc.Functions
+import com.google.api.kotlin.generator.grpc.FunctionsImpl
 import com.google.api.kotlin.generator.grpc.PROP_CALL_OPTS
 import com.google.api.kotlin.generator.grpc.PROP_CHANNEL
 import com.google.api.kotlin.generator.grpc.Properties
+import com.google.api.kotlin.generator.grpc.PropertiesImpl
 import com.google.api.kotlin.generator.grpc.Stubs
+import com.google.api.kotlin.generator.grpc.StubsImpl
 import com.google.api.kotlin.generator.grpc.UnitTest
+import com.google.api.kotlin.generator.grpc.UnitTestImpl
 import com.google.api.kotlin.types.GrpcTypes
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeSpec
@@ -35,20 +41,18 @@ import mu.KotlinLogging
 
 private val log = KotlinLogging.logger {}
 
-// property, param names, etc. for the generated client
-
 /**
- * Generates a gRPC client.
+ * Generates a gRPC client by aggregating the results of the sub-generators.
  *
  * @author jbolinger
  */
 internal class GRPCGenerator(
-    private val stubs: Stubs = Stubs(),
-    private val properties: Properties = Properties(),
-    private val companion: CompanionObject = CompanionObject(),
-    private val documentation: Documentation = Documentation(),
-    private val unitTests: UnitTest = UnitTest(stubs),
-    private val functions: Functions = Functions(stubs, unitTests)
+    private val stubs: Stubs = StubsImpl(),
+    private val properties: Properties = PropertiesImpl(),
+    private val companion: CompanionObject = CompanionObjectImpl(),
+    private val documentation: Documentation = DocumentationImpl(),
+    private val unitTests: UnitTest = UnitTestImpl(stubs),
+    private val functions: Functions = FunctionsImpl(stubs, unitTests)
 ) : AbstractGenerator(), ClientGenerator {
 
     override fun generateServiceClient(ctx: GeneratorContext): List<GeneratedArtifact> {

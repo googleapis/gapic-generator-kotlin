@@ -44,12 +44,17 @@ internal const val PARAM_REQUEST = "request"
 
 private const val PLACEHOLDER_KEYFILE = "< keyfile >"
 
-internal class Functions(
+/** Generate the API method functions for the client. */
+internal interface Functions {
+    fun generate(ctx: GeneratorContext): List<TestableFunSpec>
+}
+
+internal class FunctionsImpl(
     private val stubs: Stubs,
     private val unitTest: UnitTest
-) : AbstractGenerator() {
+) : AbstractGenerator(), Functions {
 
-    fun generate(ctx: GeneratorContext): List<TestableFunSpec> {
+    override fun generate(ctx: GeneratorContext): List<TestableFunSpec> {
         // we'll use this in the example text
         val firstMethodName = ctx.service.methodList
             .firstOrNull()?.name?.decapitalize()
@@ -204,10 +209,8 @@ internal class Functions(
                         |  }, %T::class.java)
                         |""".trimMargin(),
                     returnType,
-                    PROP_STUBS,
-                    PROP_STUBS_OPERATION,
-                    PROP_STUBS,
-                    PROP_STUBS_FUTURE,
+                    PROP_STUBS, PROP_STUBS_OPERATION,
+                    PROP_STUBS, PROP_STUBS_FUTURE,
                     methodName, requestObject,
                     realResponseType
                 )
@@ -257,15 +260,12 @@ internal class Functions(
                         |    }
                         |}
                         |""".trimMargin(),
-                    PROP_STUBS,
-                    PROP_STUBS_FUTURE,
-                    methodName,
-                    pageSizeSetter,
+                    PROP_STUBS, PROP_STUBS_FUTURE,
+                    methodName, pageSizeSetter,
                     requestObject,
                     pageTokenSetter,
                     GrpcTypes.Support.PageResult(responseListItemType),
-                    responseListGetter,
-                    nextPageTokenGetter
+                    responseListGetter, nextPageTokenGetter
                 )
             }
             else -> {
@@ -278,8 +278,7 @@ internal class Functions(
                         |  it.%L(%L)
                         |}
                         |""".trimMargin(),
-                    PROP_STUBS,
-                    PROP_STUBS_FUTURE,
+                    PROP_STUBS, PROP_STUBS_FUTURE,
                     methodName, requestObject
                 )
             }
@@ -288,24 +287,13 @@ internal class Functions(
         // add documentation
         m.addKdoc(
             createMethodDoc(
-                ctx,
-                method,
-                methodName,
-                samples,
-                flatteningConfig,
-                parameters,
-                extraParamDocs
+                ctx, method, samples, flatteningConfig, parameters, extraParamDocs
             )
         )
 
         // add unit test
         val test = unitTest.createUnaryMethodUnitTest(
-            ctx,
-            method,
-            methodName,
-            parameters,
-            flatteningConfig,
-            paging
+            ctx, method, methodName, parameters, flatteningConfig, paging
         )
 
         return TestableFunSpec(m.build(), test)
@@ -331,19 +319,13 @@ internal class Functions(
             if (method.hasClientStreaming() && method.hasServerStreaming()) {
                 flattened.addKdoc(
                     createMethodDoc(
-                        ctx,
-                        method,
-                        methodName,
-                        options.samples,
-                        flattenedMethod,
-                        parameters
+                        ctx, method, options.samples, flattenedMethod, parameters
                     )
                 )
                 flattened.addParameters(parameters.map { it.spec })
                 flattened.returns(
                     GrpcTypes.Support.StreamingCall(
-                        normalInputType,
-                        normalOutputType
+                        normalInputType, normalOutputType
                     )
                 )
                 flattened.addCode(
@@ -352,39 +334,28 @@ internal class Functions(
                         |stream.requests.send(%L)
                         |return stream
                         |""".trimMargin(),
-                    PROP_STUBS,
-                    PROP_STUBS_STREAM, methodName, request
+                    PROP_STUBS, PROP_STUBS_STREAM, methodName,
+                    request
                 )
             } else if (method.hasClientStreaming()) { // client only
                 flattened.addKdoc(
                     createMethodDoc(
-                        ctx,
-                        method,
-                        methodName,
-                        options.samples,
-                        flattenedMethod
+                        ctx, method, options.samples, flattenedMethod
                     )
                 )
                 flattened.returns(
                     GrpcTypes.Support.ClientStreamingCall(
-                        normalInputType,
-                        normalOutputType
+                        normalInputType, normalOutputType
                     )
                 )
                 flattened.addCode(
                     "return %N.%N.executeClientStreaming { it::%N }",
-                    PROP_STUBS,
-                    PROP_STUBS_STREAM, methodName
+                    PROP_STUBS, PROP_STUBS_STREAM, methodName
                 )
             } else if (method.hasServerStreaming()) { // server only
                 flattened.addKdoc(
                     createMethodDoc(
-                        ctx,
-                        method,
-                        methodName,
-                        options.samples,
-                        flattenedMethod,
-                        parameters
+                        ctx, method, options.samples, flattenedMethod, parameters
                     )
                 )
                 flattened.addParameters(parameters.map { it.spec })
@@ -395,8 +366,8 @@ internal class Functions(
                         |  stub.%N(%L, observer)
                         |}
                         |""".trimMargin(),
-                    PROP_STUBS,
-                    PROP_STUBS_STREAM, methodName, request
+                    PROP_STUBS, PROP_STUBS_STREAM,
+                    methodName, request
                 )
             } else {
                 throw IllegalArgumentException("Unknown streaming type (not client or server)!")
@@ -404,11 +375,7 @@ internal class Functions(
 
             // generate test
             val test = unitTest.createStreamingMethodTest(
-                ctx,
-                method,
-                methodName,
-                parameters,
-                flattenedMethod
+                ctx, method, methodName, parameters, flattenedMethod
             )
 
             TestableFunSpec(flattened.build(), test)
@@ -417,32 +384,28 @@ internal class Functions(
         // unchanged method
         if (options.keepOriginalMethod) {
             val normal = FunSpec.builder(methodName)
-                .addKdoc(createMethodDoc(ctx, method, methodName, options.samples))
+                .addKdoc(createMethodDoc(ctx, method, options.samples))
             val parameters = mutableListOf<ParameterInfo>()
 
             if (method.hasClientStreaming() && method.hasServerStreaming()) {
                 normal.returns(
                     GrpcTypes.Support.StreamingCall(
-                        normalInputType,
-                        normalOutputType
+                        normalInputType, normalOutputType
                     )
                 )
                 normal.addCode(
                     "return %N.%N.executeStreaming { it::%N }",
-                    PROP_STUBS,
-                    PROP_STUBS_STREAM, methodName
+                    PROP_STUBS, PROP_STUBS_STREAM, methodName
                 )
             } else if (method.hasClientStreaming()) { // client only
                 normal.returns(
                     GrpcTypes.Support.ClientStreamingCall(
-                        normalInputType,
-                        normalOutputType
+                        normalInputType, normalOutputType
                     )
                 )
                 normal.addCode(
                     "return %N.%N.executeClientStreaming { it::%N }",
-                    PROP_STUBS,
-                    PROP_STUBS_STREAM, methodName
+                    PROP_STUBS, PROP_STUBS_STREAM, methodName
                 )
             } else if (method.hasServerStreaming()) { // server only
                 val param = ParameterSpec.builder(PARAM_REQUEST, normalInputType).build()
@@ -455,9 +418,8 @@ internal class Functions(
                         |  stub.%N(%N, observer)
                         |}
                         |""".trimMargin(),
-                    PROP_STUBS,
-                    PROP_STUBS_STREAM, methodName,
-                    PARAM_REQUEST
+                    PROP_STUBS, PROP_STUBS_STREAM,
+                    methodName, PARAM_REQUEST
                 )
             } else {
                 throw IllegalArgumentException("Unknown streaming type (not client or server)!")
@@ -466,11 +428,7 @@ internal class Functions(
             // generate test
             val test =
                 unitTest.createStreamingMethodTest(
-                    ctx,
-                    method,
-                    methodName,
-                    parameters.toList(),
-                    null
+                    ctx, method, methodName, parameters.toList(), null
                 )
 
             methods.add(TestableFunSpec(normal.build(), test))
@@ -483,7 +441,6 @@ internal class Functions(
     private fun createMethodDoc(
         ctx: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
-        methodName: String,
         samples: List<SampleMethod>,
         flatteningConfig: FlattenedMethod? = null,
         parameters: List<ParameterInfo> = listOf(),

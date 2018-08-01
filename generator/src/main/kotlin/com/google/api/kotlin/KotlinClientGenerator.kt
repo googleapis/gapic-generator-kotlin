@@ -87,7 +87,6 @@ internal class KotlinClientGenerator(
                 }
             }.flatMap { it.asIterable() }
 
-
         // extract source files
         val sourceFiles = files
             .filterIsInstance(GeneratedSource::class.java)
@@ -225,7 +224,7 @@ internal class GeneratedSource(
     }
 }
 
-/** FunSpec with additional code blocks that can be used to generate tests */
+/** FunSpec with additional code blocks that can be used to, optionally, generate tests */
 internal class TestableFunSpec(
     val function: FunSpec,
     val unitTestCode: CodeBlock? = null

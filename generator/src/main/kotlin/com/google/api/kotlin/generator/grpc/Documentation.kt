@@ -21,10 +21,14 @@ import com.google.api.kotlin.generator.AbstractGenerator
 import com.google.api.kotlin.generator.wrap
 import com.squareup.kotlinpoet.CodeBlock
 
-/** the top level (class) comment */
-internal class Documentation : AbstractGenerator() {
+/** Generates the top level (class) documentation. */
+internal interface Documentation {
+    fun generateClassDoc(ctx: GeneratorContext): CodeBlock
+}
 
-    fun generateClassDoc(ctx: GeneratorContext): CodeBlock {
+internal class DocumentationImpl : AbstractGenerator(), Documentation {
+
+    override fun generateClassDoc(ctx: GeneratorContext): CodeBlock {
         val doc = CodeBlock.builder()
         val m = ctx.metadata
 
