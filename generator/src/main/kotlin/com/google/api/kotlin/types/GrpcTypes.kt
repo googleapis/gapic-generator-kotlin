@@ -41,32 +41,35 @@ internal interface GrpcTypes {
             const val SUPPORT_LIB_GRPC_PACKAGE = "$SUPPORT_LIB_PACKAGE.grpc"
 
             val GrpcClient = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "GrpcClient")
-            fun GrpcClientStub(type: ClassName) =
+            fun GrpcClientStub(type: TypeName) =
                 ClassName(SUPPORT_LIB_GRPC_PACKAGE, "GrpcClientStub").parameterizedBy(type)
 
             val ClientCallOptions = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ClientCallOptions")
             val ClientCallOptionsBuilder =
                 ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ClientCallOptions.Builder")
 
-            fun FutureCall(type: ClassName) =
+            fun FutureCall(type: TypeName) =
                 ClassName(SUPPORT_LIB_GRPC_PACKAGE, "FutureCall").parameterizedBy(type)
 
-            fun CallResult(type: ClassName) =
+            fun CallResult(type: TypeName) =
                 ClassName(SUPPORT_LIB_GRPC_PACKAGE, "CallResult").parameterizedBy(type)
 
-            fun StreamingCall(requestType: ClassName, responseType: ClassName) =
+            fun StreamingCall(requestType: TypeName, responseType: TypeName) =
                 ClassName(SUPPORT_LIB_GRPC_PACKAGE, "StreamingCall").parameterizedBy(
                     requestType,
                     responseType
                 )
 
-            fun ClientStreamingCall(requestType: ClassName, responseType: ClassName) =
+            fun RequestStream(type: TypeName) =
+                ClassName(SUPPORT_LIB_GRPC_PACKAGE, "RequestStream").parameterizedBy(type)
+
+            fun ClientStreamingCall(requestType: TypeName, responseType: TypeName) =
                 ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ClientStreamingCall").parameterizedBy(
                     requestType,
                     responseType
                 )
 
-            fun ServerStreamingCall(type: ClassName) =
+            fun ServerStreamingCall(type: TypeName) =
                 ClassName(SUPPORT_LIB_GRPC_PACKAGE, "ServerStreamingCall").parameterizedBy(type)
 
             fun LongRunningCall(type: TypeName) =
@@ -91,5 +94,8 @@ internal interface GrpcTypes {
         val OperationsFutureStub =
             ClassName("com.google.longrunning.OperationsGrpc", "OperationsFutureStub")
         val ByteString = ClassName("com.google.protobuf", "ByteString")
+
+        fun StreamObserver(type: TypeName) =
+            ClassName("io.grpc.stub", "StreamObserver").parameterizedBy(type)
     }
 }

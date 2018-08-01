@@ -25,22 +25,21 @@ import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 
+internal const val PROP_STUBS_STREAM = "stream"
+internal const val PROP_STUBS_FUTURE = "future"
+internal const val PROP_STUBS_OPERATION = "operation"
+
+internal const val CLASS_STUBS = "Stubs"
+
 // creates a nested type that will be used to hold the gRPC stubs used by the client
 internal class Stubs : AbstractGenerator() {
-    companion object {
-        const val PROP_STUBS_STREAM = "stream"
-        const val PROP_STUBS_FUTURE = "future"
-        const val PROP_STUBS_OPERATION = "operation"
-
-        const val CLASS_NAME = "Stubs"
-    }
 
     fun generateHolderType(ctx: GeneratorContext): TypeSpec {
         val streamType = getStreamStubType(ctx)
         val futureType = getFutureStubType(ctx)
         val opType = getOperationsStubType(ctx)
 
-        return TypeSpec.classBuilder(CLASS_NAME)
+        return TypeSpec.classBuilder(CLASS_STUBS)
             .primaryConstructor(
                 FunSpec.constructorBuilder()
                     .addParameter(PROP_STUBS_STREAM, streamType)
@@ -70,11 +69,11 @@ internal class Stubs : AbstractGenerator() {
                             .addModifiers(KModifier.ABSTRACT)
                             .returns(
                                 ClassName("",
-                                    CLASS_NAME
+                                    CLASS_STUBS
                                 )
                             )
-                            .addParameter(Properties.PROP_CHANNEL, GrpcTypes.ManagedChannel)
-                            .addParameter(Properties.PROP_CALL_OPTS, GrpcTypes.Support.ClientCallOptions)
+                            .addParameter(PROP_CHANNEL, GrpcTypes.ManagedChannel)
+                            .addParameter(PROP_CALL_OPTS, GrpcTypes.Support.ClientCallOptions)
                             .build()
                     )
                     .build()

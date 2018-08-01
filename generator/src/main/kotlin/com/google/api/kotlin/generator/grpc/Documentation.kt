@@ -23,6 +23,7 @@ import com.squareup.kotlinpoet.CodeBlock
 
 /** the top level (class) comment */
 internal class Documentation : AbstractGenerator() {
+
     fun generateClassDoc(ctx: GeneratorContext): CodeBlock {
         val doc = CodeBlock.builder()
         val m = ctx.metadata

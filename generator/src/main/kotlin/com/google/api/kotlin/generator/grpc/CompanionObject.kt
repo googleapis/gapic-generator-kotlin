@@ -27,11 +27,9 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import java.io.InputStream
 
-internal class CompanionObject : AbstractGenerator() {
+internal const val VAL_ALL_SCOPES = "ALL_SCOPES"
 
-    companion object {
-        const val VAL_ALL_SCOPES = "ALL_SCOPES"
-    }
+internal class CompanionObject : AbstractGenerator() {
 
     fun generate(ctx: GeneratorContext): TypeSpec {
         return TypeSpec.companionObjectBuilder()
@@ -174,7 +172,7 @@ internal class CompanionObject : AbstractGenerator() {
             )
             .addAnnotation(JvmStatic::class)
             .addAnnotation(JvmOverloads::class)
-            .addParameter("factory", ClassName("", Stubs.CLASS_NAME, "Factory")
+            .addParameter("factory", ClassName("", CLASS_STUBS, "Factory")
             )
             .addParameter(
                 ParameterSpec.builder(

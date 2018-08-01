@@ -38,16 +38,16 @@ import mu.KotlinLogging
 
 private val log = KotlinLogging.logger {}
 
+internal const val FUN_PREPARE = "prepare"
+
+internal const val PARAM_REQUEST = "request"
+
 private const val PLACEHOLDER_KEYFILE = "< keyfile >"
 
-internal class Functions(private val stubs: Stubs, private val unitTest: UnitTest) :
-    AbstractGenerator() {
-
-    companion object {
-        const val FUN_PREPARE = "prepare"
-
-        const val PARAM_REQUEST = "request"
-    }
+internal class Functions(
+    private val stubs: Stubs,
+    private val unitTest: UnitTest
+) : AbstractGenerator() {
 
     fun generate(ctx: GeneratorContext): List<TestableFunSpec> {
         // we'll use this in the example text
@@ -89,12 +89,12 @@ internal class Functions(private val stubs: Stubs, private val unitTest: UnitTes
                 .addStatement(
                     "val options = %T(%N)",
                     GrpcTypes.Support.ClientCallOptionsBuilder,
-                    Properties.PROP_CALL_OPTS
+                    PROP_CALL_OPTS
                 )
                 .addStatement("options.init()")
                 .addStatement(
                     "return %T(%N, options.build())",
-                    ctx.className, Properties.PROP_CHANNEL
+                    ctx.className, PROP_CHANNEL
                 )
                 .build()
                 .asTestable()
@@ -141,10 +141,12 @@ internal class Functions(private val stubs: Stubs, private val unitTest: UnitTes
         // add normal method
         if (options.keepOriginalMethod) {
             val parameters = listOf(
-                ParameterInfo(ParameterSpec.builder(
-                    PARAM_REQUEST,
-                    ctx.typeMap.getKotlinType(method.inputType)
-                ).build())
+                ParameterInfo(
+                    ParameterSpec.builder(
+                        PARAM_REQUEST,
+                        ctx.typeMap.getKotlinType(method.inputType)
+                    ).build()
+                )
             )
             methods.add(
                 createUnaryMethod(
@@ -202,10 +204,10 @@ internal class Functions(private val stubs: Stubs, private val unitTest: UnitTes
                         |  }, %T::class.java)
                         |""".trimMargin(),
                     returnType,
-                    Properties.PROP_STUBS,
-                    Stubs.PROP_STUBS_OPERATION,
-                    Properties.PROP_STUBS,
-                    Stubs.PROP_STUBS_FUTURE,
+                    PROP_STUBS,
+                    PROP_STUBS_OPERATION,
+                    PROP_STUBS,
+                    PROP_STUBS_FUTURE,
                     methodName, requestObject,
                     realResponseType
                 )
@@ -255,8 +257,8 @@ internal class Functions(private val stubs: Stubs, private val unitTest: UnitTes
                         |    }
                         |}
                         |""".trimMargin(),
-                    Properties.PROP_STUBS,
-                    Stubs.PROP_STUBS_FUTURE,
+                    PROP_STUBS,
+                    PROP_STUBS_FUTURE,
                     methodName,
                     pageSizeSetter,
                     requestObject,
@@ -276,8 +278,8 @@ internal class Functions(private val stubs: Stubs, private val unitTest: UnitTes
                         |  it.%L(%L)
                         |}
                         |""".trimMargin(),
-                    Properties.PROP_STUBS,
-                    Stubs.PROP_STUBS_FUTURE,
+                    PROP_STUBS,
+                    PROP_STUBS_FUTURE,
                     methodName, requestObject
                 )
             }
@@ -322,8 +324,8 @@ internal class Functions(private val stubs: Stubs, private val unitTest: UnitTes
         val normalOutputType = ctx.typeMap.getKotlinType(method.outputType)
 
         // add flattened methods
-        methods.addAll(options.flattenedMethods.map {
-            val (parameters, request) = getFlattenedParameters(ctx, method, it)
+        methods.addAll(options.flattenedMethods.map { flattenedMethod ->
+            val (parameters, request) = getFlattenedParameters(ctx, method, flattenedMethod)
 
             val flattened = FunSpec.builder(methodName)
             if (method.hasClientStreaming() && method.hasServerStreaming()) {
@@ -333,7 +335,7 @@ internal class Functions(private val stubs: Stubs, private val unitTest: UnitTes
                         method,
                         methodName,
                         options.samples,
-                        it,
+                        flattenedMethod,
                         parameters
                     )
                 )
@@ -350,11 +352,19 @@ internal class Functions(private val stubs: Stubs, private val unitTest: UnitTes
                         |stream.requests.send(%L)
                         |return stream
                         |""".trimMargin(),
-                    Properties.PROP_STUBS,
-                    Stubs.PROP_STUBS_STREAM, methodName, request
+                    PROP_STUBS,
+                    PROP_STUBS_STREAM, methodName, request
                 )
             } else if (method.hasClientStreaming()) { // client only
-                flattened.addKdoc(createMethodDoc(ctx, method, methodName, options.samples, it))
+                flattened.addKdoc(
+                    createMethodDoc(
+                        ctx,
+                        method,
+                        methodName,
+                        options.samples,
+                        flattenedMethod
+                    )
+                )
                 flattened.returns(
                     GrpcTypes.Support.ClientStreamingCall(
                         normalInputType,
@@ -363,8 +373,8 @@ internal class Functions(private val stubs: Stubs, private val unitTest: UnitTes
                 )
                 flattened.addCode(
                     "return %N.%N.executeClientStreaming { it::%N }",
-                    Properties.PROP_STUBS,
-                    Stubs.PROP_STUBS_STREAM, methodName
+                    PROP_STUBS,
+                    PROP_STUBS_STREAM, methodName
                 )
             } else if (method.hasServerStreaming()) { // server only
                 flattened.addKdoc(
@@ -373,7 +383,7 @@ internal class Functions(private val stubs: Stubs, private val unitTest: UnitTes
                         method,
                         methodName,
                         options.samples,
-                        it,
+                        flattenedMethod,
                         parameters
                     )
                 )
@@ -385,19 +395,31 @@ internal class Functions(private val stubs: Stubs, private val unitTest: UnitTes
                         |  stub.%N(%L, observer)
                         |}
                         |""".trimMargin(),
-                    Properties.PROP_STUBS,
-                    Stubs.PROP_STUBS_STREAM, methodName, request
+                    PROP_STUBS,
+                    PROP_STUBS_STREAM, methodName, request
                 )
             } else {
                 throw IllegalArgumentException("Unknown streaming type (not client or server)!")
             }
-            TestableFunSpec(flattened.build(), CodeBlock.of("throw Exception()"))
+
+            // generate test
+            val test = unitTest.createStreamingMethodTest(
+                ctx,
+                method,
+                methodName,
+                parameters,
+                flattenedMethod
+            )
+
+            TestableFunSpec(flattened.build(), test)
         })
 
         // unchanged method
         if (options.keepOriginalMethod) {
             val normal = FunSpec.builder(methodName)
                 .addKdoc(createMethodDoc(ctx, method, methodName, options.samples))
+            val parameters = mutableListOf<ParameterInfo>()
+
             if (method.hasClientStreaming() && method.hasServerStreaming()) {
                 normal.returns(
                     GrpcTypes.Support.StreamingCall(
@@ -407,8 +429,8 @@ internal class Functions(private val stubs: Stubs, private val unitTest: UnitTes
                 )
                 normal.addCode(
                     "return %N.%N.executeStreaming { it::%N }",
-                    Properties.PROP_STUBS,
-                    Stubs.PROP_STUBS_STREAM, methodName
+                    PROP_STUBS,
+                    PROP_STUBS_STREAM, methodName
                 )
             } else if (method.hasClientStreaming()) { // client only
                 normal.returns(
@@ -419,11 +441,13 @@ internal class Functions(private val stubs: Stubs, private val unitTest: UnitTes
                 )
                 normal.addCode(
                     "return %N.%N.executeClientStreaming { it::%N }",
-                    Properties.PROP_STUBS,
-                    Stubs.PROP_STUBS_STREAM, methodName
+                    PROP_STUBS,
+                    PROP_STUBS_STREAM, methodName
                 )
             } else if (method.hasServerStreaming()) { // server only
-                normal.addParameter(PARAM_REQUEST, normalInputType)
+                val param = ParameterSpec.builder(PARAM_REQUEST, normalInputType).build()
+                parameters.add(ParameterInfo(param))
+                normal.addParameter(param)
                 normal.returns(GrpcTypes.Support.ServerStreamingCall(normalOutputType))
                 normal.addCode(
                     """
@@ -431,14 +455,25 @@ internal class Functions(private val stubs: Stubs, private val unitTest: UnitTes
                         |  stub.%N(%N, observer)
                         |}
                         |""".trimMargin(),
-                    Properties.PROP_STUBS,
-                    Stubs.PROP_STUBS_STREAM, methodName,
+                    PROP_STUBS,
+                    PROP_STUBS_STREAM, methodName,
                     PARAM_REQUEST
                 )
             } else {
                 throw IllegalArgumentException("Unknown streaming type (not client or server)!")
             }
-            methods.add(TestableFunSpec(normal.build(), CodeBlock.of("throw Exception()")))
+
+            // generate test
+            val test =
+                unitTest.createStreamingMethodTest(
+                    ctx,
+                    method,
+                    methodName,
+                    parameters.toList(),
+                    null
+                )
+
+            methods.add(TestableFunSpec(normal.build(), test))
         }
 
         return methods.toList()
