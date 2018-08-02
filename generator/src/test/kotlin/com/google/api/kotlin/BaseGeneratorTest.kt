@@ -25,19 +25,22 @@ import com.google.api.kotlin.types.GrpcTypes
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.compiler.PluginProtos
 import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.doAnswer
 import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 
 /**
- * Base class for generator tests that includes common plumbing for reading the protos that are used
- * and mocking up the context (see test/resources directory for protos).
+ * Base class for generator tests that includes common plumbing for reading the protos
+ * that are used for mocking the context (see test/resources directory for protos).
  */
 abstract class BaseGeneratorTest {
 
     // namespace of the test protos
+    protected val namespaceKgax = "com.google.kgax"
     protected val namespace = "google.example"
+    protected val classname = ClassName(namespace, "TheTest")
 
     // accessors for the test protos
     protected val generatorRequest = PluginProtos.CodeGeneratorRequest.parseFrom(
@@ -73,57 +76,52 @@ abstract class BaseGeneratorTest {
     // a type map from the protos
     internal fun getMockedTypeMap(): ProtobufTypeMapper {
         return mock {
-            on { getKotlinGrpcType(any(), any()) }.doReturn(ClassName(namespace, "TestStub"))
-            on { getKotlinGrpcType(any(), any(), any()) }.doReturn(ClassName(namespace, "TestStub"))
-            on { getKotlinGrpcTypeInnerClass(any(), any(), any()) }.doReturn(
-                ClassName(
-                    namespace,
-                    "TestStub"
-                )
-            )
-            on { getKotlinGrpcTypeInnerClass(any(), any(), any(), any()) }.doReturn(
-                ClassName(
-                    namespace,
-                    "TestStub"
-                )
-            )
-            on { getKotlinType(any()) }.thenAnswer {
+            on { getKotlinGrpcType(any(), any()) } doReturn ClassName(namespace, "TestStub")
+            on { getKotlinGrpcType(any(), any(), any()) } doReturn ClassName(namespace, "TestStub")
+            on { getKotlinGrpcTypeInnerClass(any(), any(), any()) } doReturn 
+                ClassName(namespace, "TestStub")
+            on { getKotlinGrpcTypeInnerClass(any(), any(), any(), any()) } doReturn 
+                ClassName(namespace, "TestStub")
+            on { getKotlinType(any()) } doAnswer {
                 typesOfMessages[it.arguments[0]]
                     ?: throw RuntimeException("unknown type (forget to add it?): ${it.arguments[0]}")
             }
-            on { hasProtoTypeDescriptor(any()) }.thenAnswer {
+            on { hasProtoTypeDescriptor(any()) } doAnswer {
                 typesOfMessages.containsKey(it.arguments[0])
             }
-            on { getProtoTypeDescriptor(any()) }.thenAnswer {
+            on { getProtoTypeDescriptor(any()) } doAnswer {
                 typesDeclaredIn[it.arguments[0]]
                     ?: throw RuntimeException("unknown proto (forget to add it?)")
             }
         }
     }
 
-    internal fun getMockedConfig(options: ServiceOptions): ConfigurationMetadata {
+    internal fun getMockedConfig(options: ServiceOptions): ConfigurationMetadata =
+        mock {
+            on { host } doReturn "my.host"
+            on { scopes } doReturn listOf("scope_1", "scope_2")
+            on { scopesAsLiteral } doReturn "\"scope_1\", \"scope_2\""
+            on { branding } doReturn BrandingOptions("testing", "just a simple test")
+            on { get(any<String>()) } doReturn options
+            on { get(any<DescriptorProtos.ServiceDescriptorProto>()) } doReturn options
+        }
+
+    internal fun getMockedContext(options: ServiceOptions = ServiceOptions()): GeneratorContext {
+        val config = getMockedConfig(options)
+        val map = getMockedTypeMap()
+
         return mock {
-            on { host }.doReturn("my.host")
-            on { scopes }.doReturn(listOf("scope_1", "scope_2"))
-            on { branding }.doReturn(BrandingOptions("testing", "just a simple test"))
-            on { get(any<String>()) }.doReturn(options)
-            on { get(any<DescriptorProtos.ServiceDescriptorProto>()) }.doReturn(options)
+            on { proto } doReturn generatorRequest.protoFileList.find { it.serviceCount > 0 }!!
+            on { service } doReturn generatorRequest.protoFileList.find { it.serviceCount > 0 }!!.serviceList.first()
+            on { metadata } doReturn config
+            on { className } doReturn classname
+            on { typeMap } doReturn map
         }
     }
 
     // invoke the generator
-    internal fun generate(options: ServiceOptions): List<GeneratedArtifact> {
-        val mockedTypeMap = getMockedTypeMap()
-        val mockedConfig: ConfigurationMetadata = getMockedConfig(options)
-
-        return GRPCGenerator().generateServiceClient(mock {
-            on { proto }.doReturn(generatorRequest.protoFileList.find { it.serviceCount > 0 }!!)
-            on { service }.doReturn(generatorRequest.protoFileList.find { it.serviceCount > 0 }!!.serviceList.first())
-            on { metadata }.doReturn(mockedConfig)
-            on { className }.doReturn(ClassName(namespace, "TheTest"))
-            on { typeMap }.doReturn(mockedTypeMap)
-        })
-    }
+    internal fun generate(options: ServiceOptions) =
+        GRPCGenerator().generateServiceClient(getMockedContext(options))
 
     // helpers to make code a bit shorter when dealing with names
     protected fun messageType(name: String) = ClassName(namespace, name)
@@ -141,12 +139,14 @@ abstract class BaseGeneratorTest {
 }
 
 // ignore indentation in tests
-fun CodeBlock.asNormalizedString(): String {
-    return this.toString().asNormalizedString()
+fun CodeBlock?.asNormalizedString(): String {
+    return this?.toString()?.asNormalizedString() ?:
+        throw IllegalStateException("CodeBlock cannot be null")
 }
 
-fun String.asNormalizedString(marginPrefix: String = "|"): String {
-    return this.trimMargin(marginPrefix).replace("(?m)^(\\s)+".toRegex(), "")
+fun String?.asNormalizedString(marginPrefix: String = "|"): String {
+    return this?.trimMargin(marginPrefix)?.replace("(?m)^(\\s)+".toRegex(), "")?.trim() ?:
+        throw IllegalStateException("String cannot be null")
 }
 
 // non-test sources

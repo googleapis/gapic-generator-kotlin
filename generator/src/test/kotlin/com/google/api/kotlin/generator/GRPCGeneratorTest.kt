@@ -26,6 +26,7 @@ import com.google.api.kotlin.firstType
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.common.truth.Truth.assertThat
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.asTypeName
 import kotlin.test.Test
@@ -37,6 +38,32 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
         val opts = ServiceOptions(listOf())
 
         assertThat(generate(opts).firstType().kdoc.toString()).isNotEmpty()
+    }
+
+    @Test
+    fun `Generates with prepare`() {
+        val opts = ServiceOptions(listOf())
+
+        val methods = generate(opts).firstType().funSpecs
+
+        val method = methods.first { it.name == "prepare" }
+        assertThat(method.returnType).isEqualTo(classname)
+        assertThat(method.parameters).hasSize(1)
+        assertThat(method.parameters.first().name).isEqualTo("init")
+        assertThat(method.parameters.first().type).isEqualTo(
+            LambdaTypeName.get(
+                GrpcTypes.Support.ClientCallOptionsBuilder,
+                listOf(),
+                Unit::class.asTypeName()
+            )
+        )
+        assertThat(method.body.asNormalizedString()).isEqualTo(
+            """
+                |val options = $namespaceKgax.grpc.ClientCallOptions.Builder(options)
+                |options.init()
+                |return ${classname.packageName}.${classname.simpleName}(channel, options.build())
+            """.asNormalizedString()
+        )
     }
 
     @Test
@@ -112,8 +139,58 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
     }
 
     @Test
+    fun `Generates the streamTest method with flattening`() {
+        val opts = ServiceOptions(
+            listOf(
+                MethodOptions(
+                    name = "StreamTest",
+                    flattenedMethods = listOf(
+                        FlattenedMethod(listOf("query")),
+                        FlattenedMethod(listOf("query", "main_detail"))
+                    ),
+                    keepOriginalMethod = false
+                )
+            )
+        )
+
+        val methods = generate(opts).firstType().funSpecs.filter { it.name == "streamTest" }
+        assertThat(methods).hasSize(2)
+
+        val oneParamMethod = methods.first { it.parameters.size == 1 }
+        assertThat(oneParamMethod.returnType).isEqualTo(stream("TestRequest", "TestResponse"))
+        assertThat(oneParamMethod.parameters[0].name).isEqualTo("query")
+        assertThat(oneParamMethod.parameters[0].type).isEqualTo(String::class.asTypeName())
+        assertThat(oneParamMethod.body.asNormalizedString()).isEqualTo(
+            """
+                |val stream = stubs.stream.executeStreaming { it::streamTest }
+                |stream.requests.send($namespace.TestRequest.newBuilder()
+                |    .setQuery(query)
+                |    .build())
+                |return stream
+            """.asNormalizedString()
+        )
+
+        val twoParamMethod = methods.first { it.parameters.size == 2 }
+        assertThat(twoParamMethod.returnType).isEqualTo(stream("TestRequest", "TestResponse"))
+        assertThat(twoParamMethod.parameters[0].name).isEqualTo("query")
+        assertThat(twoParamMethod.parameters[0].type).isEqualTo(String::class.asTypeName())
+        assertThat(twoParamMethod.parameters[1].name).isEqualTo("mainDetail")
+        assertThat(twoParamMethod.parameters[1].type).isEqualTo(messageType("Detail"))
+        assertThat(twoParamMethod.body.asNormalizedString()).isEqualTo(
+            """
+                |val stream = stubs.stream.executeStreaming { it::streamTest }
+                |stream.requests.send($namespace.TestRequest.newBuilder()
+                |    .setQuery(query)
+                |    .setMainDetail(mainDetail)
+                |    .build())
+                |return stream
+            """.asNormalizedString()
+        )
+    }
+
+    @Test
     fun `Generates the streamClientTest method`() {
-        val opts = ServiceOptions(listOf(MethodOptions(name = "StreamTest")))
+        val opts = ServiceOptions(listOf(MethodOptions(name = "StreamClientTest")))
 
         val methods = generate(opts).firstType().funSpecs.filter { it.name == "streamClientTest" }
         assertThat(methods).hasSize(1)
@@ -130,7 +207,7 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
 
     @Test
     fun `Generates the streamServerTest method`() {
-        val opts = ServiceOptions(listOf(MethodOptions(name = "StreamTest")))
+        val opts = ServiceOptions(listOf(MethodOptions(name = "StreamServerTest")))
 
         val methods = generate(opts).firstType().funSpecs.filter { it.name == "streamServerTest" }
         assertThat(methods).hasSize(1)
@@ -144,6 +221,42 @@ class GRPCGeneratorTest : BaseGeneratorTest() {
             """
                 |return stubs.stream.executeServerStreaming { stub, observer ->
                 |  stub.streamServerTest(request, observer)
+                |}
+            """.asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `Generates the streamServerTest method with flattening`() {
+        val opts = ServiceOptions(
+            listOf(
+                MethodOptions(
+                    name = "StreamServerTest",
+                    flattenedMethods = listOf(
+                        FlattenedMethod(listOf("main_detail.even_more"))
+                    ),
+                    keepOriginalMethod = false
+                )
+            )
+        )
+
+        val methods = generate(opts).firstType().funSpecs.filter { it.name == "streamServerTest" }
+        assertThat(methods).hasSize(1)
+
+        val method = methods.first()
+        assertThat(method.returnType).isEqualTo(serverStream("TestResponse"))
+        assertThat(method.parameters).hasSize(1)
+        assertThat(method.parameters.first().name).isEqualTo("evenMore")
+        assertThat(method.parameters.first().type).isEqualTo(messageType("MoreDetail"))
+        assertThat(method.body.asNormalizedString()).isEqualTo(
+            """
+                |return stubs.stream.executeServerStreaming { stub, observer ->
+                |    stub.streamServerTest($namespace.TestRequest.newBuilder()
+                |        .setMainDetail($namespace.Detail.newBuilder()
+                |            .setEvenMore(evenMore)
+                |            .build()
+                |    )
+                |    .build(), observer)
                 |}
             """.asNormalizedString()
         )
