@@ -84,7 +84,7 @@ protobuf {
                     option 'lite'
                 }
                 client {
-                    option "source_directory=${projectDir}/src/main/proto"
+                    option "source=${projectDir}/src/main/proto"
                     //option "fallback"
                 }
             }

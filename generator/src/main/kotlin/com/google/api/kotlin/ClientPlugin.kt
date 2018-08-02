@@ -70,8 +70,8 @@ fun main(args: Array<String>) {
         val pluginsOpts = request.parameter.split(",").map { "--$it" }
         val parser = OptionsParser.newOptionsParser(CLIOptions::class.java)
         parser.parse(pluginsOpts)
-        options = parser.getOptions(CLIOptions::class.java) ?:
-            throw IllegalStateException("Unable to parse options")
+        options = parser.getOptions(CLIOptions::class.java)
+            ?: throw IllegalStateException("Unable to parse options")
     }
 
     // determine source dir

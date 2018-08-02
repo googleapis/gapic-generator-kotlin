@@ -78,9 +78,9 @@ abstract class BaseGeneratorTest {
         return mock {
             on { getKotlinGrpcType(any(), any()) } doReturn ClassName(namespace, "TestStub")
             on { getKotlinGrpcType(any(), any(), any()) } doReturn ClassName(namespace, "TestStub")
-            on { getKotlinGrpcTypeInnerClass(any(), any(), any()) } doReturn 
+            on { getKotlinGrpcTypeInnerClass(any(), any(), any()) } doReturn
                 ClassName(namespace, "TestStub")
-            on { getKotlinGrpcTypeInnerClass(any(), any(), any(), any()) } doReturn 
+            on { getKotlinGrpcTypeInnerClass(any(), any(), any(), any()) } doReturn
                 ClassName(namespace, "TestStub")
             on { getKotlinType(any()) } doAnswer {
                 typesOfMessages[it.arguments[0]]
@@ -140,13 +140,13 @@ abstract class BaseGeneratorTest {
 
 // ignore indentation in tests
 fun CodeBlock?.asNormalizedString(): String {
-    return this?.toString()?.asNormalizedString() ?:
-        throw IllegalStateException("CodeBlock cannot be null")
+    return this?.toString()?.asNormalizedString()
+        ?: throw IllegalStateException("CodeBlock cannot be null")
 }
 
 fun String?.asNormalizedString(marginPrefix: String = "|"): String {
-    return this?.trimMargin(marginPrefix)?.replace("(?m)^(\\s)+".toRegex(), "")?.trim() ?:
-        throw IllegalStateException("String cannot be null")
+    return this?.trimMargin(marginPrefix)?.replace("(?m)^(\\s)+".toRegex(), "")?.trim()
+        ?: throw IllegalStateException("String cannot be null")
 }
 
 // non-test sources

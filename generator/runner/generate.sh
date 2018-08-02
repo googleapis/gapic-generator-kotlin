@@ -14,6 +14,10 @@ while (( "$#" )); do
       SKIP_FORMAT=1
       shift
       ;;
+    --no-compile)
+      SKIP_COMPILE=1
+      shift
+      ;;
     --overwrite)
       DO_OVERWRITE=1
       shift
@@ -48,7 +52,12 @@ fi
 # generate
 echo
 echo "Generating client code..."
-./gradlew build
+if [ -z ${SKIP_COMPILE+x} ]; then
+  ./gradlew build
+else
+  echo "[Skipping compilation step - generate code only]"
+  ./gradlew generateProto
+fi
 echo
 cat /tmp/kotlin_generator.log
 
@@ -70,9 +79,12 @@ if [ -z ${SKIP_FORMAT+x} ]; then
   echo "Linting Kotlin code..."
   echo "  Why? Imports are generated conservatively, and include default imports, to avoid potential name collisions."
   echo "  You may choose to remove them if it is safe to do so."
-  /usr/local/bin/ktlint --color /generated/**/*.kt
+  /usr/local/bin/ktlint --color /generated/**/*.kt || true
 fi
 
 echo
-echo "Successfully generated and compiled your client library."
+echo "Generated artifacts:"
+tree -C /generated
+echo
+echo "Successfully generated your client library."
 echo

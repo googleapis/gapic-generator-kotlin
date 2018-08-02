@@ -74,11 +74,15 @@ ENTRYPOINT exec java -jar /usr/google-java-format/formatter.jar --replace $(find
 
 FROM openjdk:8 as generator
 
-# copy formatter
+# copy formatters
 COPY --from=formatter /usr/ide/intellij /usr/ide/intellij
 COPY --from=formatter /usr/ide/format.xml /usr/ide/format.xml
 COPY --from=ktlint /usr/local/bin/ktlint /usr/local/bin/ktlint
 COPY --from=javaformatter /usr/google-java-format/formatter.jar /usr/google-java-format/formatter.jar
+
+RUN apt-get update && apt-get install -y \
+    tree \
+    && rm -rf /var/lib/apt/lists/*
 
 # TODO: remove when published
 COPY repository /root/.m2/repository
