@@ -99,7 +99,8 @@ WORKDIR /usr/src/generator/runner
 
 # disable gradle daemon
 RUN mkdir -p /root/.gradle && \
-    echo "org.gradle.daemon=false" > /root/.gradle/gradle.properties
+    echo "org.gradle.daemon=false" > /root/.gradle/gradle.properties && \
+    echo "org.gradle.jvmargs=-Xmx4096m -XX:MaxPermSize=4096m" >> /root/.gradle/gradle.properties 
 
 # run a build to cache the build artifacts
 RUN ./gradlew build clean

@@ -85,6 +85,7 @@ protobuf {
                 }
                 client {
                     option "source=${projectDir}/src/main/proto"
+                    option "test_output=${project.buildDir}/generated/source/protoTest/clientTest"
                     //option "fallback"
                 }
             }

@@ -63,6 +63,7 @@ cat /tmp/kotlin_generator.log
 
 # copy generated code
 cp -R build/generated/source/proto/main/* /generated
+cp -R build/generated/source/protoTest/* /generated
 
 # format
 if [ -z ${SKIP_FORMAT+x} ]; then
