@@ -26,12 +26,6 @@ import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 
-internal const val PROP_STUBS_STREAM = "stream"
-internal const val PROP_STUBS_FUTURE = "future"
-internal const val PROP_STUBS_OPERATION = "operation"
-
-internal const val CLASS_STUBS = "Stubs"
-
 /**
  * Generates a type that holder the gRPC stubs that will be used by the client.
  *
@@ -50,6 +44,14 @@ internal interface Stubs {
 
     /** Gets the operations stub type */
     fun getOperationsStubType(ctx: GeneratorContext): ParameterizedTypeName
+
+    companion object {
+        const val PROP_STUBS_STREAM = "stream"
+        const val PROP_STUBS_FUTURE = "future"
+        const val PROP_STUBS_OPERATION = "operation"
+
+        const val CLASS_STUBS = "Stubs"
+    }
 }
 
 internal class StubsImpl : AbstractGenerator(), Stubs {
@@ -59,27 +61,27 @@ internal class StubsImpl : AbstractGenerator(), Stubs {
         val futureType = getFutureStubType(ctx)
         val opType = getOperationsStubType(ctx)
 
-        return TypeSpec.classBuilder(CLASS_STUBS)
+        return TypeSpec.classBuilder(Stubs.CLASS_STUBS)
             .primaryConstructor(
                 FunSpec.constructorBuilder()
-                    .addParameter(PROP_STUBS_STREAM, streamType)
-                    .addParameter(PROP_STUBS_FUTURE, futureType)
-                    .addParameter(PROP_STUBS_OPERATION, opType)
+                    .addParameter(Stubs.PROP_STUBS_STREAM, streamType)
+                    .addParameter(Stubs.PROP_STUBS_FUTURE, futureType)
+                    .addParameter(Stubs.PROP_STUBS_OPERATION, opType)
                     .build()
             )
             .addProperty(
-                PropertySpec.builder(PROP_STUBS_STREAM, streamType)
-                    .initializer(PROP_STUBS_STREAM)
+                PropertySpec.builder(Stubs.PROP_STUBS_STREAM, streamType)
+                    .initializer(Stubs.PROP_STUBS_STREAM)
                     .build()
             )
             .addProperty(
-                PropertySpec.builder(PROP_STUBS_FUTURE, futureType)
-                    .initializer(PROP_STUBS_FUTURE)
+                PropertySpec.builder(Stubs.PROP_STUBS_FUTURE, futureType)
+                    .initializer(Stubs.PROP_STUBS_FUTURE)
                     .build()
             )
             .addProperty(
-                PropertySpec.builder(PROP_STUBS_OPERATION, opType)
-                    .initializer(PROP_STUBS_OPERATION)
+                PropertySpec.builder(Stubs.PROP_STUBS_OPERATION, opType)
+                    .initializer(Stubs.PROP_STUBS_OPERATION)
                     .build()
             )
             .addType(
@@ -87,9 +89,9 @@ internal class StubsImpl : AbstractGenerator(), Stubs {
                     .addFunction(
                         FunSpec.builder("create")
                             .addModifiers(KModifier.ABSTRACT)
-                            .returns(ClassName("", CLASS_STUBS))
-                            .addParameter(PROP_CHANNEL, GrpcTypes.ManagedChannel)
-                            .addParameter(PROP_CALL_OPTS, GrpcTypes.Support.ClientCallOptions)
+                            .returns(ClassName("", Stubs.CLASS_STUBS))
+                            .addParameter(Properties.PROP_CHANNEL, GrpcTypes.ManagedChannel)
+                            .addParameter(Properties.PROP_CALL_OPTS, GrpcTypes.Support.ClientCallOptions)
                             .build()
                     )
                     .build()

@@ -27,14 +27,16 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import java.io.InputStream
 
-internal const val VAL_ALL_SCOPES = "ALL_SCOPES"
-
 /**
  * Generates a companion object for the client, which is responsible for
  * creating instances of the client (i.e. a factory).
  */
 internal interface CompanionObject {
     fun generate(ctx: GeneratorContext): TypeSpec
+
+    companion object {
+        const val VAL_ALL_SCOPES = "ALL_SCOPES"
+    }
 }
 
 internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
@@ -47,7 +49,7 @@ internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
             )
             .addProperty(
                 PropertySpec.builder(
-                    VAL_ALL_SCOPES, List::class.parameterizedBy(String::class)
+                    CompanionObject.VAL_ALL_SCOPES, List::class.parameterizedBy(String::class)
                 )
                     .addAnnotation(JvmStatic::class)
                     .initializer("listOf(%L)", ctx.metadata.scopesAsLiteral)
@@ -78,7 +80,7 @@ internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
                     "scopes",
                     List::class.parameterizedBy(String::class)
                 )
-                    .defaultValue("%N", VAL_ALL_SCOPES)
+                    .defaultValue("%N", CompanionObject.VAL_ALL_SCOPES)
                     .build()
             )
             .addParameter(
@@ -117,7 +119,7 @@ internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
                     "scopes",
                     List::class.parameterizedBy(String::class)
                 )
-                    .defaultValue("%N", VAL_ALL_SCOPES)
+                    .defaultValue("%N", CompanionObject.VAL_ALL_SCOPES)
                     .build()
             )
             .addParameter(
@@ -181,7 +183,7 @@ internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
             .addAnnotation(JvmStatic::class)
             .addAnnotation(JvmOverloads::class)
             .addParameter(
-                "factory", ClassName("", CLASS_STUBS, "Factory")
+                "factory", ClassName("", Stubs.CLASS_STUBS, "Factory")
             )
             .addParameter(
                 ParameterSpec.builder(

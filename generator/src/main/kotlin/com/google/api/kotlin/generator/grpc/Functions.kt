@@ -38,19 +38,20 @@ import mu.KotlinLogging
 
 private val log = KotlinLogging.logger {}
 
-internal const val FUN_PREPARE = "prepare"
-
-internal const val PARAM_REQUEST = "request"
-
 private const val PLACEHOLDER_KEYFILE = "< keyfile >"
 
 /** Generate the API method functions for the client. */
 internal interface Functions {
     fun generate(ctx: GeneratorContext): List<TestableFunSpec>
+
+    companion object {
+        const val FUN_PREPARE = "prepare"
+
+        const val PARAM_REQUEST = "request"
+    }
 }
 
 internal class FunctionsImpl(
-    private val stubs: Stubs,
     private val unitTest: UnitTest
 ) : AbstractGenerator(), Functions {
 
@@ -61,7 +62,7 @@ internal class FunctionsImpl(
 
         // extra methods (not part of the target API)
         val extras = listOf(
-            FunSpec.builder(FUN_PREPARE)
+            FunSpec.builder(Functions.FUN_PREPARE)
                 .addKdoc(
                     """
                         |Prepare for an API call by setting any desired options. For example:
@@ -94,12 +95,12 @@ internal class FunctionsImpl(
                 .addStatement(
                     "val options = %T(%N)",
                     GrpcTypes.Support.ClientCallOptionsBuilder,
-                    PROP_CALL_OPTS
+                    Properties.PROP_CALL_OPTS
                 )
                 .addStatement("options.init()")
                 .addStatement(
                     "return %T(%N, options.build())",
-                    ctx.className, PROP_CHANNEL
+                    ctx.className, Properties.PROP_CHANNEL
                 )
                 .build()
                 .asTestable()
@@ -148,7 +149,7 @@ internal class FunctionsImpl(
             val parameters = listOf(
                 ParameterInfo(
                     ParameterSpec.builder(
-                        PARAM_REQUEST,
+                        Functions.PARAM_REQUEST,
                         ctx.typeMap.getKotlinType(method.inputType)
                     ).build()
                 )
@@ -157,7 +158,7 @@ internal class FunctionsImpl(
                 createUnaryMethod(
                     ctx, method, methodName,
                     parameters = parameters,
-                    requestObject = CodeBlock.of(PARAM_REQUEST),
+                    requestObject = CodeBlock.of(Functions.PARAM_REQUEST),
                     paging = options.pagedResponse,
                     samples = options.samples
                 )
@@ -187,7 +188,7 @@ internal class FunctionsImpl(
             extraParamDocs.add(
                 CodeBlock.of(
                     "@param %L the request object for the API call",
-                    PARAM_REQUEST
+                    Functions.PARAM_REQUEST
                 )
             )
         }
@@ -209,8 +210,8 @@ internal class FunctionsImpl(
                         |  }, %T::class.java)
                         |""".trimMargin(),
                     returnType,
-                    PROP_STUBS, PROP_STUBS_OPERATION,
-                    PROP_STUBS, PROP_STUBS_FUTURE,
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_OPERATION,
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_FUTURE,
                     methodName, requestObject,
                     realResponseType
                 )
@@ -260,7 +261,7 @@ internal class FunctionsImpl(
                         |    }
                         |}
                         |""".trimMargin(),
-                    PROP_STUBS, PROP_STUBS_FUTURE,
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_FUTURE,
                     methodName, pageSizeSetter,
                     requestObject,
                     pageTokenSetter,
@@ -278,7 +279,7 @@ internal class FunctionsImpl(
                         |  it.%L(%L)
                         |}
                         |""".trimMargin(),
-                    PROP_STUBS, PROP_STUBS_FUTURE,
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_FUTURE,
                     methodName, requestObject
                 )
             }
@@ -334,7 +335,7 @@ internal class FunctionsImpl(
                         |stream.requests.send(%L)
                         |return stream
                         |""".trimMargin(),
-                    PROP_STUBS, PROP_STUBS_STREAM, methodName,
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM, methodName,
                     request
                 )
             } else if (method.hasClientStreaming()) { // client only
@@ -350,7 +351,7 @@ internal class FunctionsImpl(
                 )
                 flattened.addCode(
                     "return %N.%N.executeClientStreaming { it::%N }",
-                    PROP_STUBS, PROP_STUBS_STREAM, methodName
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM, methodName
                 )
             } else if (method.hasServerStreaming()) { // server only
                 flattened.addKdoc(
@@ -366,7 +367,7 @@ internal class FunctionsImpl(
                         |  stub.%N(%L, observer)
                         |}
                         |""".trimMargin(),
-                    PROP_STUBS, PROP_STUBS_STREAM,
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM,
                     methodName, request
                 )
             } else {
@@ -395,7 +396,7 @@ internal class FunctionsImpl(
                 )
                 normal.addCode(
                     "return %N.%N.executeStreaming { it::%N }",
-                    PROP_STUBS, PROP_STUBS_STREAM, methodName
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM, methodName
                 )
             } else if (method.hasClientStreaming()) { // client only
                 normal.returns(
@@ -405,10 +406,10 @@ internal class FunctionsImpl(
                 )
                 normal.addCode(
                     "return %N.%N.executeClientStreaming { it::%N }",
-                    PROP_STUBS, PROP_STUBS_STREAM, methodName
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM, methodName
                 )
             } else if (method.hasServerStreaming()) { // server only
-                val param = ParameterSpec.builder(PARAM_REQUEST, normalInputType).build()
+                val param = ParameterSpec.builder(Functions.PARAM_REQUEST, normalInputType).build()
                 parameters.add(ParameterInfo(param))
                 normal.addParameter(param)
                 normal.returns(GrpcTypes.Support.ServerStreamingCall(normalOutputType))
@@ -418,8 +419,8 @@ internal class FunctionsImpl(
                         |  stub.%N(%N, observer)
                         |}
                         |""".trimMargin(),
-                    PROP_STUBS, PROP_STUBS_STREAM,
-                    methodName, PARAM_REQUEST
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM,
+                    methodName, Functions.PARAM_REQUEST
                 )
             } else {
                 throw IllegalArgumentException("Unknown streaming type (not client or server)!")

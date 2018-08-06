@@ -26,8 +26,6 @@ import com.google.api.kotlin.generator.grpc.Documentation
 import com.google.api.kotlin.generator.grpc.DocumentationImpl
 import com.google.api.kotlin.generator.grpc.Functions
 import com.google.api.kotlin.generator.grpc.FunctionsImpl
-import com.google.api.kotlin.generator.grpc.PROP_CALL_OPTS
-import com.google.api.kotlin.generator.grpc.PROP_CHANNEL
 import com.google.api.kotlin.generator.grpc.Properties
 import com.google.api.kotlin.generator.grpc.PropertiesImpl
 import com.google.api.kotlin.generator.grpc.Stubs
@@ -52,7 +50,7 @@ internal class GRPCGenerator(
     private val companion: CompanionObject = CompanionObjectImpl(),
     private val documentation: Documentation = DocumentationImpl(),
     private val unitTests: UnitTest = UnitTestImpl(stubs),
-    private val functions: Functions = FunctionsImpl(stubs, unitTests)
+    private val functions: Functions = FunctionsImpl(unitTests)
 ) : AbstractGenerator(), ClientGenerator {
 
     override fun generateServiceClient(ctx: GeneratorContext): List<GeneratedArtifact> {
@@ -64,8 +62,8 @@ internal class GRPCGenerator(
         // build client
         clientType.addAnnotation(createGeneratedByAnnotation())
         clientType.superclass(GrpcTypes.Support.GrpcClient)
-        clientType.addSuperclassConstructorParameter("%N", PROP_CHANNEL)
-        clientType.addSuperclassConstructorParameter("%N", PROP_CALL_OPTS)
+        clientType.addSuperclassConstructorParameter("%N", Properties.PROP_CHANNEL)
+        clientType.addSuperclassConstructorParameter("%N", Properties.PROP_CALL_OPTS)
         clientType.addKdoc(documentation.generateClassDoc(ctx))
         clientType.primaryConstructor(properties.generatePrimaryConstructor())
         clientType.addProperties(properties.generate(ctx))

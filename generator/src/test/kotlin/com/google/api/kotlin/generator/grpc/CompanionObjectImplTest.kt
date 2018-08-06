@@ -115,7 +115,7 @@ class CompanionObjectImplTest : BaseGeneratorTest() {
     fun `Generates factory with stubs`() {
         testAuthFactoryMethod(
             "fromStubs", arrayOf(
-                Pair("factory", ClassName("", CLASS_STUBS, "Factory")),
+                Pair("factory", ClassName("", Stubs.CLASS_STUBS, "Factory")),
                 Pair("channel", GrpcTypes.ManagedChannel.asNullable()),
                 Pair("options", GrpcTypes.Support.ClientCallOptions.asNullable())
             ),

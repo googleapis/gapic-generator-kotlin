@@ -26,18 +26,20 @@ import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 
-internal const val PROP_CHANNEL = "channel"
-internal const val PROP_CALL_OPTS = "options"
-internal const val PROP_STUBS = "stubs"
-
-internal const val PARAM_FACTORY = "factory"
-
 /**
  * Generates the properties and constructors for the client.
  */
 internal interface Properties {
     fun generate(ctx: GeneratorContext): List<PropertySpec>
     fun generatePrimaryConstructor(): FunSpec
+
+    companion object {
+        const val PROP_CHANNEL = "channel"
+        const val PROP_CALL_OPTS = "options"
+        const val PROP_STUBS = "stubs"
+
+        const val PARAM_FACTORY = "factory"
+    }
 }
 
 internal class PropertiesImpl : AbstractGenerator(), Properties {
@@ -48,35 +50,35 @@ internal class PropertiesImpl : AbstractGenerator(), Properties {
         )
 
         val stub = PropertySpec.builder(
-            PROP_STUBS, ClassName.bestGuess(CLASS_STUBS)
+            Properties.PROP_STUBS, ClassName.bestGuess(Stubs.CLASS_STUBS)
         )
             .addModifiers(KModifier.PRIVATE)
             .initializer(
                 CodeBlock.builder()
                     .add(
                         "%N?.create(%N, %N) ?: %T(\n",
-                        PARAM_FACTORY,
-                        PROP_CHANNEL,
-                        PROP_CALL_OPTS,
-                        ClassName.bestGuess(CLASS_STUBS)
+                        Properties.PARAM_FACTORY,
+                        Properties.PROP_CHANNEL,
+                        Properties.PROP_CALL_OPTS,
+                        ClassName.bestGuess(Stubs.CLASS_STUBS)
                     )
                     .add(
                         "%T.newStub(%N).prepare(%N),\n",
                         grpcType,
-                        PROP_CHANNEL,
-                        PROP_CALL_OPTS
+                        Properties.PROP_CHANNEL,
+                        Properties.PROP_CALL_OPTS
                     )
                     .add(
                         "%T.newFutureStub(%N).prepare(%N),\n",
                         grpcType,
-                        PROP_CHANNEL,
-                        PROP_CALL_OPTS
+                        Properties.PROP_CHANNEL,
+                        Properties.PROP_CALL_OPTS
                     )
                     .add(
                         "%T.newFutureStub(%N).prepare(%N))",
                         GrpcTypes.OperationsGrpc,
-                        PROP_CHANNEL,
-                        PROP_CALL_OPTS
+                        Properties.PROP_CHANNEL,
+                        Properties.PROP_CALL_OPTS
                     )
                     .build()
             )
@@ -88,12 +90,12 @@ internal class PropertiesImpl : AbstractGenerator(), Properties {
     override fun generatePrimaryConstructor(): FunSpec {
         return FunSpec.constructorBuilder()
             .addModifiers(KModifier.PRIVATE)
-            .addParameter(PROP_CHANNEL, GrpcTypes.ManagedChannel)
-            .addParameter(PROP_CALL_OPTS, GrpcTypes.Support.ClientCallOptions)
+            .addParameter(Properties.PROP_CHANNEL, GrpcTypes.ManagedChannel)
+            .addParameter(Properties.PROP_CALL_OPTS, GrpcTypes.Support.ClientCallOptions)
             .addParameter(
                 ParameterSpec.builder(
-                    PARAM_FACTORY,
-                    ClassName("", CLASS_STUBS, "Factory").asNullable()
+                    Properties.PARAM_FACTORY,
+                    ClassName("", Stubs.CLASS_STUBS, "Factory").asNullable()
                 ).defaultValue("null").build()
             ).build()
     }

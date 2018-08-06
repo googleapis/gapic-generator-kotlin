@@ -36,14 +36,6 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 
-const val FUN_GET_CLIENT = "getClient"
-
-internal const val MOCK_STREAM_STUB = "streamingStub"
-internal const val MOCK_FUTURE_STUB = "futureStub"
-internal const val MOCK_OPS_STUB = "operationsStub"
-internal const val MOCK_CHANNEL = "channel"
-internal const val MOCK_CALL_OPTS = "options"
-
 /** Generates the unit tests for the client methods. */
 internal interface UnitTest {
     fun generate(ctx: GeneratorContext, apiMethods: List<TestableFunSpec>): GeneratedSource?
@@ -72,9 +64,19 @@ internal interface UnitTest {
         parameters: List<AbstractGenerator.ParameterInfo>,
         flatteningConfig: FlattenedMethod?
     ): CodeBlock
+
+    companion object {
+        const val FUN_GET_CLIENT = "getClient"
+
+        const val MOCK_STREAM_STUB = "streamingStub"
+        const val MOCK_FUTURE_STUB = "futureStub"
+        const val MOCK_OPS_STUB = "operationsStub"
+        const val MOCK_CHANNEL = "channel"
+        const val MOCK_CALL_OPTS = "options"
+    }
 }
 
-internal class UnitTestImpl(val stubs: Stubs) : AbstractGenerator(), UnitTest {
+internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), UnitTest {
 
     override fun generate(
         ctx: GeneratorContext,
@@ -85,11 +87,11 @@ internal class UnitTestImpl(val stubs: Stubs) : AbstractGenerator(), UnitTest {
 
         // add props (mocks) that will be used by all test methods
         val mocks = mapOf(
-            MOCK_STREAM_STUB to stubs.getStreamStubType(ctx),
-            MOCK_FUTURE_STUB to stubs.getFutureStubType(ctx),
-            MOCK_OPS_STUB to stubs.getOperationsStubType(ctx),
-            MOCK_CHANNEL to GrpcTypes.ManagedChannel,
-            MOCK_CALL_OPTS to GrpcTypes.Support.ClientCallOptions
+            UnitTest.MOCK_STREAM_STUB to stubs.getStreamStubType(ctx),
+            UnitTest.MOCK_FUTURE_STUB to stubs.getFutureStubType(ctx),
+            UnitTest.MOCK_OPS_STUB to stubs.getOperationsStubType(ctx),
+            UnitTest.MOCK_CHANNEL to GrpcTypes.ManagedChannel,
+            UnitTest.MOCK_CALL_OPTS to GrpcTypes.Support.ClientCallOptions
         )
         for ((propName, type) in mocks) {
             unitTestType.addProperty(
@@ -111,7 +113,7 @@ internal class UnitTestImpl(val stubs: Stubs) : AbstractGenerator(), UnitTest {
 
         // add a function to create a client for each test
         unitTestType.addFunction(
-            FunSpec.builder(FUN_GET_CLIENT)
+            FunSpec.builder(UnitTest.FUN_GET_CLIENT)
                 .returns(ctx.className)
                 .addStatement(
                     """
@@ -120,10 +122,11 @@ internal class UnitTestImpl(val stubs: Stubs) : AbstractGenerator(), UnitTest {
                         |        %T.%L(%N, %N, %N)
                         |}, %N, %N)
                         |""".trimMargin(),
-                    ctx.className, ctx.className, CLASS_STUBS,
+                    ctx.className, ctx.className, Stubs.CLASS_STUBS,
                     GrpcTypes.ManagedChannel, GrpcTypes.Support.ClientCallOptions,
-                    ctx.className, CLASS_STUBS, MOCK_STREAM_STUB, MOCK_FUTURE_STUB, MOCK_OPS_STUB,
-                    MOCK_CHANNEL, MOCK_CALL_OPTS
+                    ctx.className, Stubs.CLASS_STUBS,
+                    UnitTest.MOCK_STREAM_STUB, UnitTest.MOCK_FUTURE_STUB, UnitTest.MOCK_OPS_STUB,
+                    UnitTest.MOCK_CHANNEL, UnitTest.MOCK_CALL_OPTS
                 )
                 .build()
         )
@@ -198,7 +201,7 @@ internal class UnitTestImpl(val stubs: Stubs) : AbstractGenerator(), UnitTest {
                |whenever(%N.executeFuture<%T>(any())).thenReturn(future)
                |""".trimMargin(),
             GrpcTypes.Support.FutureCall(originalReturnType),
-            MOCK_FUTURE_STUB, originalReturnType
+            UnitTest.MOCK_FUTURE_STUB, originalReturnType
         )
 
         // if paging add extra mocks for the page handling
@@ -261,7 +264,7 @@ internal class UnitTestImpl(val stubs: Stubs) : AbstractGenerator(), UnitTest {
                 |    verify(mock).%N(%L)
                 |})
                 |""".trimMargin(),
-            MOCK_FUTURE_STUB, originalReturnType,
+            UnitTest.MOCK_FUTURE_STUB, originalReturnType,
             stubs.getFutureStubType(ctx).typeArguments.first(),
             methodName, check
         )
@@ -328,7 +331,7 @@ internal class UnitTestImpl(val stubs: Stubs) : AbstractGenerator(), UnitTest {
         }
         givenBlock.code.addStatement(
             "whenever(%N.%L(any())).thenReturn(streaming)",
-            MOCK_STREAM_STUB,
+            UnitTest.MOCK_STREAM_STUB,
             streamMethod
         )
 
@@ -350,7 +353,7 @@ internal class UnitTestImpl(val stubs: Stubs) : AbstractGenerator(), UnitTest {
                     |    verify(mock).%L(%L, eq(mockObserver))
                     |})
                     |""".trimMargin(),
-                MOCK_STREAM_STUB, streamMethod,
+                UnitTest.MOCK_STREAM_STUB, streamMethod,
                 stubs.getStreamStubType(ctx).typeArguments.first(),
                 GrpcTypes.StreamObserver(originalReturnType),
                 methodName, check
@@ -363,7 +366,7 @@ internal class UnitTestImpl(val stubs: Stubs) : AbstractGenerator(), UnitTest {
                     |    assertEquals(mock::%L, it(mock))
                     |})
                     |""".trimMargin(),
-                MOCK_STREAM_STUB, streamMethod,
+                UnitTest.MOCK_STREAM_STUB, streamMethod,
                 stubs.getStreamStubType(ctx).typeArguments.first(),
                 methodName
             )
@@ -418,7 +421,7 @@ internal class UnitTestImpl(val stubs: Stubs) : AbstractGenerator(), UnitTest {
                 ?: throw IllegalStateException("unable to determine variable name: ${it.spec.name}")
         }
         val testWhen = CodeBlock.builder()
-            .addStatement("val client = %N()", FUN_GET_CLIENT)
+            .addStatement("val client = %N()", UnitTest.FUN_GET_CLIENT)
         if (paging != null && pageSize != null) {
             testWhen.addStatement(
                 "val result = client.%N(${invokeClientParams.joinToString(", ") { "%N" }}, $pageSize)",
