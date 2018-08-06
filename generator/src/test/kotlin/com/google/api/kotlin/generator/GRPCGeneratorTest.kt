@@ -31,7 +31,7 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.asTypeName
 import kotlin.test.Test
 
-class GRPCGeneratorTest : BaseGeneratorTest() {
+internal class GRPCGeneratorTest : BaseGeneratorTest() {
 
     @Test
     fun `Generates with class documentation`() {

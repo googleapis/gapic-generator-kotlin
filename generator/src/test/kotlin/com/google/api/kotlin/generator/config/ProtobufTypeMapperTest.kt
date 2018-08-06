@@ -23,7 +23,7 @@ import com.squareup.kotlinpoet.ClassName
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
-class ProtobufTypeMapperTest : BaseGeneratorTest() {
+internal class ProtobufTypeMapperTest : BaseGeneratorTest() {
 
     @Test
     fun `maps all Kotlin types`() {

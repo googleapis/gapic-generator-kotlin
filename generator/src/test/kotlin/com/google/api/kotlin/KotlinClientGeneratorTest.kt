@@ -29,7 +29,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeSpec
 import kotlin.test.Test
 
-class KotlinClientGeneratorTest : BaseGeneratorTest() {
+internal class KotlinClientGeneratorTest : BaseGeneratorTest() {
 
     @Test
     fun `generates a class with context and a license`() {

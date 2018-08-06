@@ -16,7 +16,6 @@
 
 package com.google.api.kotlin.generator.grpc
 
-import com.google.api.kotlin.BaseGeneratorTest
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.ConfigurationMetadata
@@ -33,7 +32,11 @@ import com.squareup.kotlinpoet.asTypeName
 import java.io.InputStream
 import kotlin.test.Test
 
-class CompanionObjectImplTest : BaseGeneratorTest() {
+private const val namespace = "foo.companion.obj"
+private const val classname = "CompClazz"
+private const val scopes = "\"sc_1\", \"sc_4\", \"sc\""
+
+class CompanionObjectImplTest {
 
     @Test
     fun `Generates default scopes property`() {
@@ -68,7 +71,7 @@ class CompanionObjectImplTest : BaseGeneratorTest() {
             CodeBlock.of(
                 """
                     |val credentials = %T.create(accessToken).createScoped(scopes)
-                    |return $namespace.TheTest(channel ?: createChannel(), %T(%T.from(credentials)))
+                    |return $namespace.$classname(channel ?: createChannel(), %T(%T.from(credentials)))
                 """.trimMargin(),
                 GrpcTypes.Auth.GoogleCredentials,
                 GrpcTypes.Support.ClientCallOptions,
@@ -85,7 +88,7 @@ class CompanionObjectImplTest : BaseGeneratorTest() {
                 Pair("channel", GrpcTypes.ManagedChannel.asNullable())
             ),
             CodeBlock.of(
-                "return $namespace.TheTest(channel ?: createChannel(), %T(%T.from(credentials)))",
+                "return $namespace.$classname(channel ?: createChannel(), %T(%T.from(credentials)))",
                 GrpcTypes.Support.ClientCallOptions,
                 GrpcTypes.Auth.MoreCallCredentials
             )
@@ -103,7 +106,7 @@ class CompanionObjectImplTest : BaseGeneratorTest() {
             CodeBlock.of(
                 """
                     |val credentials = %T.fromStream(keyFile).createScoped(scopes)
-                    |return $namespace.TheTest(channel ?: createChannel(), %T(%T.from(credentials)))
+                    |return $namespace.$classname(channel ?: createChannel(), %T(%T.from(credentials)))
                 """.trimMargin(),
                 GrpcTypes.Auth.GoogleCredentials,
                 GrpcTypes.Support.ClientCallOptions,
@@ -120,7 +123,7 @@ class CompanionObjectImplTest : BaseGeneratorTest() {
                 Pair("options", GrpcTypes.Support.ClientCallOptions.asNullable())
             ),
             CodeBlock.of(
-                "return $namespace.TheTest(channel ?: createChannel(), options ?: %T(), factory)",
+                "return $namespace.$classname(channel ?: createChannel(), options ?: %T(), factory)",
                 GrpcTypes.Support.ClientCallOptions
             )
         )
@@ -131,14 +134,22 @@ class CompanionObjectImplTest : BaseGeneratorTest() {
         params: Array<Pair<String, TypeName>>,
         body: CodeBlock
     ) {
-        val type = CompanionObjectImpl().generate(getMockedContext())
+        val meta: ConfigurationMetadata = mock {
+            on { scopesAsLiteral } doReturn scopes
+        }
+        val ctx: GeneratorContext = mock {
+            on { className } doReturn ClassName(namespace, classname)
+            on { metadata } doReturn meta
+        }
+
+        val type = CompanionObjectImpl().generate(ctx)
 
         val method = type.funSpecs.first { it.name == funName }
         assertThat(method.kdoc.toString()).isNotEmpty()
         assertThat(method.annotations.map { it.type }).containsExactlyElementsIn(
             arrayOf(JvmStatic::class, JvmOverloads::class).map { it.asClassName() }
         )
-        assertThat(method.returnType).isEqualTo(classname)
+        assertThat(method.returnType).isEqualTo(ClassName(namespace, classname))
         assertThat(method.parameters.map { it.name }).containsExactlyElementsIn(
             params.map { it.first }
         ).inOrder()
@@ -150,7 +161,15 @@ class CompanionObjectImplTest : BaseGeneratorTest() {
 
     @Test
     fun `Generates create channel method`() {
-        val type = CompanionObjectImpl().generate(getMockedContext())
+        val meta: ConfigurationMetadata = mock {
+            on { scopesAsLiteral } doReturn scopes
+        }
+        val ctx: GeneratorContext = mock {
+            on { className } doReturn ClassName(namespace, classname)
+            on { metadata } doReturn meta
+        }
+
+        val type = CompanionObjectImpl().generate(ctx)
 
         val method = type.funSpecs.first { it.name == "createChannel" }
         assertThat(method.kdoc.toString()).isNotEmpty()

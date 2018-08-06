@@ -34,8 +34,10 @@ import com.squareup.kotlinpoet.CodeBlock
 /**
  * Base class for generator tests that includes common plumbing for reading the protos
  * that are used for mocking the context (see test/resources directory for protos).
+ *
+ * Not all tests should inherit from this class (only tests that use the test protos).
  */
-abstract class BaseGeneratorTest {
+internal abstract class BaseGeneratorTest {
 
     // namespace of the test protos
     protected val namespaceKgax = "com.google.kgax"
@@ -74,7 +76,7 @@ abstract class BaseGeneratorTest {
         ".$namespace.MoreDetail" to testTypesProto.messageTypeList.find { it.name == "MoreDetail" })
 
     // a type map from the protos
-    internal fun getMockedTypeMap(): ProtobufTypeMapper {
+    protected fun getMockedTypeMap(): ProtobufTypeMapper {
         return mock {
             on { getKotlinGrpcType(any(), any()) } doReturn ClassName(namespace, "TestStub")
             on { getKotlinGrpcType(any(), any(), any()) } doReturn ClassName(namespace, "TestStub")
@@ -96,7 +98,7 @@ abstract class BaseGeneratorTest {
         }
     }
 
-    internal fun getMockedConfig(options: ServiceOptions): ConfigurationMetadata =
+    protected fun getMockedConfig(options: ServiceOptions): ConfigurationMetadata =
         mock {
             on { host } doReturn "my.host"
             on { scopes } doReturn listOf("scope_1", "scope_2")
@@ -106,7 +108,7 @@ abstract class BaseGeneratorTest {
             on { get(any<DescriptorProtos.ServiceDescriptorProto>()) } doReturn options
         }
 
-    internal fun getMockedContext(options: ServiceOptions = ServiceOptions()): GeneratorContext {
+    protected fun getMockedContext(options: ServiceOptions = ServiceOptions()): GeneratorContext {
         val config = getMockedConfig(options)
         val map = getMockedTypeMap()
 
@@ -120,7 +122,7 @@ abstract class BaseGeneratorTest {
     }
 
     // invoke the generator
-    internal fun generate(options: ServiceOptions) =
+    protected fun generate(options: ServiceOptions) =
         GRPCGenerator().generateServiceClient(getMockedContext(options))
 
     // helpers to make code a bit shorter when dealing with names
