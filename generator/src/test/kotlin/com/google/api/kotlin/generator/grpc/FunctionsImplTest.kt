@@ -23,7 +23,6 @@ import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.MethodDescriptorProto
 import com.google.api.kotlin.ServiceDescriptorProto
 import com.google.api.kotlin.TEST_NAMESPACE_KGAX
-import com.google.api.kotlin.TestableFunSpec
 import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.ConfigurationMetadata
 import com.google.api.kotlin.config.FlattenedMethod
