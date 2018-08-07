@@ -117,45 +117,7 @@ class FunctionsImplTest {
         val result = FunctionsImpl(unitTestGen).generate(ctx)
         assertThat(result).hasSize(2)
 
-        validatePrepare(result.first { it.function.name == "prepare" })
-
-        val theFun = result.first { it.function.name == "funFunction" }
-        assertThat(theFun.function.returnType).isEqualTo(
-            futureCall("ZaOutput", packageName = "foo.bar")
-        )
-        assertThat(theFun.function.isConstructor).isFalse()
-        assertThat(theFun.function.isAccessor).isFalse()
-        assertThat(theFun.function.modifiers).isPublic()
-        assertThat(theFun.function.receiverType).isNull()
-        assertThat(theFun.function.typeVariables).isEmpty()
-        assertThat(theFun.function.parameters).hasSize(1)
-        if (hasNormal) {
-            assertThat(theFun.function.parameters[0].name).isEqualTo("request")
-            assertThat(theFun.function.parameters[0].type).isEqualTo(
-                messageType("ZaInput", packageName = "foo.bar")
-            )
-            assertThat(theFun.function.body.asNormalizedString()).isEqualTo(
-                """
-                |return stubs.future.executeFuture {
-                |it.funFunction(request)
-                |}""".asNormalizedString()
-            )
-        }
-        if (hasFlat) {
-            assertThat(theFun.function.parameters[0].name).isEqualTo("daField")
-            assertThat(theFun.function.parameters[0].type).isEqualTo(String::class.asTypeName())
-            assertThat(theFun.function.body.asNormalizedString()).isEqualTo(
-                """
-                |return stubs.future.executeFuture {
-                |it.funFunction(foo.bar.ZaInput.newBuilder()
-                |    .setDaField(daField)
-                |    .build())
-                |}""".asNormalizedString()
-            )
-        }
-    }
-
-    private fun validatePrepare(prepareFun: TestableFunSpec) {
+        val prepareFun = result.first { it.function.name == "prepare" }
         assertThat(prepareFun.function.returnType).isEqualTo(
             messageType("ZaTest", packageName = "foo.bar")
         )
@@ -180,5 +142,41 @@ class FunctionsImplTest {
                 |options.init()
                 |return foo.bar.ZaTest(channel, options.build())""".trimIndent().asNormalizedString()
         )
+
+        val theFun = result.first { it.function.name == "funFunction" }
+        assertThat(theFun.function.returnType).isEqualTo(
+            futureCall("ZaOutput", packageName = "foo.bar")
+        )
+        assertThat(theFun.function.isConstructor).isFalse()
+        assertThat(theFun.function.isAccessor).isFalse()
+        assertThat(theFun.function.modifiers).isPublic()
+        assertThat(theFun.function.receiverType).isNull()
+        assertThat(theFun.function.typeVariables).isEmpty()
+        assertThat(theFun.function.parameters).hasSize(1)
+        if (hasNormal) {
+            assertThat(theFun.function.parameters[0].name).isEqualTo("request")
+            assertThat(theFun.function.parameters[0].type).isEqualTo(
+                messageType("ZaInput", packageName = "foo.bar")
+            )
+            assertThat(theFun.function.body.asNormalizedString()).isEqualTo(
+                """
+                |return stubs.future.executeFuture {
+                |    it.funFunction(request)
+                |}""".asNormalizedString()
+            )
+        }
+        if (hasFlat) {
+            assertThat(theFun.function.parameters[0].name).isEqualTo("daField")
+            assertThat(theFun.function.parameters[0].type).isEqualTo(String::class.asTypeName())
+            assertThat(theFun.function.body.asNormalizedString()).isEqualTo(
+                """
+                |return stubs.future.executeFuture {
+                |it.funFunction(foo.bar.ZaInput.newBuilder()
+                |    .setDaField(daField)
+                |    .build())
+                |}""".asNormalizedString()
+            )
+        }
     }
+
 }
