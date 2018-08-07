@@ -17,12 +17,21 @@
 package com.google.api.kotlin.generator
 
 import com.google.api.kotlin.BaseGeneratorTest
+import com.google.api.kotlin.TEST_CLASSNAME
+import com.google.api.kotlin.TEST_NAMESPACE
+import com.google.api.kotlin.TEST_NAMESPACE_KGAX
 import com.google.api.kotlin.asNormalizedString
+import com.google.api.kotlin.clientStream
 import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.MethodOptions
 import com.google.api.kotlin.config.ServiceOptions
 import com.google.api.kotlin.firstSource
 import com.google.api.kotlin.firstType
+import com.google.api.kotlin.futureCall
+import com.google.api.kotlin.longRunning
+import com.google.api.kotlin.messageType
+import com.google.api.kotlin.serverStream
+import com.google.api.kotlin.stream
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.common.truth.Truth.assertThat
 import com.squareup.kotlinpoet.ClassName
@@ -47,7 +56,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
         val methods = generate(opts).firstType().funSpecs
 
         val method = methods.first { it.name == "prepare" }
-        assertThat(method.returnType).isEqualTo(classname)
+        assertThat(method.returnType).isEqualTo(TEST_CLASSNAME)
         assertThat(method.parameters).hasSize(1)
         assertThat(method.parameters.first().name).isEqualTo("init")
         assertThat(method.parameters.first().type).isEqualTo(
@@ -59,9 +68,9 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
         )
         assertThat(method.body.asNormalizedString()).isEqualTo(
             """
-                |val options = $namespaceKgax.grpc.ClientCallOptions.Builder(options)
+                |val options = $TEST_NAMESPACE_KGAX.grpc.ClientCallOptions.Builder(options)
                 |options.init()
-                |return ${classname.packageName}.${classname.simpleName}(channel, options.build())
+                |return ${TEST_CLASSNAME.packageName}.${TEST_CLASSNAME.simpleName}(channel, options.build())
             """.asNormalizedString()
         )
     }
@@ -163,7 +172,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(oneParamMethod.body.asNormalizedString()).isEqualTo(
             """
                 |val stream = stubs.stream.executeStreaming { it::streamTest }
-                |stream.requests.send($namespace.TestRequest.newBuilder()
+                |stream.requests.send($TEST_NAMESPACE.TestRequest.newBuilder()
                 |    .setQuery(query)
                 |    .build())
                 |return stream
@@ -179,7 +188,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(twoParamMethod.body.asNormalizedString()).isEqualTo(
             """
                 |val stream = stubs.stream.executeStreaming { it::streamTest }
-                |stream.requests.send($namespace.TestRequest.newBuilder()
+                |stream.requests.send($TEST_NAMESPACE.TestRequest.newBuilder()
                 |    .setQuery(query)
                 |    .setMainDetail(mainDetail)
                 |    .build())
@@ -251,8 +260,8 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(method.body.asNormalizedString()).isEqualTo(
             """
                 |return stubs.stream.executeServerStreaming { stub, observer ->
-                |    stub.streamServerTest($namespace.TestRequest.newBuilder()
-                |        .setMainDetail($namespace.Detail.newBuilder()
+                |    stub.streamServerTest($TEST_NAMESPACE.TestRequest.newBuilder()
+                |        .setMainDetail($TEST_NAMESPACE.Detail.newBuilder()
                 |            .setEvenMore(evenMore)
                 |            .build()
                 |    )
@@ -308,7 +317,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             assertThat(this.body.asNormalizedString()).isEqualTo(
                 """
                 |return stubs.future.executeFuture {
-                |  it.testFlat($namespace.TestRequest.newBuilder()
+                |  it.testFlat($TEST_NAMESPACE.TestRequest.newBuilder()
                 |    .setQuery(query)
                 |    .build())
                 |}
@@ -326,7 +335,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             assertThat(this.body.asNormalizedString()).isEqualTo(
                 """
                 |return stubs.future.executeFuture {
-                |  it.testFlat($namespace.TestRequest.newBuilder()
+                |  it.testFlat($TEST_NAMESPACE.TestRequest.newBuilder()
                 |    .setQuery(query)
                 |    .setMainDetail(mainDetail)
                 |    .build())
@@ -363,7 +372,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             assertThat(this.body.asNormalizedString()).isEqualTo(
                 """
                 |return stubs.future.executeFuture {
-                |  it.testFlatWithoutOriginal($namespace.TestRequest.newBuilder()
+                |  it.testFlatWithoutOriginal($TEST_NAMESPACE.TestRequest.newBuilder()
                 |    .setMainDetail(mainDetail)
                 |    .build())
                 |}
@@ -398,8 +407,8 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             assertThat(this.body.asNormalizedString()).isEqualTo(
                 """
                 |return stubs.future.executeFuture {
-                |  it.nestedFlat($namespace.TestRequest.newBuilder()
-                |    .setMainDetail($namespace.Detail.newBuilder()
+                |  it.nestedFlat($TEST_NAMESPACE.TestRequest.newBuilder()
+                |    .setMainDetail($TEST_NAMESPACE.Detail.newBuilder()
                 |      .setEvenMore(evenMore)
                 |      .build()
                 |    )
@@ -438,7 +447,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             assertThat(this.body.asNormalizedString()).isEqualTo(
                 """
                 |return stubs.future.executeFuture {
-                |  it.nestedFlat($namespace.TestRequest.newBuilder()
+                |  it.nestedFlat($TEST_NAMESPACE.TestRequest.newBuilder()
                 |    .addAllMoreDetails(moreDetails)
                 |    .build())
                 |}
@@ -473,8 +482,8 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             assertThat(this.body.asNormalizedString()).isEqualTo(
                 """
                 |return stubs.future.executeFuture {
-                |  it.nestedFlat($namespace.TestRequest.newBuilder()
-                |    .addMoreDetails(0, $namespace.Detail.newBuilder()
+                |  it.nestedFlat($TEST_NAMESPACE.TestRequest.newBuilder()
+                |    .addMoreDetails(0, $TEST_NAMESPACE.Detail.newBuilder()
                 |      .setEvenMore(evenMore)
                 |      .build()
                 |    )
@@ -512,8 +521,8 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             assertThat(this.body.asNormalizedString()).isEqualTo(
                 """
                 |return stubs.future.executeFuture {
-                |  it.nestedFlatPrimitive($namespace.TestRequest.newBuilder()
-                |    .setMainDetail($namespace.Detail.newBuilder()
+                |  it.nestedFlatPrimitive($TEST_NAMESPACE.TestRequest.newBuilder()
+                |    .setMainDetail($TEST_NAMESPACE.Detail.newBuilder()
                 |      .setUseful(useful)
                 |      .build()
                 |    )
