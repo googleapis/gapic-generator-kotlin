@@ -22,20 +22,28 @@ import com.google.api.kotlin.config.ConfigurationMetadata
 import com.google.common.truth.Truth.assertThat
 import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.reset
+import com.nhaarman.mockito_kotlin.whenever
 import com.squareup.kotlinpoet.ClassName
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class CompanionObjectImplTest {
 
+    private val meta: ConfigurationMetadata = mock()
+    private val ctx: GeneratorContext = mock()
+
+    @BeforeTest
+    fun before() {
+        reset(meta, ctx)
+        whenever(ctx.metadata).doReturn(meta)
+    }
+
     @Test
     fun `Generates default scopes property`() {
-        val meta: ConfigurationMetadata = mock {
-            on { scopesAsLiteral } doReturn "\"a\", \"b c d e\""
-        }
-        val ctx: GeneratorContext = mock {
-            on { className } doReturn ClassName("foo.bar", "ScopesTest")
-            on { metadata } doReturn meta
-        }
+        whenever(meta.scopesAsLiteral).doReturn("\"a\", \"b c d e\"")
+        whenever(ctx.className).doReturn(ClassName("foo.bar", "ScopesTest"))
+
         val type = CompanionObjectImpl().generate(ctx)
 
         assertThat(type.propertySpecs).hasSize(1)
@@ -51,13 +59,8 @@ class CompanionObjectImplTest {
 
     @Test
     fun `Generates factory with access token`() {
-        val meta: ConfigurationMetadata = mock {
-            on { scopesAsLiteral } doReturn "\"a\", \"b c d e\""
-        }
-        val ctx: GeneratorContext = mock {
-            on { className } doReturn ClassName("r.r.r", "Clazz")
-            on { metadata } doReturn meta
-        }
+        whenever(meta.scopesAsLiteral).doReturn("\"a\", \"b c d e\"")
+        whenever(ctx.className).doReturn(ClassName("r.r.r", "Clazz"))
 
         val type = CompanionObjectImpl().generate(ctx)
 
@@ -90,13 +93,8 @@ class CompanionObjectImplTest {
 
     @Test
     fun `Generates factory with credentials`() {
-        val meta: ConfigurationMetadata = mock {
-            on { scopesAsLiteral } doReturn "\"a\", \"b c d e\""
-        }
-        val ctx: GeneratorContext = mock {
-            on { className } doReturn ClassName("r.r.r", "Clazz")
-            on { metadata } doReturn meta
-        }
+        whenever(meta.scopesAsLiteral).doReturn("\"a\", \"b c d e\"")
+        whenever(ctx.className).doReturn(ClassName("r.r.r", "Clazz"))
 
         val type = CompanionObjectImpl().generate(ctx)
 
@@ -123,13 +121,8 @@ class CompanionObjectImplTest {
 
     @Test
     fun `Generates factory with serviceAccount`() {
-        val meta: ConfigurationMetadata = mock {
-            on { scopesAsLiteral } doReturn "\"a\", \"b c d e\""
-        }
-        val ctx: GeneratorContext = mock {
-            on { className } doReturn ClassName("r.r.r", "Clazz")
-            on { metadata } doReturn meta
-        }
+        whenever(meta.scopesAsLiteral).doReturn("\"a\", \"b c d e\"")
+        whenever(ctx.className).doReturn(ClassName("r.r.r", "Clazz"))
 
         val type = CompanionObjectImpl().generate(ctx)
 
@@ -160,18 +153,12 @@ class CompanionObjectImplTest {
 
     @Test
     fun `Generates factory with stubs`() {
-        val meta: ConfigurationMetadata = mock {
-            on { scopesAsLiteral } doReturn "\"a\", \"b c d e\""
-        }
-        val ctx: GeneratorContext = mock {
-            on { className } doReturn ClassName("r.r.r", "Clazz")
-            on { metadata } doReturn meta
-        }
+        whenever(meta.scopesAsLiteral).doReturn("\"a\", \"b c d e\"")
+        whenever(ctx.className).doReturn(ClassName("r.r.r", "Clazz"))
 
         val type = CompanionObjectImpl().generate(ctx)
 
         val method = type.funSpecs.first { it.name == "fromStubs" }
-
         assertThat(method.toString().asNormalizedString()).isEqualTo(
             """
             |/**
@@ -198,13 +185,8 @@ class CompanionObjectImplTest {
 
     @Test
     fun `Generates create channel method`() {
-        val meta: ConfigurationMetadata = mock {
-            on { scopesAsLiteral } doReturn "\"x\", \"y\""
-        }
-        val ctx: GeneratorContext = mock {
-            on { className } doReturn ClassName("a.b.c", "Clazz")
-            on { metadata } doReturn meta
-        }
+        whenever(meta.scopesAsLiteral).doReturn("\"x\", \"y\"")
+        whenever(ctx.className).doReturn(ClassName("a.b.c", "Clazz"))
 
         val type = CompanionObjectImpl().generate(ctx)
 
