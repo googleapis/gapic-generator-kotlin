@@ -38,6 +38,7 @@ import com.squareup.kotlinpoet.TypeSpec
 
 /** Generates the unit tests for the client methods. */
 internal interface UnitTest {
+
     fun generate(ctx: GeneratorContext, apiMethods: List<TestableFunSpec>): GeneratedSource?
 
     /**

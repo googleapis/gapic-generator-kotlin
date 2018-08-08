@@ -65,18 +65,18 @@ internal class FunctionsImpl(
             FunSpec.builder(Functions.FUN_PREPARE)
                 .addKdoc(
                     """
-                        |Prepare for an API call by setting any desired options. For example:
-                        |
-                        |```
-                        |val client = %T.fromServiceAccount(%L)
-                        |val response = client.prepare {
-                        |  withMetadata("my-custom-header", listOf("some", "thing"))
-                        |}.%N(request).get()
-                        |```
-                        |
-                        |You may save the client returned by this call and reuse it if you
-                        |plan to make multiple requests with the same settings.
-                        |""".trimMargin(),
+                    |Prepare for an API call by setting any desired options. For example:
+                    |
+                    |```
+                    |val client = %T.fromServiceAccount(%L)
+                    |val response = client.prepare {
+                    |  withMetadata("my-custom-header", listOf("some", "thing"))
+                    |}.%N(request).get()
+                    |```
+                    |
+                    |You may save the client returned by this call and reuse it if you
+                    |plan to make multiple requests with the same settings.
+                    |""".trimMargin(),
                     ctx.className,
                     PLACEHOLDER_KEYFILE, firstMethodName ?: "method"
                 )
@@ -203,12 +203,12 @@ internal class FunctionsImpl(
                 m.returns(returnType)
                 m.addCode(
                     """
-                        |return %T(
-                        |  %N.%N,
-                        |  %N.%N.executeFuture {
-                        |    it.%L(%L)
-                        |  }, %T::class.java)
-                        |""".trimMargin(),
+                    |return %T(
+                    |  %N.%N,
+                    |  %N.%N.executeFuture {
+                    |    it.%L(%L)
+                    |  }, %T::class.java)
+                    |""".trimMargin(),
                     returnType,
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_OPERATION,
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_FUTURE,
@@ -244,23 +244,23 @@ internal class FunctionsImpl(
                 )
                 m.addCode(
                     """
-                        |return pager {
-                        |    method = { request ->
-                        |        %N.%N.executeFuture {
-                        |            it.%L(request.toBuilder().%L(pageSize).build())
-                        |        }.get()
-                        |    }
-                        |    initialRequest = {
-                        |        %L
-                        |    }
-                        |    nextRequest = { request, token ->
-                        |        request.toBuilder().%L(token).build()
-                        |    }
-                        |    nextPage = { response ->
-                        |        %T(response.body.%L, response.body.%L, response.metadata)
-                        |    }
-                        |}
-                        |""".trimMargin(),
+                    |return pager {
+                    |    method = { request ->
+                    |        %N.%N.executeFuture {
+                    |            it.%L(request.toBuilder().%L(pageSize).build())
+                    |        }.get()
+                    |    }
+                    |    initialRequest = {
+                    |        %L
+                    |    }
+                    |    nextRequest = { request, token ->
+                    |        request.toBuilder().%L(token).build()
+                    |    }
+                    |    nextPage = { response ->
+                    |        %T(response.body.%L, response.body.%L, response.metadata)
+                    |    }
+                    |}
+                    |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_FUTURE,
                     methodName, pageSizeSetter,
                     requestObject,
@@ -275,10 +275,10 @@ internal class FunctionsImpl(
                 m.returns(GrpcTypes.Support.FutureCall(originalReturnType))
                 m.addCode(
                     """
-                        |return %N.%N.executeFuture {
-                        |  it.%L(%L)
-                        |}
-                        |""".trimMargin(),
+                    |return %N.%N.executeFuture {
+                    |  it.%L(%L)
+                    |}
+                    |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_FUTURE,
                     methodName, requestObject
                 )
@@ -331,10 +331,10 @@ internal class FunctionsImpl(
                 )
                 flattened.addCode(
                     """
-                        |val stream = %N.%N.executeStreaming { it::%N }
-                        |stream.requests.send(%L)
-                        |return stream
-                        |""".trimMargin(),
+                    |val stream = %N.%N.executeStreaming { it::%N }
+                    |stream.requests.send(%L)
+                    |return stream
+                    |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM, methodName,
                     request
                 )
@@ -363,10 +363,10 @@ internal class FunctionsImpl(
                 flattened.returns(GrpcTypes.Support.ServerStreamingCall(normalOutputType))
                 flattened.addCode(
                     """
-                        |return %N.%N.executeServerStreaming { stub, observer ->
-                        |  stub.%N(%L, observer)
-                        |}
-                        |""".trimMargin(),
+                    |return %N.%N.executeServerStreaming { stub, observer ->
+                    |  stub.%N(%L, observer)
+                    |}
+                    |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM,
                     methodName, request
                 )
@@ -415,10 +415,10 @@ internal class FunctionsImpl(
                 normal.returns(GrpcTypes.Support.ServerStreamingCall(normalOutputType))
                 normal.addCode(
                     """
-                        |return %N.%N.executeServerStreaming { stub, observer ->
-                        |  stub.%N(%N, observer)
-                        |}
-                        |""".trimMargin(),
+                    |return %N.%N.executeServerStreaming { stub, observer ->
+                    |  stub.%N(%N, observer)
+                    |}
+                    |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM,
                     methodName, Functions.PARAM_REQUEST
                 )

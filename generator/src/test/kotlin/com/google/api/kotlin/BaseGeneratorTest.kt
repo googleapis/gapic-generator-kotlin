@@ -173,15 +173,18 @@ fun String?.asNormalizedString(marginPrefix: String = "|"): String {
         ?: throw IllegalStateException("String cannot be null")
 }
 
-// non-test sources
-internal fun List<GeneratedArtifact>.sources(): List<GeneratedSource> = this
+internal fun List<GeneratedArtifact>.sources()= this
     .mapNotNull { it as? GeneratedSource }
     .filter { it.kind == GeneratedSource.Kind.SOURCE }
 
-// first non-test source
-internal fun List<GeneratedArtifact>.firstSource() = this.sources().first()
+internal fun List<GeneratedArtifact>.unitTests() = this
+    .mapNotNull { it as? GeneratedSource }
+    .filter { it.kind == GeneratedSource.Kind.UNIT_TEST }
 
-internal fun List<GeneratedArtifact>.firstType() = this.sources().first().types.first()
+internal fun List<GeneratedArtifact>.firstSourceType() = this.sources().first().types.first()
+internal fun List<GeneratedArtifact>.firstUnitTestType() = this.unitTests().first().types.first()
+
+// misc. proto helpers
 
 fun ServiceDescriptorProto(
     init: DescriptorProtos.ServiceDescriptorProto.Builder.() -> Unit

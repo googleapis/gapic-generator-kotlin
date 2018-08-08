@@ -22,11 +22,10 @@ import com.google.api.kotlin.FileDescriptorProto
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.MethodDescriptorProto
 import com.google.api.kotlin.ServiceDescriptorProto
-import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.ConfigurationMetadata
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.ServiceOptions
-import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth
 import com.google.protobuf.DescriptorProtos
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.doReturn
@@ -34,14 +33,15 @@ import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.whenever
 import com.squareup.kotlinpoet.ClassName
-import kotlin.test.BeforeTest
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import kotlin.test.Test
+import kotlin.test.BeforeTest
 
 // tests basic functionality
 // more complex tests use the test protos in [GRPCGeneratorTest].
-class FunctionsImplTest {
+class UnitTestImplTest {
 
-    private val unitTestGenerator: UnitTest = mock()
+    private val stubGenerator: StubsImpl = mock()
     private val proto: DescriptorProtos.FileDescriptorProto = mock()
     private val service: DescriptorProtos.ServiceDescriptorProto = mock()
     private val meta: ConfigurationMetadata = mock()
@@ -50,7 +50,7 @@ class FunctionsImplTest {
 
     @BeforeTest
     fun before() {
-        reset(unitTestGenerator, proto, service, meta, types, ctx)
+        reset(stubGenerator, proto, service, meta, types, ctx)
         whenever(ctx.proto).doReturn(proto)
         whenever(ctx.service).doReturn(service)
         whenever(ctx.typeMap).doReturn(types)
@@ -59,6 +59,10 @@ class FunctionsImplTest {
 
     @Test
     fun `Generates the prepare fun`() {
+        whenever(stubGenerator.getFutureStubType(ctx)).doReturn(
+            ClassName("hey.there", "Folks").parameterizedBy(ClassName("a.b.c", "Dee"))
+        )
+
         whenever(types.getKotlinType(".foo.bar.ZaInput")).doReturn(
             ClassName("foo.bar", "ZaInput")
         )
@@ -90,30 +94,10 @@ class FunctionsImplTest {
                 })
             })
 
-        val result = FunctionsImpl(unitTestGenerator).generate(ctx)
+        val result = FunctionsImpl(UnitTestImpl(stubGenerator)).generate(ctx)
 
         val prepareFun = result.first { it.function.name == "prepare" }
-        assertThat(prepareFun.function.toString().asNormalizedString()).isEqualTo(
-            """
-            |/**
-            |* Prepare for an API call by setting any desired options. For example:
-            |*
-            |* ```
-            |* val client = foo.bar.ZaTest.fromServiceAccount(< keyfile >)
-            |* val response = client.prepare {
-            |*   withMetadata("my-custom-header", listOf("some", "thing"))
-            |* }.funFunction(request).get()
-            |* ```
-            |*
-            |* You may save the client returned by this call and reuse it if you
-            |* plan to make multiple requests with the same settings.
-            |*/
-            |fun prepare(init: com.google.kgax.grpc.ClientCallOptions.Builder.() -> kotlin.Unit): foo.bar.ZaTest {
-            |    val options = com.google.kgax.grpc.ClientCallOptions.Builder(options)
-            |    options.init()
-            |    return foo.bar.ZaTest(channel, options.build())
-            |}
-            |""".asNormalizedString()
-        )
+        Truth.assertThat(prepareFun.unitTestCode).isNull()
     }
+
 }
