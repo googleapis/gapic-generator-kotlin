@@ -22,7 +22,6 @@ import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.ServiceOptions
 import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.api.kotlin.types.GrpcTypes
-import com.google.common.truth.IterableSubject
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.compiler.PluginProtos
 import com.nhaarman.mockito_kotlin.any
@@ -31,12 +30,10 @@ import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.KModifier
 
 // namespaces of the test protos
-internal const val TEST_NAMESPACE_KGAX = "com.google.kgax"
-internal const val TEST_NAMESPACE = "google.example"
-internal val TEST_CLASSNAME = ClassName(TEST_NAMESPACE, "TheTest")
+private const val TEST_NAMESPACE = "google.example"
+private val TEST_CLASSNAME = ClassName(TEST_NAMESPACE, "TheTest")
 
 /**
  * Base class for generator tests that includes common plumbing for reading the protos
@@ -81,7 +78,10 @@ internal abstract class BaseGeneratorTest {
     protected fun getMockedTypeMap(): ProtobufTypeMapper {
         return mock {
             on { getKotlinGrpcType(any(), any()) } doReturn ClassName(TEST_NAMESPACE, "TestStub")
-            on { getKotlinGrpcType(any(), any(), any()) } doReturn ClassName(TEST_NAMESPACE, "TestStub")
+            on { getKotlinGrpcType(any(), any(), any()) } doReturn ClassName(
+                TEST_NAMESPACE,
+                "TestStub"
+            )
             on { getKotlinGrpcTypeInnerClass(any(), any(), any()) } doReturn
                 ClassName(TEST_NAMESPACE, "TestStub")
             on { getKotlinGrpcTypeInnerClass(any(), any(), any(), any()) } doReturn
@@ -131,13 +131,27 @@ internal abstract class BaseGeneratorTest {
 // helpers to make code a bit shorter when dealing with names
 fun messageType(name: String, packageName: String = "google.example") = ClassName(packageName, name)
 
-fun futureCall(name: String, packageName: String = "google.example") = GrpcTypes.Support.FutureCall(messageType(name, packageName))
-fun longRunning(name: String, packageName: String = "google.example") = GrpcTypes.Support.LongRunningCall(messageType(name, packageName))
-fun stream(requestName: String, responseName: String, packageName: String = "google.example") =
-    GrpcTypes.Support.StreamingCall(messageType(requestName, packageName), messageType(responseName, packageName))
+fun futureCall(name: String, packageName: String = "google.example") =
+    GrpcTypes.Support.FutureCall(messageType(name, packageName))
 
-fun clientStream(requestName: String, responseName: String, packageName: String = "google.example") =
-    GrpcTypes.Support.ClientStreamingCall(messageType(requestName, packageName), messageType(responseName, packageName))
+fun longRunning(name: String, packageName: String = "google.example") =
+    GrpcTypes.Support.LongRunningCall(messageType(name, packageName))
+
+fun stream(requestName: String, responseName: String, packageName: String = "google.example") =
+    GrpcTypes.Support.StreamingCall(
+        messageType(requestName, packageName),
+        messageType(responseName, packageName)
+    )
+
+fun clientStream(
+    requestName: String,
+    responseName: String,
+    packageName: String = "google.example"
+) =
+    GrpcTypes.Support.ClientStreamingCall(
+        messageType(requestName, packageName),
+        messageType(responseName, packageName)
+    )
 
 fun serverStream(responseName: String, packageName: String = "google.example") =
     GrpcTypes.Support.ServerStreamingCall(messageType(responseName, packageName))
@@ -149,7 +163,13 @@ fun CodeBlock?.asNormalizedString(): String {
 }
 
 fun String?.asNormalizedString(marginPrefix: String = "|"): String {
-    return this?.trimMargin(marginPrefix)?.replace("(?m)^(\\s)+".toRegex(), "")?.trim()
+    return this?.trimMargin(marginPrefix)
+        ?.replace("(?m)^(\\s)+".toRegex(), "") // un-indent
+        ?.replace("(?m)(\\s)+$".toRegex(), "") // remove trailing whitespace
+        ?.replace("\n+".toRegex(), " ") // normalize newlines
+        ?.replace("( ", "(")
+        ?.replace(" )", ")")
+        ?.trim()
         ?: throw IllegalStateException("String cannot be null")
 }
 
@@ -187,9 +207,3 @@ fun FieldDescriptorProto(
     init: DescriptorProtos.FieldDescriptorProto.Builder.() -> Unit
 ): DescriptorProtos.FieldDescriptorProto =
     DescriptorProtos.FieldDescriptorProto.newBuilder().apply(init).build()
-
-fun IterableSubject.isPublic() {
-    this.doesNotContain(KModifier.PRIVATE)
-    this.doesNotContain(KModifier.INTERNAL)
-    this.doesNotContain(KModifier.PROTECTED)
-}

@@ -17,27 +17,16 @@
 package com.google.api.kotlin.generator
 
 import com.google.api.kotlin.BaseGeneratorTest
-import com.google.api.kotlin.TEST_CLASSNAME
-import com.google.api.kotlin.TEST_NAMESPACE
-import com.google.api.kotlin.TEST_NAMESPACE_KGAX
 import com.google.api.kotlin.asNormalizedString
-import com.google.api.kotlin.clientStream
 import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.MethodOptions
 import com.google.api.kotlin.config.ServiceOptions
 import com.google.api.kotlin.firstSource
 import com.google.api.kotlin.firstType
-import com.google.api.kotlin.futureCall
-import com.google.api.kotlin.longRunning
-import com.google.api.kotlin.messageType
-import com.google.api.kotlin.serverStream
 import com.google.api.kotlin.stream
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.common.truth.Truth.assertThat
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.LambdaTypeName
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.asTypeName
 import kotlin.test.Test
 
 internal class GRPCGeneratorTest : BaseGeneratorTest() {
@@ -56,22 +45,29 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
         val methods = generate(opts).firstType().funSpecs
 
         val method = methods.first { it.name == "prepare" }
-        assertThat(method.returnType).isEqualTo(TEST_CLASSNAME)
-        assertThat(method.parameters).hasSize(1)
-        assertThat(method.parameters.first().name).isEqualTo("init")
-        assertThat(method.parameters.first().type).isEqualTo(
-            LambdaTypeName.get(
-                GrpcTypes.Support.ClientCallOptionsBuilder,
-                listOf(),
-                Unit::class.asTypeName()
-            )
-        )
-        assertThat(method.body.asNormalizedString()).isEqualTo(
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
             """
-                |val options = $TEST_NAMESPACE_KGAX.grpc.ClientCallOptions.Builder(options)
-                |options.init()
-                |return ${TEST_CLASSNAME.packageName}.${TEST_CLASSNAME.simpleName}(channel, options.build())
-            """.asNormalizedString()
+            |/**
+            |* Prepare for an API call by setting any desired options. For example:
+            |*
+            |* ```
+            |* val client = google.example.TheTest.fromServiceAccount(< keyfile >)
+            |* val response = client.prepare {
+            |*   withMetadata("my-custom-header", listOf("some", "thing"))
+            |* }.test(request).get()
+            |* ```
+            |*
+            |* You may save the client returned by this call and reuse it if you
+            |* plan to make multiple requests with the same settings.
+            |*/
+            |fun prepare(
+            |    init: com.google.kgax.grpc.ClientCallOptions.Builder.() -> kotlin.Unit
+            |): google.example.TheTest {
+            |    val options = com.google.kgax.grpc.ClientCallOptions.Builder(options)
+            |    options.init()
+            |    return google.example.TheTest(channel, options.build())
+            |}
+            |""".asNormalizedString()
         )
     }
 
@@ -93,17 +89,19 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
         val methods = generate(opts).firstType().funSpecs.filter { it.name == "test" }
         assertThat(methods).hasSize(1)
 
-        val method = methods.first()
-        assertThat(method.returnType).isEqualTo(futureCall("TestResponse"))
-        assertThat(method.parameters).hasSize(1)
-        assertThat(method.parameters.first().name).isEqualTo("request")
-        assertThat(method.parameters.first().type).isEqualTo(messageType("TestRequest"))
-        assertThat(method.body.asNormalizedString()).isEqualTo(
+        assertThat(methods.first().toString().asNormalizedString()).isEqualTo(
             """
-                |return stubs.future.executeFuture {
-                |  it.test(request)
-                |}
-            """.asNormalizedString()
+            |/**
+            |*
+            |*
+            |* @param request the request object for the API call
+            |*/
+            |fun test(
+            |    request: google.example.TestRequest
+            |): com.google.kgax.grpc.FutureCall<google.example.TestResponse> = stubs.future.executeFuture {
+            |    it.test(request)
+            |}
+            |""".asNormalizedString()
         )
     }
 
@@ -115,17 +113,20 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
-        assertThat(method.returnType).isEqualTo(longRunning("TestResponse"))
-        assertThat(method.parameters).hasSize(1)
-        assertThat(method.parameters.first().name).isEqualTo("request")
-        assertThat(method.parameters.first().type).isEqualTo(messageType("TestRequest"))
-        assertThat(method.body.asNormalizedString()).isEqualTo(
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
             """
-                |return ${longRunning("TestResponse")}(
-                |  stubs.operation,
-                |  stubs.future.executeFuture {
-                |    it.operationTest(request)
-                |  }, ${messageType("TestResponse")}::class.java)
+            |/**
+            |*
+            |*
+            |* @param request the request object for the API call
+            |*/
+            |fun operationTest(
+            |    request: google.example.TestRequest
+            |): com.google.kgax.grpc.LongRunningCall<google.example.TestResponse> = com.google.kgax.grpc.LongRunningCall<google.example.TestResponse>(
+            |    stubs.operation,
+            |    stubs.future.executeFuture { it.operationTest(request) },
+            |    google.example.TestResponse::class.java
+            |)
             """.asNormalizedString()
         )
     }
@@ -166,34 +167,47 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(methods).hasSize(2)
 
         val oneParamMethod = methods.first { it.parameters.size == 1 }
-        assertThat(oneParamMethod.returnType).isEqualTo(stream("TestRequest", "TestResponse"))
-        assertThat(oneParamMethod.parameters[0].name).isEqualTo("query")
-        assertThat(oneParamMethod.parameters[0].type).isEqualTo(String::class.asTypeName())
-        assertThat(oneParamMethod.body.asNormalizedString()).isEqualTo(
+        assertThat(oneParamMethod.toString().asNormalizedString()).isEqualTo(
             """
-                |val stream = stubs.stream.executeStreaming { it::streamTest }
-                |stream.requests.send($TEST_NAMESPACE.TestRequest.newBuilder()
-                |    .setQuery(query)
-                |    .build())
-                |return stream
-            """.asNormalizedString()
+            |/**
+            |*
+            |*
+            |* @param query
+            |*/
+            |fun streamTest(
+            |    query: kotlin.String
+            |): com.google.kgax.grpc.StreamingCall<google.example.TestRequest, google.example.TestResponse> {
+            |    val stream = stubs.stream.executeStreaming { it::streamTest }
+            |    stream.requests.send(google.example.TestRequest.newBuilder()
+            |        .setQuery(query)
+            |        .build())
+            |    return stream
+            |}
+            |""".asNormalizedString()
         )
 
         val twoParamMethod = methods.first { it.parameters.size == 2 }
-        assertThat(twoParamMethod.returnType).isEqualTo(stream("TestRequest", "TestResponse"))
-        assertThat(twoParamMethod.parameters[0].name).isEqualTo("query")
-        assertThat(twoParamMethod.parameters[0].type).isEqualTo(String::class.asTypeName())
-        assertThat(twoParamMethod.parameters[1].name).isEqualTo("mainDetail")
-        assertThat(twoParamMethod.parameters[1].type).isEqualTo(messageType("Detail"))
-        assertThat(twoParamMethod.body.asNormalizedString()).isEqualTo(
+        assertThat(twoParamMethod.toString().asNormalizedString()).isEqualTo(
             """
-                |val stream = stubs.stream.executeStreaming { it::streamTest }
-                |stream.requests.send($TEST_NAMESPACE.TestRequest.newBuilder()
-                |    .setQuery(query)
-                |    .setMainDetail(mainDetail)
-                |    .build())
-                |return stream
-            """.asNormalizedString()
+            |/**
+            |*
+            |*
+            |* @param query
+            |*
+            |* @param mainDetail
+            |*/
+            |fun streamTest(
+            |    query: kotlin.String,
+            |    mainDetail: google.example.Detail
+            |): com.google.kgax.grpc.StreamingCall<google.example.TestRequest, google.example.TestResponse> {
+            |    val stream = stubs.stream.executeStreaming { it::streamTest }
+            |    stream.requests.send(google.example.TestRequest.newBuilder()
+            |        .setQuery(query)
+            |        .setMainDetail(mainDetail)
+            |        .build())
+            |    return stream
+            |}
+            |""".asNormalizedString()
         )
     }
 
@@ -205,12 +219,15 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
-        assertThat(method.returnType).isEqualTo(clientStream("TestRequest", "TestResponse"))
-        assertThat(method.parameters).isEmpty()
-        assertThat(method.body.asNormalizedString()).isEqualTo(
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
             """
-                |return stubs.stream.executeClientStreaming { it::streamClientTest }
-            """.asNormalizedString()
+            |/**
+            |*
+            |*/
+            |fun streamClientTest(): com.google.kgax.grpc.ClientStreamingCall<google.example.TestRequest, google.example.TestResponse> = stubs.stream.executeClientStreaming {
+            |    it::streamClientTest
+            |}
+            |""".asNormalizedString()
         )
     }
 
@@ -222,16 +239,17 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
-        assertThat(method.returnType).isEqualTo(serverStream("TestResponse"))
-        assertThat(method.parameters).hasSize(1)
-        assertThat(method.parameters.first().name).isEqualTo("request")
-        assertThat(method.parameters.first().type).isEqualTo(messageType("TestRequest"))
-        assertThat(method.body.asNormalizedString()).isEqualTo(
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
             """
-                |return stubs.stream.executeServerStreaming { stub, observer ->
-                |  stub.streamServerTest(request, observer)
-                |}
-            """.asNormalizedString()
+            |/**
+            |*
+            |*/
+            |fun streamServerTest(
+            |    request: google.example.TestRequest
+            |): com.google.kgax.grpc.ServerStreamingCall<google.example.TestResponse> = stubs.stream.executeServerStreaming { stub, observer ->
+            |    stub.streamServerTest(request, observer)
+            |}
+            |""".asNormalizedString()
         )
     }
 
@@ -252,22 +270,22 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
         val methods = generate(opts).firstType().funSpecs.filter { it.name == "streamServerTest" }
         assertThat(methods).hasSize(1)
 
-        val method = methods.first()
-        assertThat(method.returnType).isEqualTo(serverStream("TestResponse"))
-        assertThat(method.parameters).hasSize(1)
-        assertThat(method.parameters.first().name).isEqualTo("evenMore")
-        assertThat(method.parameters.first().type).isEqualTo(messageType("MoreDetail"))
-        assertThat(method.body.asNormalizedString()).isEqualTo(
+        assertThat(methods.first().toString().asNormalizedString()).isEqualTo(
             """
-                |return stubs.stream.executeServerStreaming { stub, observer ->
-                |    stub.streamServerTest($TEST_NAMESPACE.TestRequest.newBuilder()
-                |        .setMainDetail($TEST_NAMESPACE.Detail.newBuilder()
-                |            .setEvenMore(evenMore)
-                |            .build()
-                |    )
-                |    .build(), observer)
-                |}
-            """.asNormalizedString()
+            |/**
+            |*
+            |*/
+            |fun streamServerTest(
+            |    evenMore: google.example.MoreDetail
+            |): com.google.kgax.grpc.ServerStreamingCall<google.example.TestResponse> = stubs.stream.executeServerStreaming { stub, observer ->
+            |    stub.streamServerTest(google.example.TestRequest.newBuilder()
+            |        .setMainDetail(google.example.Detail.newBuilder()
+            |            .setEvenMore(evenMore)
+            |            .build())
+            |        .build(),
+            |    observer)
+            |}
+            |""".asNormalizedString()
         )
     }
 
@@ -288,61 +306,62 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
 
         val methods = generate(opts).firstType().funSpecs.filter { it.name == "testFlat" }
         assertThat(methods).hasSize(3)
-        assertThat(methods.map { it.returnType }).containsExactly(
-            futureCall("TestResponse"),
-            futureCall("TestResponse"),
-            futureCall("TestResponse")
-        )
 
         val original =
-            methods.find { it.parameters.size == 1 && it.parameters[0].name == "request" }
-        assertThat(original).isNotNull()
-        original?.apply {
-            assertThat(parameters.first().name).isEqualTo("request")
-            assertThat(parameters.first().type).isEqualTo(messageType("TestRequest"))
-            assertThat(this.body.asNormalizedString()).isEqualTo(
-                """
-                |return stubs.future.executeFuture {
-                |  it.testFlat(request)
-                |}
-            """.asNormalizedString()
-            )
-        }
+            methods.first { it.parameters.size == 1 && it.parameters[0].name == "request" }
+        assertThat(original.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            |*
+            |*
+            |* @param request the request object for the API call
+            |*/
+            |fun testFlat(
+            |    request: google.example.TestRequest
+            |): com.google.kgax.grpc.FutureCall<google.example.TestResponse> = stubs.future.executeFuture {
+            |    it.testFlat(request)
+            |}
+            |""".asNormalizedString()
+        )
 
-        val oneArg = methods.find { it.parameters.size == 1 && it.parameters[0].name != "request" }
-        assertThat(oneArg).isNotNull()
-        oneArg?.apply {
-            assertThat(parameters.first().name).isEqualTo("query")
-            assertThat(parameters.first().type).isEqualTo(String::class.asTypeName())
-            assertThat(this.body.asNormalizedString()).isEqualTo(
-                """
-                |return stubs.future.executeFuture {
-                |  it.testFlat($TEST_NAMESPACE.TestRequest.newBuilder()
-                |    .setQuery(query)
-                |    .build())
-                |}
-            """.asNormalizedString()
-            )
-        }
+        val oneArg = methods.first { it.parameters.size == 1 && it.parameters[0].name != "request" }
+        assertThat(oneArg.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            |*
+            |*
+            |* @param query
+            |*/
+            |fun testFlat(
+            |    query: kotlin.String
+            |): com.google.kgax.grpc.FutureCall<google.example.TestResponse> = stubs.future.executeFuture {
+            |    it.testFlat(google.example.TestRequest.newBuilder()
+            |        .setQuery(query)
+            |        .build())
+            |}
+            |""".asNormalizedString()
+        )
 
-        val twoArg = methods.find { it.parameters.size == 2 }
-        assertThat(twoArg).isNotNull()
-        twoArg?.apply {
-            assertThat(parameters[0].name).isEqualTo("query")
-            assertThat(parameters[0].type).isEqualTo(String::class.asTypeName())
-            assertThat(parameters[1].name).isEqualTo("mainDetail")
-            assertThat(parameters[1].type).isEqualTo(messageType("Detail"))
-            assertThat(this.body.asNormalizedString()).isEqualTo(
-                """
-                |return stubs.future.executeFuture {
-                |  it.testFlat($TEST_NAMESPACE.TestRequest.newBuilder()
-                |    .setQuery(query)
-                |    .setMainDetail(mainDetail)
-                |    .build())
-                |}
-            """.asNormalizedString()
-            )
-        }
+        val twoArg = methods.first { it.parameters.size == 2 }
+        assertThat(twoArg.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            |*
+            |*
+            |* @param query
+            |*
+            |* @param mainDetail
+            |*/
+            |fun testFlat(
+            |    query: kotlin.String,
+            |    mainDetail: google.example.Detail
+            |): com.google.kgax.grpc.FutureCall<google.example.TestResponse> = stubs.future.executeFuture {
+            |    it.testFlat(google.example.TestRequest.newBuilder()
+            |        .setQuery(query)
+            |        .setMainDetail(mainDetail)
+            |        .build())
+            |}""".asNormalizedString()
+        )
     }
 
     @Test
@@ -362,23 +381,24 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
         val methods =
             generate(opts).firstType().funSpecs.filter { it.name == "testFlatWithoutOriginal" }
         assertThat(methods).hasSize(1)
-        assertThat(methods.map { it.returnType }).containsExactly(futureCall("TestResponse"))
 
-        val oneArg = methods.find { it.parameters.size == 1 }
-        assertThat(oneArg).isNotNull()
-        oneArg?.apply {
-            assertThat(parameters.first().name).isEqualTo("mainDetail")
-            assertThat(parameters.first().type).isEqualTo(messageType("Detail"))
-            assertThat(this.body.asNormalizedString()).isEqualTo(
-                """
-                |return stubs.future.executeFuture {
-                |  it.testFlatWithoutOriginal($TEST_NAMESPACE.TestRequest.newBuilder()
-                |    .setMainDetail(mainDetail)
-                |    .build())
+        val oneArg = methods.first { it.parameters.size == 1 }
+        assertThat(oneArg.toString().asNormalizedString()).isEqualTo(
+            """
+                |/**
+                |*
+                |*
+                |* @param mainDetail
+                |*/
+                |fun testFlatWithoutOriginal(
+                |    mainDetail: google.example.Detail
+                |): com.google.kgax.grpc.FutureCall<google.example.TestResponse> = stubs.future.executeFuture {
+                |    it.testFlatWithoutOriginal(google.example.TestRequest.newBuilder()
+                |        .setMainDetail(mainDetail)
+                |        .build())
                 |}
-            """.asNormalizedString()
-            )
-        }
+                |""".asNormalizedString()
+        )
     }
 
     @Test
@@ -397,26 +417,23 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
 
         val methods = generate(opts).firstType().funSpecs.filter { it.name == "nestedFlat" }
         assertThat(methods).hasSize(1)
-        assertThat(methods.map { it.returnType }).containsExactly(futureCall("TestResponse"))
 
-        val method = methods.find { it.parameters.size == 1 }
-        assertThat(method).isNotNull()
-        method?.apply {
-            assertThat(parameters.first().name).isEqualTo("evenMore")
-            assertThat(parameters.first().type).isEqualTo(messageType("MoreDetail"))
-            assertThat(this.body.asNormalizedString()).isEqualTo(
-                """
-                |return stubs.future.executeFuture {
-                |  it.nestedFlat($TEST_NAMESPACE.TestRequest.newBuilder()
-                |    .setMainDetail($TEST_NAMESPACE.Detail.newBuilder()
-                |      .setEvenMore(evenMore)
-                |      .build()
-                |    )
-                |    .build())
-                |}
-            """.asNormalizedString()
-            )
-        }
+        assertThat(methods.first().toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            |*
+            |*/
+            |fun nestedFlat(
+            |    evenMore: google.example.MoreDetail
+            |): com.google.kgax.grpc.FutureCall<google.example.TestResponse> = stubs.future.executeFuture {
+            |    it.nestedFlat(google.example.TestRequest.newBuilder()
+            |        .setMainDetail(google.example.Detail.newBuilder()
+            |            .setEvenMore(evenMore)
+            |            .build())
+            |        .build())
+            |}
+            |""".asNormalizedString()
+        )
     }
 
     @Test
@@ -435,25 +452,23 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
 
         val methods = generate(opts).firstType().funSpecs.filter { it.name == "nestedFlat" }
         assertThat(methods).hasSize(1)
-        assertThat(methods.map { it.returnType }).containsExactly(futureCall("TestResponse"))
 
-        val method = methods.find { it.parameters.size == 1 }
-        assertThat(method).isNotNull()
-        method?.apply {
-            assertThat(parameters.first().name).isEqualTo("moreDetails")
-            assertThat(parameters.first().type).isEqualTo(
-                List::class.asTypeName().parameterizedBy(messageType("Detail"))
-            )
-            assertThat(this.body.asNormalizedString()).isEqualTo(
-                """
-                |return stubs.future.executeFuture {
-                |  it.nestedFlat($TEST_NAMESPACE.TestRequest.newBuilder()
-                |    .addAllMoreDetails(moreDetails)
-                |    .build())
-                |}
-            """.asNormalizedString()
-            )
-        }
+        assertThat(methods.first().toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            |*
+            |*
+            |* @param moreDetails
+            |*/
+            |fun nestedFlat(
+            |    moreDetails: kotlin.collections.List<google.example.Detail>
+            |): com.google.kgax.grpc.FutureCall<google.example.TestResponse> = stubs.future.executeFuture {
+            |    it.nestedFlat(google.example.TestRequest.newBuilder()
+            |        .addAllMoreDetails(moreDetails)
+            |        .build())
+            |}
+            |""".asNormalizedString()
+        )
     }
 
     @Test
@@ -472,26 +487,24 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
 
         val methods = generate(opts).firstType().funSpecs.filter { it.name == "nestedFlat" }
         assertThat(methods).hasSize(1)
-        assertThat(methods.map { it.returnType }).containsExactly(futureCall("TestResponse"))
 
-        val method = methods.find { it.parameters.size == 1 }
-        assertThat(method).isNotNull()
-        method?.apply {
-            assertThat(parameters.first().name).isEqualTo("evenMore")
-            assertThat(parameters.first().type).isEqualTo(messageType("MoreDetail"))
-            assertThat(this.body.asNormalizedString()).isEqualTo(
-                """
-                |return stubs.future.executeFuture {
-                |  it.nestedFlat($TEST_NAMESPACE.TestRequest.newBuilder()
-                |    .addMoreDetails(0, $TEST_NAMESPACE.Detail.newBuilder()
-                |      .setEvenMore(evenMore)
-                |      .build()
-                |    )
-                |    .build())
-                |}
-            """.asNormalizedString()
-            )
-        }
+        val method = methods.first { it.parameters.size == 1 }
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            |*
+            |*/
+            |fun nestedFlat(
+            |    evenMore: google.example.MoreDetail
+            |): com.google.kgax.grpc.FutureCall<google.example.TestResponse> = stubs.future.executeFuture {
+            |    it.nestedFlat(google.example.TestRequest.newBuilder()
+            |        .addMoreDetails(0, google.example.Detail.newBuilder()
+            |            .setEvenMore(evenMore)
+            |            .build())
+            |        .build())
+            |}
+            |""".asNormalizedString()
+        )
     }
 
     @Test
@@ -511,25 +524,23 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
         val methods =
             generate(opts).firstType().funSpecs.filter { it.name == "nestedFlatPrimitive" }
         assertThat(methods).hasSize(1)
-        assertThat(methods.map { it.returnType }).containsExactly(futureCall("TestResponse"))
 
-        val method = methods.find { it.parameters.size == 1 }
-        assertThat(method).isNotNull()
-        method?.apply {
-            assertThat(parameters.first().name).isEqualTo("useful")
-            assertThat(parameters.first().type).isEqualTo(Boolean::class.asTypeName())
-            assertThat(this.body.asNormalizedString()).isEqualTo(
-                """
-                |return stubs.future.executeFuture {
-                |  it.nestedFlatPrimitive($TEST_NAMESPACE.TestRequest.newBuilder()
-                |    .setMainDetail($TEST_NAMESPACE.Detail.newBuilder()
-                |      .setUseful(useful)
-                |      .build()
-                |    )
-                |    .build())
-                |}
-            """.asNormalizedString()
-            )
-        }
+        val method = methods.first() { it.parameters.size == 1 }
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            |*
+            |*/
+            |fun nestedFlatPrimitive(
+            |    useful: kotlin.Boolean
+            |): com.google.kgax.grpc.FutureCall<google.example.TestResponse> = stubs.future.executeFuture {
+            |    it.nestedFlatPrimitive(google.example.TestRequest.newBuilder()
+            |        .setMainDetail(google.example.Detail.newBuilder()
+            |            .setUseful(useful)
+            |            .build())
+            |        .build())
+            |}
+            |""".asNormalizedString()
+        )
     }
 }

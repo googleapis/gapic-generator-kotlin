@@ -74,7 +74,7 @@ dependencies {
     testImplementation 'com.nhaarman:mockito-kotlin:1.6.0'
     testImplementation "com.google.truth:truth:0.41"
 
-    ktlint "com.github.shyiko:ktlint:0.25.1"
+    ktlint "com.github.shyiko:ktlint:0.27.0"
 }
 
 compileKotlin {

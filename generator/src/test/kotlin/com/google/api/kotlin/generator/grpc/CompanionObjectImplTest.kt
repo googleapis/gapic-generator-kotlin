@@ -19,22 +19,11 @@ package com.google.api.kotlin.generator.grpc
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.ConfigurationMetadata
-import com.google.api.kotlin.types.GrpcTypes
 import com.google.common.truth.Truth.assertThat
 import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.TypeName
-import com.squareup.kotlinpoet.asClassName
-import com.squareup.kotlinpoet.asTypeName
-import java.io.InputStream
 import kotlin.test.Test
-
-private const val namespace = "foo.companion.obj"
-private const val classname = "CompClazz"
-private const val scopes = "\"sc_1\", \"sc_4\", \"sc\""
 
 class CompanionObjectImplTest {
 
@@ -52,148 +41,194 @@ class CompanionObjectImplTest {
         assertThat(type.propertySpecs).hasSize(1)
 
         val prop = type.propertySpecs.first()
-        assertThat(prop.name).isEqualTo("ALL_SCOPES")
-        assertThat(prop.initializer.asNormalizedString()).isEqualTo(
+        assertThat(prop.toString().asNormalizedString()).isEqualTo(
             """
-                |listOf("a", "b c d e")
-            """.asNormalizedString()
+            |@kotlin.jvm.JvmStatic
+            |val ALL_SCOPES: kotlin.collections.List<kotlin.String> = listOf("a", "b c d e")
+            |""".asNormalizedString()
         )
     }
 
     @Test
     fun `Generates factory with access token`() {
-        testAuthFactoryMethod(
-            "fromAccessToken", arrayOf(
-                Pair("accessToken", GrpcTypes.Auth.AccessToken),
-                Pair("scopes", List::class.parameterizedBy(String::class)),
-                Pair("channel", GrpcTypes.ManagedChannel.asNullable())
-            ),
-            CodeBlock.of(
-                """
-                    |val credentials = %T.create(accessToken).createScoped(scopes)
-                    |return $namespace.$classname(channel ?: createChannel(), %T(%T.from(credentials)))
-                """.trimMargin(),
-                GrpcTypes.Auth.GoogleCredentials,
-                GrpcTypes.Support.ClientCallOptions,
-                GrpcTypes.Auth.MoreCallCredentials
-            )
-        )
-    }
-
-    @Test
-    fun `Generates factory with credentials`() {
-        testAuthFactoryMethod(
-            "fromCredentials", arrayOf(
-                Pair("credentials", GrpcTypes.Auth.GoogleCredentials),
-                Pair("channel", GrpcTypes.ManagedChannel.asNullable())
-            ),
-            CodeBlock.of(
-                "return $namespace.$classname(channel ?: createChannel(), %T(%T.from(credentials)))",
-                GrpcTypes.Support.ClientCallOptions,
-                GrpcTypes.Auth.MoreCallCredentials
-            )
-        )
-    }
-
-    @Test
-    fun `Generates factory with serviceAccount`() {
-        testAuthFactoryMethod(
-            "fromServiceAccount", arrayOf(
-                Pair("keyFile", InputStream::class.asTypeName()),
-                Pair("scopes", List::class.parameterizedBy(String::class)),
-                Pair("channel", GrpcTypes.ManagedChannel.asNullable())
-            ),
-            CodeBlock.of(
-                """
-                    |val credentials = %T.fromStream(keyFile).createScoped(scopes)
-                    |return $namespace.$classname(channel ?: createChannel(), %T(%T.from(credentials)))
-                """.trimMargin(),
-                GrpcTypes.Auth.GoogleCredentials,
-                GrpcTypes.Support.ClientCallOptions,
-                GrpcTypes.Auth.MoreCallCredentials)
-        )
-    }
-
-    @Test
-    fun `Generates factory with stubs`() {
-        testAuthFactoryMethod(
-            "fromStubs", arrayOf(
-                Pair("factory", ClassName("", Stubs.CLASS_STUBS, "Factory")),
-                Pair("channel", GrpcTypes.ManagedChannel.asNullable()),
-                Pair("options", GrpcTypes.Support.ClientCallOptions.asNullable())
-            ),
-            CodeBlock.of(
-                "return $namespace.$classname(channel ?: createChannel(), options ?: %T(), factory)",
-                GrpcTypes.Support.ClientCallOptions
-            )
-        )
-    }
-
-    private fun testAuthFactoryMethod(
-        funName: String,
-        params: Array<Pair<String, TypeName>>,
-        body: CodeBlock
-    ) {
         val meta: ConfigurationMetadata = mock {
-            on { scopesAsLiteral } doReturn scopes
+            on { scopesAsLiteral } doReturn "\"a\", \"b c d e\""
         }
         val ctx: GeneratorContext = mock {
-            on { className } doReturn ClassName(namespace, classname)
+            on { className } doReturn ClassName("r.r.r", "Clazz")
             on { metadata } doReturn meta
         }
 
         val type = CompanionObjectImpl().generate(ctx)
 
-        val method = type.funSpecs.first { it.name == funName }
-        assertThat(method.kdoc.toString()).isNotEmpty()
-        assertThat(method.annotations.map { it.type }).containsExactlyElementsIn(
-            arrayOf(JvmStatic::class, JvmOverloads::class).map { it.asClassName() }
+        val method = type.funSpecs.first { it.name == "fromAccessToken" }
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            |* Create a Clazz with the provided [accessToken].
+            |*
+            |* TODO: ADD INFO ABOUT REFRESHING
+            |*
+            |* If a [channel] is not provided one will be created automatically (recommended).
+            |*/
+            |@kotlin.jvm.JvmStatic
+            |@kotlin.jvm.JvmOverloads
+            |fun fromAccessToken(
+            |    accessToken: com.google.auth.oauth2.AccessToken,
+            |    scopes: kotlin.collections.List<kotlin.String> = ALL_SCOPES,
+            |    channel: io.grpc.ManagedChannel? = null
+            |): r.r.r.Clazz {
+            |    val credentials = com.google.auth.oauth2.GoogleCredentials.create(accessToken).createScoped(scopes)
+            |    return r.r.r.Clazz(
+            |        channel ?: createChannel(),
+            |        com.google.kgax.grpc.ClientCallOptions(io.grpc.auth.MoreCallCredentials.from(credentials))
+            |    )
+            |}
+            |""".asNormalizedString()
         )
-        assertThat(method.returnType).isEqualTo(ClassName(namespace, classname))
-        assertThat(method.parameters.map { it.name }).containsExactlyElementsIn(
-            params.map { it.first }
-        ).inOrder()
-        assertThat(method.parameters.map { it.type }).containsExactlyElementsIn(
-            params.map { it.second }
-        ).inOrder()
-        assertThat(method.body.asNormalizedString()).isEqualTo(body.asNormalizedString())
+    }
+
+    @Test
+    fun `Generates factory with credentials`() {
+        val meta: ConfigurationMetadata = mock {
+            on { scopesAsLiteral } doReturn "\"a\", \"b c d e\""
+        }
+        val ctx: GeneratorContext = mock {
+            on { className } doReturn ClassName("r.r.r", "Clazz")
+            on { metadata } doReturn meta
+        }
+
+        val type = CompanionObjectImpl().generate(ctx)
+
+        val method = type.funSpecs.first { it.name == "fromCredentials" }
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            |* Create a Clazz with the provided [credentials].
+            |*
+            |* If a [channel] is not provided one will be created automatically (recommended).
+            |*/
+            |@kotlin.jvm.JvmStatic
+            |@kotlin.jvm.JvmOverloads
+            |fun fromCredentials(
+            |    credentials: com.google.auth.oauth2.GoogleCredentials,
+            |    channel: io.grpc.ManagedChannel? = null
+            |): r.r.r.Clazz = r.r.r.Clazz(
+            |    channel ?: createChannel(),
+            |    com.google.kgax.grpc.ClientCallOptions(io.grpc.auth.MoreCallCredentials.from(credentials))
+            |)
+            |""".asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `Generates factory with serviceAccount`() {
+        val meta: ConfigurationMetadata = mock {
+            on { scopesAsLiteral } doReturn "\"a\", \"b c d e\""
+        }
+        val ctx: GeneratorContext = mock {
+            on { className } doReturn ClassName("r.r.r", "Clazz")
+            on { metadata } doReturn meta
+        }
+
+        val type = CompanionObjectImpl().generate(ctx)
+
+        val method = type.funSpecs.first { it.name == "fromServiceAccount" }
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            |* Create a Clazz with service account credentials from a JSON [keyFile].
+            |*
+            |* If a [channel] is not provided one will be created automatically (recommended).
+            |*/
+            |@kotlin.jvm.JvmStatic
+            |@kotlin.jvm.JvmOverloads
+            |fun fromServiceAccount(
+            |    keyFile: java.io.InputStream,
+            |    scopes: kotlin.collections.List<kotlin.String> = ALL_SCOPES,
+            |    channel: io.grpc.ManagedChannel? = null
+            |): r.r.r.Clazz {
+            |    val credentials = com.google.auth.oauth2.GoogleCredentials.fromStream(keyFile).createScoped(scopes)
+            |    return r.r.r.Clazz(
+            |        channel ?: createChannel(),
+            |        com.google.kgax.grpc.ClientCallOptions(io.grpc.auth.MoreCallCredentials.from(credentials))
+            |    )
+            |}
+            |""".asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `Generates factory with stubs`() {
+        val meta: ConfigurationMetadata = mock {
+            on { scopesAsLiteral } doReturn "\"a\", \"b c d e\""
+        }
+        val ctx: GeneratorContext = mock {
+            on { className } doReturn ClassName("r.r.r", "Clazz")
+            on { metadata } doReturn meta
+        }
+
+        val type = CompanionObjectImpl().generate(ctx)
+
+        val method = type.funSpecs.first { it.name == "fromStubs" }
+
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            |* Create a Clazz with the provided gRPC stubs.
+            |*
+            |* This is an advanced method and should only be used when you need complete
+            |* control over the underlying gRPC stubs that are used by this client.
+            |*
+            |* Prefer to use [fromAccessToken], [fromServiceAccount], or [fromCredentials].
+            |*/
+            |@kotlin.jvm.JvmStatic
+            |@kotlin.jvm.JvmOverloads
+            |fun fromStubs(
+            |    factory: Stubs.Factory,
+            |    channel: io.grpc.ManagedChannel? = null,
+            |    options: com.google.kgax.grpc.ClientCallOptions? = null
+            |): r.r.r.Clazz = r.r.r.Clazz(
+            |    channel ?: createChannel(),
+            |    options ?: com.google.kgax.grpc.ClientCallOptions(), factory
+            |)
+            |""".asNormalizedString()
+        )
     }
 
     @Test
     fun `Generates create channel method`() {
         val meta: ConfigurationMetadata = mock {
-            on { scopesAsLiteral } doReturn scopes
+            on { scopesAsLiteral } doReturn "\"x\", \"y\""
         }
         val ctx: GeneratorContext = mock {
-            on { className } doReturn ClassName(namespace, classname)
+            on { className } doReturn ClassName("a.b.c", "Clazz")
             on { metadata } doReturn meta
         }
 
         val type = CompanionObjectImpl().generate(ctx)
 
         val method = type.funSpecs.first { it.name == "createChannel" }
-        assertThat(method.kdoc.toString()).isNotEmpty()
-        assertThat(method.annotations.map { it.type }).containsExactlyElementsIn(
-            arrayOf(JvmStatic::class, JvmOverloads::class).map { it.asClassName() }
-        )
-        assertThat(method.returnType).isEqualTo(GrpcTypes.ManagedChannel)
-        assertThat(method.parameters.map { it.name }).containsExactly(
-            "host", "port", "enableRetry"
-        ).inOrder()
-        assertThat(method.parameters.map { it.type }).containsExactlyElementsIn(
-            arrayOf(String::class, Int::class, Boolean::class).map { it.asClassName() }
-        ).inOrder()
-        assertThat(method.body.asNormalizedString()).isEqualTo(
-            CodeBlock.of(
-                """
-                    |val builder = %T.forAddress(host, port)
-                    |if (enableRetry) {
-                    |    builder.enableRetry()
-                    |}
-                    |return builder.build()
-                    |""".trimMargin(),
-                GrpcTypes.OkHttpChannelBuilder)
-                .asNormalizedString()
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            |* Create a [ManagedChannel] to use with a Clazz.
+            |*
+            |* Prefer to use the default value with [fromAccessToken], [fromServiceAccount],
+            |* or [fromCredentials] unless you need to customize the channel.
+            |*/
+            |@kotlin.jvm.JvmStatic
+            |@kotlin.jvm.JvmOverloads
+            |fun createChannel(
+            |    host: kotlin.String = null,
+            |    port: kotlin.Int = 443,
+            |    enableRetry: kotlin.Boolean = true
+            |): io.grpc.ManagedChannel {
+            |    val builder = io.grpc.okhttp.OkHttpChannelBuilder.forAddress(host, port)
+            |    if (enableRetry) { builder.enableRetry() }
+            |    return builder.build()
+            |}
+            |""".asNormalizedString()
         )
     }
 }
