@@ -21,6 +21,7 @@ import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.PagedResponse
 import com.google.api.kotlin.config.SampleMethod
 import com.google.api.kotlin.generator.AbstractGenerator
+import com.google.api.kotlin.generator.ParameterInfo
 import com.google.api.kotlin.generator.getMethodComments
 import com.google.api.kotlin.generator.getParameterComments
 import com.google.api.kotlin.generator.isMessageType
@@ -37,7 +38,7 @@ internal interface Documentation {
         methodName: String,
         samples: List<SampleMethod>,
         flatteningConfig: FlattenedMethod? = null,
-        parameters: List<AbstractGenerator.ParameterInfo> = listOf(),
+        parameters: List<ParameterInfo> = listOf(),
         paging: PagedResponse? = null,
         extras: List<CodeBlock> = listOf()
     ): CodeBlock
@@ -93,13 +94,21 @@ internal class DocumentationImpl : AbstractGenerator(), Documentation {
             doc.add(generateMethodSample(ctx, method, methodName, null, flatteningConfig, paging))
         } else {
             for (sample in samples) {
-                doc.add(generateMethodSample(ctx, method, methodName, sample, flatteningConfig, paging))
+                doc.add(
+                    generateMethodSample(
+                        ctx,
+                        method,
+                        methodName,
+                        sample,
+                        flatteningConfig,
+                        paging
+                    )
+                )
             }
         }
 
         // add parameter comments
-        val paramComments = flatteningConfig?.parameters?.mapIndexed { idx, fullPath ->
-            val path = fullPath.split(".")
+        val paramComments = flatteningConfig?.parameters?.mapIndexed { idx, path ->
             val fieldInfo = getProtoFieldInfoForPath(
                 ctx, path, ctx.typeMap.getProtoTypeDescriptor(method.inputType)
             )
@@ -122,28 +131,37 @@ internal class DocumentationImpl : AbstractGenerator(), Documentation {
         sample: SampleMethod?,
         flatteningConfig: FlattenedMethod?,
         paging: PagedResponse? = null
-    ) : CodeBlock {
+    ): CodeBlock {
         val call = CodeBlock.builder()
 
         // create client
         call.addStatement("For example:")
         call.addStatement("```")
-        call.addStatement("val client = getClient_TODO_()")
+        call.addStatement(
+            "val client = %T.fromServiceAccount(YOUR_KEY_FILE)",
+            context.className
+        )
 
+        if (methodName.toLowerCase() == "longRunningRecognize".toLowerCase()) {
+            val x = 4
+        }
         // create inputs
         val inputType = context.typeMap.getProtoTypeDescriptor(method.inputType)
         val invokeClientParams = if (flatteningConfig != null) {
             flatteningConfig.parameters.map { p ->
-                val type = getProtoFieldInfoForPath(context, p.split("."), inputType)
+                val type = getProtoFieldInfoForPath(context, p, inputType)
                 if (type.field.isMessageType()) {
-                    getBuilder(context, type.message, type.kotlinType, listOf(listOf(p)), sample).second
+                    getBuilder(context, type.message, type.kotlinType, listOf(p), sample).second
                 } else {
-                    CodeBlock.of("%L", sample?.parameters?.find { it.parameterPath == p }?.value ?: p)
+                    CodeBlock.of(
+                        "%L",
+                        sample?.parameters?.find { it.parameterPath == p.toString() }?.value ?: p
+                    )
                 }
             }
         } else {
             val inputKotlinType = context.typeMap.getKotlinType(method.inputType)
-            listOf(getBuilder(context, inputType, inputKotlinType, listOf(), sample).second, sample)
+            listOf(getBuilder(context, inputType, inputKotlinType, listOf(), sample).second)
         }
 
         // invoke method

@@ -80,9 +80,9 @@ class MainActivityStreaming : AppCompatActivity() {
                             languageCode = "en-US"
                             encoding = RecognitionConfig.AudioEncoding.LINEAR16
                             sampleRateHertz = 16000
-                            interimResults = false
-                            singleUtterance = false
                         }
+                        interimResults = false
+                        singleUtterance = false
                     })
 
             // monitor the input stream and send requests as audio data becomes available

@@ -21,8 +21,10 @@ import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.TestableFunSpec
 import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.PagedResponse
+import com.google.api.kotlin.config.PropertyPath
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.generator.AbstractGenerator
+import com.google.api.kotlin.generator.ParameterInfo
 import com.google.api.kotlin.generator.ProtoFieldInfo
 import com.google.api.kotlin.generator.describeMap
 import com.google.api.kotlin.generator.isLongRunningOperation
@@ -49,7 +51,7 @@ internal interface UnitTest {
         ctx: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
         methodName: String,
-        parameters: List<AbstractGenerator.ParameterInfo>,
+        parameters: List<ParameterInfo>,
         flatteningConfig: FlattenedMethod?,
         paging: PagedResponse?
     ): CodeBlock
@@ -62,7 +64,7 @@ internal interface UnitTest {
         ctx: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
         methodName: String,
-        parameters: List<AbstractGenerator.ParameterInfo>,
+        parameters: List<ParameterInfo>,
         flatteningConfig: FlattenedMethod?
     ): CodeBlock
 
@@ -471,13 +473,13 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
             check.add("eq(%N)", given.variables.values.map { it.variableName }.first())
         } else {
             val nestedAssert = mutableListOf<CodeBlock>()
-            val paths = flatteningConfig.parameters.map { it.split(".") }
+            val paths = flatteningConfig.parameters
             visitFlattenedMethod(ctx, method, paths, object : Visitor() {
                 override fun onTerminalParam(
-                    currentPath: List<String>,
+                    currentPath: PropertyPath,
                     fieldInfo: ProtoFieldInfo
                 ) {
-                    val key = getAccessorName(currentPath.last())
+                    val key = getAccessorName(currentPath.lastSegment)
                     val accessor = getAccessorCode(ctx.typeMap, fieldInfo)
                     val variable = given.variables[key]?.variableName
                         ?: throw IllegalStateException("Could not locate variable with name: $key")

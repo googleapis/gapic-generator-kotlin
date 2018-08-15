@@ -173,7 +173,7 @@ internal class ConfigurationMetadataFactory(val rootDirectory: String = "") {
             config.interfaces.forEach { service ->
                 services[service.name] = ServiceOptions(service.methods.map { method ->
                     val flattening =
-                        method.flattening?.groups?.map { FlattenedMethod(it.parameters) }
+                        method.flattening?.groups?.map { FlattenedMethod(it.parameters.map { it.asPropertyPath() }) }
                             ?: listOf()
 
                     // collect samples
@@ -228,7 +228,7 @@ internal data class MethodOptions(
 )
 
 /** Flattened method with a list of, potentially nested, [parameters] */
-internal data class FlattenedMethod(val parameters: List<String>)
+internal data class FlattenedMethod(val parameters: List<PropertyPath>)
 
 /** Paged responses */
 internal data class PagedResponse(

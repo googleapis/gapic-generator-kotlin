@@ -24,6 +24,7 @@ import com.google.api.kotlin.config.MethodOptions
 import com.google.api.kotlin.config.PagedResponse
 import com.google.api.kotlin.config.SampleMethod
 import com.google.api.kotlin.generator.AbstractGenerator
+import com.google.api.kotlin.generator.ParameterInfo
 import com.google.api.kotlin.generator.isLongRunningOperation
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.protobuf.DescriptorProtos
@@ -35,8 +36,6 @@ import com.squareup.kotlinpoet.asTypeName
 import mu.KotlinLogging
 
 private val log = KotlinLogging.logger {}
-
-private const val PLACEHOLDER_KEYFILE = "< keyfile >"
 
 /** Generate the API method functions for the client. */
 internal interface Functions {
@@ -66,7 +65,7 @@ internal class FunctionsImpl(
                     |Prepare for an API call by setting any desired options. For example:
                     |
                     |```
-                    |val client = %T.fromServiceAccount(%L)
+                    |val client = %T.fromServiceAccount(YOUR_KEY_FILE)
                     |val response = client.prepare {
                     |    withMetadata("my-custom-header", listOf("some", "thing"))
                     |}.%N(request).get()
@@ -76,7 +75,7 @@ internal class FunctionsImpl(
                     |plan to make multiple requests with the same settings.
                     |""".trimMargin(),
                     ctx.className,
-                    PLACEHOLDER_KEYFILE, firstMethodName ?: "method"
+                    firstMethodName ?: "method"
                 )
                 .returns(ctx.className)
                 .addParameter(
