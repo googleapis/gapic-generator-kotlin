@@ -40,6 +40,8 @@ internal interface GrpcTypes {
             const val SUPPORT_LIB_PACKAGE = "com.google.kgax"
             const val SUPPORT_LIB_GRPC_PACKAGE = "$SUPPORT_LIB_PACKAGE.grpc"
 
+            val ProtoBuilder = ClassName(SUPPORT_LIB_PACKAGE, "ProtoBuilder")
+
             val GrpcClient = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "GrpcClient")
             fun GrpcClientStub(type: TypeName) =
                 ClassName(SUPPORT_LIB_GRPC_PACKAGE, "GrpcClientStub").parameterizedBy(type)

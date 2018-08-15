@@ -20,6 +20,7 @@ import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.PagedResponse
 import com.google.api.kotlin.config.ProtobufTypeMapper
+import com.google.api.kotlin.config.SampleMethod
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.common.base.CaseFormat
 import com.google.protobuf.DescriptorProtos
@@ -33,6 +34,7 @@ import com.squareup.kotlinpoet.INT
 import com.squareup.kotlinpoet.LONG
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asTypeName
 import org.apache.commons.text.WordUtils
 import javax.annotation.Generated
@@ -78,15 +80,14 @@ internal abstract class AbstractGenerator {
         // only support for 0 index is implemented, so bail out if greater
         if (idx > 0) {
             throw IllegalArgumentException(
-                "using a non-zero field index is not supported: ${path.joinToString(
-                    "."
-                )}"
+                "using a non-zero field index is not supported: ${path.joinToString(".")}"
             )
         }
 
         // if no nesting, we're done
         if (path.size == 1) {
-            return ProtoFieldInfo(context.proto, type, field, idx)
+            val kotlinType = field.asClassName(context.typeMap)
+            return ProtoFieldInfo(context.proto, type, field, idx, kotlinType)
         }
 
         if (context.typeMap.hasProtoTypeDescriptor(field.typeName)) {
@@ -131,33 +132,35 @@ internal abstract class AbstractGenerator {
 
     /**
      * A wrapper for a ParameterSpec that includes type information if the parameter is
-     * from a flattened method.
+     * from a flattened method and the path that it was referenced from.
      */
     internal data class ParameterInfo(
         val spec: ParameterSpec,
+        val flattenedPath: List<String>? = null,
         val flattenedFieldInfo: ProtoFieldInfo? = null
     )
 
-    /** Get the parameters to flatten the [method] using the given [config] and [context]. */
-    protected fun getFlattenedParameters(
+    protected fun getBuilder(
         context: GeneratorContext,
-        method: DescriptorProtos.MethodDescriptorProto,
-        config: FlattenedMethod
-    ): FlattenedMethodResult {
-        // inspect the flattening config and build a request object that can be used
-        // to call the method with the input parameters
-        val visitor = object : Visitor() {
-            // params for the method signature
-            lateinit var parameters: List<ParameterInfo>
+        messageType: DescriptorProtos.DescriptorProto,
+        kotlinType: TypeName,
+        propertyPaths: List<List<String>>,
+        sample: SampleMethod? = null
+    ): Pair<List<ParameterInfo>, CodeBlock> {
+        // params for the method signature
+        lateinit var parameters: List<ParameterInfo>
 
-            // the set of builders to be used to create the request object
-            val builders = mutableMapOf<String, CodeBlock.Builder>()
+        // the set of builders to be used to create the request object
+        val builders = mutableMapOf<String, CodeBlock.Builder>()
 
-            // add outermost builder
-            val code = CodeBlock.builder()
-                .add("%T.newBuilder()\n", context.typeMap.getKotlinType(method.inputType))
-                .indent()
+        // add outermost builder
+        val code = CodeBlock.builder()
+            .add("%T.newBuilder()\n", kotlinType)
 
+        // the indent() and unindent() don't work well with kdoc, so do it manually
+        val indent = { level: Int -> " ".repeat(level * 4) }
+
+        this.visitType(context, messageType, propertyPaths, object : Visitor() {
             override fun onBegin(params: List<ParameterInfo>) {
                 parameters = params
             }
@@ -166,12 +169,23 @@ internal abstract class AbstractGenerator {
                 // add to appropriate builder
                 val format = "${getSetterCode(context.typeMap, fieldInfo)}\n"
 
-                val value = getParameterName(fieldInfo.field.name)
+                // check if an explicit value was set for this property
+                // if not use the parameter name
+                val explicitValue = sample?.parameters?.find {
+                    it.parameterPath == currentPath.joinToString(".")
+                }
+                val value = if (explicitValue != null) {
+                    explicitValue.value
+                } else {
+                    getParameterName(fieldInfo.field.name)
+                }
+
+                // set value
                 if (currentPath.size == 1) {
-                    code.add(format, value)
+                    code.add(indent(currentPath.size) + format, value)
                 } else {
                     val key = currentPath.take(currentPath.size - 1).joinToString(".")
-                    builders[key]!!.add(format, value)
+                    builders[key]!!.add(indent(currentPath.size) + format, value)
                 }
             }
 
@@ -181,35 +195,50 @@ internal abstract class AbstractGenerator {
                 if (!builders.containsKey(key)) {
                     val nestedBuilder = CodeBlock.builder()
                         .add(
-                            "%T.newBuilder()\n",
+                            "${indent(currentPath.size)}%T.newBuilder()\n",
                             context.typeMap.getKotlinType(fieldInfo.field.typeName)
                         )
-                        .indent()
                     builders[key] = nestedBuilder
                 }
             }
 
             override fun onEnd() {
-                val requestType = context.typeMap.getProtoTypeDescriptor(method.inputType)
-
                 // close the outermost and nested builders
-                builders.forEach { _, builder -> builder.add(".build()\n").unindent() }
+                builders.forEach { _, builder -> builder.add(".build()\n") }
 
                 // build from innermost to outermost
                 builders.keys.map { it.split(".") }.sortedBy { it.size }.reversed()
                     .forEach { currentPath ->
-                        val fieldInfo = getProtoFieldInfoForPath(context, currentPath, requestType)
+                        val fieldInfo = getProtoFieldInfoForPath(context, currentPath, messageType)
                         val value = builders[currentPath.joinToString(".")]!!.build()
                         code.add("${getSetterCode(context.typeMap, fieldInfo)}\n", value)
                     }
-                code.add(".build()").unindent()
+                code.add("${indent(1)}.build()")
             }
-        }
-        this.visitFlattenedMethod(context, method, config, visitor)
+        })
 
-        // put it all together
-        return FlattenedMethodResult(visitor.parameters, visitor.code.build(), config)
+        return Pair(parameters, code.build())
     }
+
+    /** Get the parameters to flatten the [method] using the given [config] and [context]. */
+    protected fun getFlattenedParameters(
+        context: GeneratorContext,
+        method: DescriptorProtos.MethodDescriptorProto,
+        config: FlattenedMethod
+    ): FlattenedMethodResult {
+        val paths = config.parameters.map { it.split(".") }
+        val protoType = context.typeMap.getProtoTypeDescriptor(method.inputType)
+        val kotlinType = context.typeMap.getKotlinType(method.inputType)
+        val (parameters, requestObj) = getBuilder(context, protoType, kotlinType, paths)
+        return FlattenedMethodResult(parameters, requestObj, config)
+    }
+
+    protected fun visitFlattenedMethod(
+        context: GeneratorContext,
+        method: DescriptorProtos.MethodDescriptorProto,
+        parametersAsPaths: List<List<String>>,
+        visitor: Visitor
+    ) = visitType(context, context.typeMap.getProtoTypeDescriptor(method.inputType), parametersAsPaths, visitor)
 
     protected abstract class Visitor {
         open fun onBegin(params: List<ParameterInfo>) {}
@@ -218,16 +247,12 @@ internal abstract class AbstractGenerator {
         open fun onTerminalParam(currentPath: List<String>, fieldInfo: ProtoFieldInfo) {}
     }
 
-    protected fun visitFlattenedMethod(
+    protected fun visitType(
         context: GeneratorContext,
-        method: DescriptorProtos.MethodDescriptorProto,
-        config: FlattenedMethod,
+        requestType: DescriptorProtos.DescriptorProto,
+        parametersAsPaths: List<List<String>>,
         visitor: Visitor
     ) {
-        // get request type
-        val requestType = context.typeMap.getProtoTypeDescriptor(method.inputType)
-        val parametersAsPaths = config.parameters.map { it.split(".") }
-
         // create parameter list
         val parameters = parametersAsPaths.map { path ->
             val fieldInfo = getProtoFieldInfoForPath(context, path, requestType)
@@ -244,11 +269,11 @@ internal abstract class AbstractGenerator {
                 else -> rawType
             }
             val spec = ParameterSpec.builder(getParameterName(path.last()), typeName).build()
-            ParameterInfo(spec, fieldInfo)
+            ParameterInfo(spec, path, fieldInfo)
         }
         visitor.onBegin(parameters)
 
-        // go through the nest properties from left to right
+        // go through the nested properties from left to right
         val maxWidth = parametersAsPaths.map { it.size }.max() ?: 0
         for (i in 1..maxWidth) {
             // terminal node - set the value
@@ -273,7 +298,7 @@ internal abstract class AbstractGenerator {
 
     // TODO: update to use the generated builders?
     // create setter code based on type of field (map vs. repeated, vs. single object)
-    private fun getSetterCode(typeMap: ProtobufTypeMapper, fieldInfo: ProtoFieldInfo): String {
+    protected fun getSetterCode(typeMap: ProtobufTypeMapper, fieldInfo: ProtoFieldInfo): String {
         if (fieldInfo.field.isMap(typeMap)) {
             return ".${getSetterMapName(fieldInfo.field.name)}(%L)"
         } else if (fieldInfo.field.isRepeated()) {
@@ -336,7 +361,8 @@ internal data class ProtoFieldInfo(
     val file: DescriptorProtos.FileDescriptorProto,
     val message: DescriptorProtos.DescriptorProto,
     val field: DescriptorProtos.FieldDescriptorProto,
-    val index: Int = -1
+    val index: Int = -1,
+    val kotlinType: TypeName
 )
 
 /** Checks if this methods is a LRO. */
@@ -432,3 +458,23 @@ internal fun DescriptorProtos.FieldDescriptorProto.asClassName(typeMap: Protobuf
         }
     }
 }
+
+internal fun DescriptorProtos.FieldDescriptorProto.isMessageType(): Boolean =
+    when (this.type) {
+        DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING -> false
+        DescriptorProtos.FieldDescriptorProto.Type.TYPE_BOOL -> false
+        DescriptorProtos.FieldDescriptorProto.Type.TYPE_DOUBLE -> false
+        DescriptorProtos.FieldDescriptorProto.Type.TYPE_FLOAT -> false
+        DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32 -> false
+        DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT32 -> false
+        DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED32 -> false
+        DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED32 -> false
+        DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT32 -> false
+        DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64 -> false
+        DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT64 -> false
+        DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED64 -> false
+        DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED64 -> false
+        DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT64 -> false
+        DescriptorProtos.FieldDescriptorProto.Type.TYPE_BYTES -> false
+        else -> true
+    }

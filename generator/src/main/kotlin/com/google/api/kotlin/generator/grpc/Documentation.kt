@@ -17,18 +17,35 @@
 package com.google.api.kotlin.generator.grpc
 
 import com.google.api.kotlin.GeneratorContext
+import com.google.api.kotlin.config.FlattenedMethod
+import com.google.api.kotlin.config.PagedResponse
+import com.google.api.kotlin.config.SampleMethod
 import com.google.api.kotlin.generator.AbstractGenerator
+import com.google.api.kotlin.generator.getMethodComments
+import com.google.api.kotlin.generator.getParameterComments
+import com.google.api.kotlin.generator.isMessageType
 import com.google.api.kotlin.generator.wrap
+import com.google.protobuf.DescriptorProtos
 import com.squareup.kotlinpoet.CodeBlock
 
-/** Generates the top level (class) documentation. */
+/** Generates the KDoc documentation. */
 internal interface Documentation {
-    fun generateClassDoc(ctx: GeneratorContext): CodeBlock
+    fun generateClassKDoc(ctx: GeneratorContext): CodeBlock
+    fun generateMethodKDoc(
+        ctx: GeneratorContext,
+        method: DescriptorProtos.MethodDescriptorProto,
+        methodName: String,
+        samples: List<SampleMethod>,
+        flatteningConfig: FlattenedMethod? = null,
+        parameters: List<AbstractGenerator.ParameterInfo> = listOf(),
+        paging: PagedResponse? = null,
+        extras: List<CodeBlock> = listOf()
+    ): CodeBlock
 }
 
 internal class DocumentationImpl : AbstractGenerator(), Documentation {
 
-    override fun generateClassDoc(ctx: GeneratorContext): CodeBlock {
+    override fun generateClassKDoc(ctx: GeneratorContext): CodeBlock {
         val doc = CodeBlock.builder()
         val m = ctx.metadata
 
@@ -47,5 +64,107 @@ internal class DocumentationImpl : AbstractGenerator(), Documentation {
         // TODO: add other sections (quick start, etc.)
 
         return doc.build()
+    }
+
+    // create method comments from proto comments
+    override fun generateMethodKDoc(
+        ctx: GeneratorContext,
+        method: DescriptorProtos.MethodDescriptorProto,
+        methodName: String,
+        samples: List<SampleMethod>,
+        flatteningConfig: FlattenedMethod?,
+        parameters: List<ParameterInfo>,
+        paging: PagedResponse?,
+        extras: List<CodeBlock>
+    ): CodeBlock {
+        val doc = CodeBlock.builder()
+
+        // remove the spacing from proto files
+        fun cleanupComment(text: String?) = text
+            ?.replace("\\n\\s".toRegex(), "\n")
+            ?.trim()
+
+        // add proto comments
+        val text = ctx.proto.getMethodComments(ctx.service, method)
+        doc.add("%L\n\n", cleanupComment(text) ?: "")
+
+        // add any samples
+        if (samples.isEmpty()) {
+            doc.add(generateMethodSample(ctx, method, methodName, null, flatteningConfig, paging))
+        } else {
+            for (sample in samples) {
+                doc.add(generateMethodSample(ctx, method, methodName, sample, flatteningConfig, paging))
+            }
+        }
+
+        // add parameter comments
+        val paramComments = flatteningConfig?.parameters?.mapIndexed { idx, fullPath ->
+            val path = fullPath.split(".")
+            val fieldInfo = getProtoFieldInfoForPath(
+                ctx, path, ctx.typeMap.getProtoTypeDescriptor(method.inputType)
+            )
+            val comment = fieldInfo.file.getParameterComments(fieldInfo)
+            Pair(parameters[idx].spec.name, cleanupComment(comment))
+        }?.filter { it.second != null } ?: listOf()
+        paramComments.forEach { doc.add("\n@param %L %L\n", it.first, it.second) }
+
+        // add any extra comments at the bottom (only used for the pageSize currently)
+        extras.forEach { doc.add("\n%L\n", it) }
+
+        // put it all together
+        return doc.build()
+    }
+
+    private fun generateMethodSample(
+        context: GeneratorContext,
+        method: DescriptorProtos.MethodDescriptorProto,
+        methodName: String,
+        sample: SampleMethod?,
+        flatteningConfig: FlattenedMethod?,
+        paging: PagedResponse? = null
+    ) : CodeBlock {
+        val call = CodeBlock.builder()
+
+        // create client
+        call.addStatement("For example:")
+        call.addStatement("```")
+        call.addStatement("val client = getClient_TODO_()")
+
+        // create inputs
+        val inputType = context.typeMap.getProtoTypeDescriptor(method.inputType)
+        val invokeClientParams = if (flatteningConfig != null) {
+            flatteningConfig.parameters.map { p ->
+                val type = getProtoFieldInfoForPath(context, p.split("."), inputType)
+                if (type.field.isMessageType()) {
+                    getBuilder(context, type.message, type.kotlinType, listOf(listOf(p)), sample).second
+                } else {
+                    CodeBlock.of("%L", sample?.parameters?.find { it.parameterPath == p }?.value ?: p)
+                }
+            }
+        } else {
+            val inputKotlinType = context.typeMap.getKotlinType(method.inputType)
+            listOf(getBuilder(context, inputType, inputKotlinType, listOf(), sample).second, sample)
+        }
+
+        // invoke method
+        if (paging != null) {
+            call.addStatement(
+                "val resultList = client.%N(${invokeClientParams.joinToString(", ") { "%L" }})",
+                methodName,
+                *invokeClientParams.toTypedArray()
+            )
+            call.addStatement("val page = result.next()")
+        } else {
+            call.add(
+                "val result = client.%N(${invokeClientParams.joinToString(", ") { "%L" }})\n",
+                methodName,
+                *invokeClientParams.toTypedArray()
+            )
+        }
+
+        // close
+        call.addStatement("```")
+
+        return call.build()
     }
 }

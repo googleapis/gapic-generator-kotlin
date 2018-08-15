@@ -50,7 +50,7 @@ internal class GRPCGenerator(
     private val companion: CompanionObject = CompanionObjectImpl(),
     private val documentation: Documentation = DocumentationImpl(),
     private val unitTests: UnitTest = UnitTestImpl(stubs),
-    private val functions: Functions = FunctionsImpl(unitTests)
+    private val functions: Functions = FunctionsImpl(documentation, unitTests)
 ) : AbstractGenerator(), ClientGenerator {
 
     override fun generateServiceClient(ctx: GeneratorContext): List<GeneratedArtifact> {
@@ -64,7 +64,7 @@ internal class GRPCGenerator(
         clientType.superclass(GrpcTypes.Support.GrpcClient)
         clientType.addSuperclassConstructorParameter("%N", Properties.PROP_CHANNEL)
         clientType.addSuperclassConstructorParameter("%N", Properties.PROP_CALL_OPTS)
-        clientType.addKdoc(documentation.generateClassDoc(ctx))
+        clientType.addKdoc(documentation.generateClassKDoc(ctx))
         clientType.primaryConstructor(properties.generatePrimaryConstructor())
         clientType.addProperties(properties.generate(ctx))
         clientType.addFunctions(apiMethods.map { it.function })

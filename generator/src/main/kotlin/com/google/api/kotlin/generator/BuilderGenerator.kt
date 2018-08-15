@@ -18,6 +18,8 @@ package com.google.api.kotlin.generator
 
 import com.google.api.kotlin.GeneratedSource
 import com.google.api.kotlin.config.ProtobufTypeMapper
+import com.google.api.kotlin.types.GrpcTypes
+import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.LambdaTypeName
@@ -44,6 +46,7 @@ internal class BuilderGenerator {
             }
             .forEach { type ->
                 val builderType = ClassName.bestGuess("$type.Builder")
+                    .annotated(AnnotationSpec.builder(GrpcTypes.Support.ProtoBuilder).build())
 
                 // construct function name
                 var parentType = type.enclosingClassName()

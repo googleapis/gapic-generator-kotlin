@@ -41,6 +41,7 @@ import kotlin.test.Test
 // more complex tests use the test protos in [GRPCGeneratorTest].
 class FunctionsImplTest {
 
+    private val documentationGenerator: Documentation = mock()
     private val unitTestGenerator: UnitTest = mock()
     private val proto: DescriptorProtos.FileDescriptorProto = mock()
     private val service: DescriptorProtos.ServiceDescriptorProto = mock()
@@ -50,7 +51,7 @@ class FunctionsImplTest {
 
     @BeforeTest
     fun before() {
-        reset(unitTestGenerator, proto, service, meta, types, ctx)
+        reset(documentationGenerator, unitTestGenerator, proto, service, meta, types, ctx)
         whenever(ctx.proto).doReturn(proto)
         whenever(ctx.service).doReturn(service)
         whenever(ctx.typeMap).doReturn(types)
@@ -90,7 +91,7 @@ class FunctionsImplTest {
                 })
             })
 
-        val result = FunctionsImpl(unitTestGenerator).generate(ctx)
+        val result = FunctionsImpl(documentationGenerator, unitTestGenerator).generate(ctx)
 
         val prepareFun = result.first { it.function.name == "prepare" }
         assertThat(prepareFun.function.toString().asNormalizedString()).isEqualTo(

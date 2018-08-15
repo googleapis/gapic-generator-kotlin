@@ -34,13 +34,14 @@ import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.whenever
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import kotlin.test.Test
 import kotlin.test.BeforeTest
+import kotlin.test.Test
 
 // tests basic functionality
 // more complex tests use the test protos in [GRPCGeneratorTest].
 class UnitTestImplTest {
 
+    private val documentationGenerator: Documentation = mock()
     private val stubGenerator: StubsImpl = mock()
     private val proto: DescriptorProtos.FileDescriptorProto = mock()
     private val service: DescriptorProtos.ServiceDescriptorProto = mock()
@@ -50,7 +51,7 @@ class UnitTestImplTest {
 
     @BeforeTest
     fun before() {
-        reset(stubGenerator, proto, service, meta, types, ctx)
+        reset(documentationGenerator, stubGenerator, proto, service, meta, types, ctx)
         whenever(ctx.proto).doReturn(proto)
         whenever(ctx.service).doReturn(service)
         whenever(ctx.typeMap).doReturn(types)
@@ -94,10 +95,10 @@ class UnitTestImplTest {
                 })
             })
 
-        val result = FunctionsImpl(UnitTestImpl(stubGenerator)).generate(ctx)
+        val result =
+            FunctionsImpl(documentationGenerator, UnitTestImpl(stubGenerator)).generate(ctx)
 
         val prepareFun = result.first { it.function.name == "prepare" }
         Truth.assertThat(prepareFun.unitTestCode).isNull()
     }
-
 }

@@ -471,7 +471,8 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
             check.add("eq(%N)", given.variables.values.map { it.variableName }.first())
         } else {
             val nestedAssert = mutableListOf<CodeBlock>()
-            visitFlattenedMethod(ctx, method, flatteningConfig, object : Visitor() {
+            val paths = flatteningConfig.parameters.map { it.split(".") }
+            visitFlattenedMethod(ctx, method, paths, object : Visitor() {
                 override fun onTerminalParam(
                     currentPath: List<String>,
                     fieldInfo: ProtoFieldInfo

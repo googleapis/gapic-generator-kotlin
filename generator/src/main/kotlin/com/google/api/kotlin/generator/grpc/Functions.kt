@@ -24,8 +24,6 @@ import com.google.api.kotlin.config.MethodOptions
 import com.google.api.kotlin.config.PagedResponse
 import com.google.api.kotlin.config.SampleMethod
 import com.google.api.kotlin.generator.AbstractGenerator
-import com.google.api.kotlin.generator.getMethodComments
-import com.google.api.kotlin.generator.getParameterComments
 import com.google.api.kotlin.generator.isLongRunningOperation
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.protobuf.DescriptorProtos
@@ -46,12 +44,12 @@ internal interface Functions {
 
     companion object {
         const val FUN_PREPARE = "prepare"
-
         const val PARAM_REQUEST = "request"
     }
 }
 
 internal class FunctionsImpl(
+    private val documentation: Documentation,
     private val unitTest: UnitTest
 ) : AbstractGenerator(), Functions {
 
@@ -70,7 +68,7 @@ internal class FunctionsImpl(
                     |```
                     |val client = %T.fromServiceAccount(%L)
                     |val response = client.prepare {
-                    |  withMetadata("my-custom-header", listOf("some", "thing"))
+                    |    withMetadata("my-custom-header", listOf("some", "thing"))
                     |}.%N(request).get()
                     |```
                     |
@@ -89,8 +87,7 @@ internal class FunctionsImpl(
                             listOf(),
                             Unit::class.asTypeName()
                         )
-                    )
-                        .build()
+                    ).build()
                 )
                 .addStatement(
                     "val options = %T(%N)",
@@ -287,8 +284,15 @@ internal class FunctionsImpl(
 
         // add documentation
         m.addKdoc(
-            createMethodDoc(
-                ctx, method, samples, flatteningConfig, parameters, extraParamDocs
+            documentation.generateMethodKDoc(
+                ctx,
+                method,
+                methodName,
+                samples = samples,
+                flatteningConfig = flatteningConfig,
+                parameters = parameters,
+                paging = paging,
+                extras = extraParamDocs
             )
         )
 
@@ -319,8 +323,14 @@ internal class FunctionsImpl(
             val flattened = FunSpec.builder(methodName)
             if (method.hasClientStreaming() && method.hasServerStreaming()) {
                 flattened.addKdoc(
-                    createMethodDoc(
-                        ctx, method, options.samples, flattenedMethod, parameters
+                    documentation.generateMethodKDoc(
+                        ctx,
+                        method,
+                        methodName,
+                        samples = options.samples,
+                        flatteningConfig = flattenedMethod,
+                        parameters = parameters,
+                        paging = options.pagedResponse
                     )
                 )
                 flattened.addParameters(parameters.map { it.spec })
@@ -340,8 +350,14 @@ internal class FunctionsImpl(
                 )
             } else if (method.hasClientStreaming()) { // client only
                 flattened.addKdoc(
-                    createMethodDoc(
-                        ctx, method, options.samples, flattenedMethod
+                    documentation.generateMethodKDoc(
+                        ctx,
+                        method,
+                        methodName,
+                        samples = options.samples,
+                        flatteningConfig = flattenedMethod,
+                        parameters = parameters,
+                        paging = options.pagedResponse
                     )
                 )
                 flattened.returns(
@@ -355,8 +371,14 @@ internal class FunctionsImpl(
                 )
             } else if (method.hasServerStreaming()) { // server only
                 flattened.addKdoc(
-                    createMethodDoc(
-                        ctx, method, options.samples, flattenedMethod, parameters
+                    documentation.generateMethodKDoc(
+                        ctx,
+                        method,
+                        methodName,
+                        samples = options.samples,
+                        flatteningConfig = flattenedMethod,
+                        parameters = parameters,
+                        paging = options.pagedResponse
                     )
                 )
                 flattened.addParameters(parameters.map { it.spec })
@@ -385,7 +407,7 @@ internal class FunctionsImpl(
         // unchanged method
         if (options.keepOriginalMethod) {
             val normal = FunSpec.builder(methodName)
-                .addKdoc(createMethodDoc(ctx, method, options.samples))
+                .addKdoc(documentation.generateMethodKDoc(ctx, method, methodName, options.samples))
             val parameters = mutableListOf<ParameterInfo>()
 
             if (method.hasClientStreaming() && method.hasServerStreaming()) {
@@ -436,48 +458,5 @@ internal class FunctionsImpl(
         }
 
         return methods.toList()
-    }
-
-    // create method comments from proto comments
-    private fun createMethodDoc(
-        ctx: GeneratorContext,
-        method: DescriptorProtos.MethodDescriptorProto,
-        samples: List<SampleMethod>,
-        flatteningConfig: FlattenedMethod? = null,
-        parameters: List<ParameterInfo> = listOf(),
-        extras: List<CodeBlock> = listOf()
-    ): CodeBlock {
-        val doc = CodeBlock.builder()
-
-        // remove the spacing from proto files
-        fun cleanupComment(text: String?) = text
-            ?.replace("\\n\\s".toRegex(), "\n")
-            ?.trim()
-
-        // add proto comments
-        val text = ctx.proto.getMethodComments(ctx.service, method)
-        doc.add("%L\n", cleanupComment(text) ?: "")
-
-        // add any samples
-        samples.forEach {
-            // doc.add(createMethodDocSample(ctx, method, methodName, it, flatteningConfig))
-        }
-
-        // add parameter comments
-        val paramComments = flatteningConfig?.parameters?.mapIndexed { idx, fullPath ->
-            val path = fullPath.split(".")
-            val fieldInfo = getProtoFieldInfoForPath(
-                ctx, path, ctx.typeMap.getProtoTypeDescriptor(method.inputType)
-            )
-            val comment = fieldInfo.file.getParameterComments(fieldInfo)
-            Pair(parameters[idx].spec.name, cleanupComment(comment))
-        }?.filter { it.second != null } ?: listOf()
-        paramComments.forEach { doc.add("\n@param %L %L\n", it.first, it.second) }
-
-        // add any extra comments at the bottom (only used for the pageSize currently)
-        extras.forEach { doc.add("\n%L\n", it) }
-
-        // put it all together
-        return doc.build()
     }
 }
