@@ -279,6 +279,10 @@ internal abstract class AbstractGenerator {
         val protoType = context.typeMap.getProtoTypeDescriptor(method.inputType)
         val kotlinType = context.typeMap.getKotlinType(method.inputType)
         val (parameters, requestObj) = getBuilder(context, protoType, kotlinType, config.parameters)
+        if (config.parameters.map { it.toString() }.contains("sink")) {
+            val ee = 5
+            val (a, b) = getBuilder(context, protoType, kotlinType, config.parameters)
+        }
         return FlattenedMethodResult(parameters, requestObj, config)
     }
 

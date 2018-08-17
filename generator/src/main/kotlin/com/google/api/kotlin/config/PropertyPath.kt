@@ -27,6 +27,8 @@ internal data class PropertyPath(
     val last get() = this.segments.last().asPropertyPath()
     val size get() = this.segments.size
 
+    constructor(segment: String): this(listOf(segment))
+
     /** path between the specified [fromIndex] (inclusive) and [toIndex] (exclusive). */
     fun subPath(fromIndex: Int, toIndex: Int) =
         PropertyPath(segments.subList(fromIndex, toIndex))
@@ -47,7 +49,7 @@ internal data class PropertyPath(
             // we only want the most specific (i.e. "a.b.c")
             return all
                 .filter { p ->
-                    all.none { it != p && it.startsWith(p) }
+                    all.none { it != p && it.startsWith("$p.") }
                 }
                 .map { PropertyPath(it.split(".")) }
         }
@@ -72,9 +74,10 @@ internal fun List<PropertyPath>.merge(sample: SampleMethod?): List<PropertyPath>
         PropertyPath(it.parameterPath.split("."))
     } ?: listOf()
 
+    // remove parents if child nodes exists
     val paths = this.map { it.toString() }
     val usePathsFromSamples = pathsFromSamples.filter { p ->
-        paths.any { p.toString().startsWith(it) }
+        paths.any { p.toString().startsWith("$it.") }
     }
 
     return PropertyPath.merge(this, usePathsFromSamples)

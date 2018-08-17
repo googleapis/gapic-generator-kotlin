@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.google.api.kotlin.generator.config
+package com.google.api.kotlin.config
 
 import com.google.api.kotlin.BaseGeneratorTest
-import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.common.truth.Truth.assertThat
 import com.squareup.kotlinpoet.ClassName
 import kotlin.test.Test
