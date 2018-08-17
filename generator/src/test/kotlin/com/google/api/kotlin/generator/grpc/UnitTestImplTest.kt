@@ -28,11 +28,14 @@ import com.google.api.kotlin.config.ServiceOptions
 import com.google.common.truth.Truth
 import com.google.protobuf.DescriptorProtos
 import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.anyOrNull
 import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.whenever
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -76,6 +79,11 @@ class UnitTestImplTest {
                 type = DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING
             })
         })
+        whenever(
+            documentationGenerator.generateMethodKDoc(
+                eq(ctx), any(), any(), any(), anyOrNull(), any(), anyOrNull(), any()
+            )
+        ).doReturn(CodeBlock.of("some docs"))
 
         val opts: ServiceOptions = mock()
         whenever(meta.get(any<String>())).doReturn(opts)

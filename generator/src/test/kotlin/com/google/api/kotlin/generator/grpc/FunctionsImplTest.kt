@@ -24,16 +24,20 @@ import com.google.api.kotlin.MethodDescriptorProto
 import com.google.api.kotlin.ServiceDescriptorProto
 import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.ConfigurationMetadata
+import com.google.api.kotlin.config.MethodOptions
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.ServiceOptions
 import com.google.common.truth.Truth.assertThat
 import com.google.protobuf.DescriptorProtos
 import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.anyOrNull
 import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.whenever
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -46,16 +50,20 @@ class FunctionsImplTest {
     private val proto: DescriptorProtos.FileDescriptorProto = mock()
     private val service: DescriptorProtos.ServiceDescriptorProto = mock()
     private val meta: ConfigurationMetadata = mock()
+    private val options: ServiceOptions = mock()
     private val types: ProtobufTypeMapper = mock()
     private val ctx: GeneratorContext = mock()
 
     @BeforeTest
     fun before() {
-        reset(documentationGenerator, unitTestGenerator, proto, service, meta, types, ctx)
+        reset(documentationGenerator, unitTestGenerator, proto, service, meta, options, types, ctx)
+        whenever(ctx.className).doReturn(ClassName("prepare", "me"))
         whenever(ctx.proto).doReturn(proto)
         whenever(ctx.service).doReturn(service)
         whenever(ctx.typeMap).doReturn(types)
         whenever(ctx.metadata).doReturn(meta)
+        whenever(ctx.metadata.get(any<String>())).doReturn(options)
+        whenever(options.methods).doReturn(listOf<MethodOptions>())
     }
 
     @Test
@@ -72,6 +80,11 @@ class FunctionsImplTest {
                 type = DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING
             })
         })
+        whenever(
+            documentationGenerator.generateMethodKDoc(
+                eq(ctx), any(), any(), any(), anyOrNull(), any(), anyOrNull(), any()
+            )
+        ).doReturn(CodeBlock.of("some docs"))
 
         val opts: ServiceOptions = mock()
         whenever(meta.get(any<String>())).doReturn(opts)
@@ -100,9 +113,9 @@ class FunctionsImplTest {
             |* Prepare for an API call by setting any desired options. For example:
             |*
             |* ```
-            |* val client = foo.bar.ZaTest.fromServiceAccount(< keyfile >)
+            |* val client = foo.bar.ZaTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val response = client.prepare {
-            |*   withMetadata("my-custom-header", listOf("some", "thing"))
+            |*     withMetadata("my-custom-header", listOf("some", "thing"))
             |* }.funFunction(request).get()
             |* ```
             |*

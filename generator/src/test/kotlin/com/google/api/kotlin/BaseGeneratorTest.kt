@@ -163,12 +163,14 @@ fun CodeBlock?.asNormalizedString(): String {
         ?: throw IllegalStateException("CodeBlock cannot be null")
 }
 
+// normalize the string to avoid checking for formatting
 fun String?.asNormalizedString(marginPrefix: String = "|"): String {
     return this?.trimMargin(marginPrefix)
-        ?.replace("(?m)^(\\s)+".toRegex(), "") // un-indent
-        ?.replace("(?m)(\\s)+$".toRegex(), "") // remove trailing whitespace
+        ?.split("\n")
+        ?.map { it.trim() } // un-indent and normalize whitespace
+        ?.joinToString("\n")
         ?.replace("\n+".toRegex(), " ") // normalize newlines
-        ?.replace("( ", "(")
+        ?.replace("( ", "(") // normalize parens
         ?.replace(" )", ")")
         ?.trim()
         ?: throw IllegalStateException("String cannot be null")

@@ -345,7 +345,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |    evenMore: google.example.MoreDetail
             |): com.google.kgax.grpc.ServerStreamingCall<google.example.TestResponse> = stubs.stream.executeServerStreaming { stub, observer ->
             |    stub.streamServerTest(google.example.TestRequest {
-            |        this.mainDetail = google.example.Detail {
+            |        mainDetail = google.example.Detail {
             |            this.evenMore = evenMore
             |        }
             |    },
@@ -543,7 +543,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |    evenMore: google.example.MoreDetail
             |): com.google.kgax.grpc.FutureCall<google.example.TestResponse> = stubs.future.executeFuture {
             |    it.nestedFlat(google.example.TestRequest {
-            |        this.mainDetail = google.example.Detail {
+            |        mainDetail = google.example.Detail {
             |            this.evenMore = evenMore
             |        }
             |    })
@@ -638,8 +638,8 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |    it.nestedFlat(google.example.TestRequest {
             |        addMoreDetails(0, google.example.Detail {
             |            this.evenMore = evenMore
-            |        })
-            |    })
+            |        }
+            |    )})
             |}
             |""".asNormalizedString()
         )

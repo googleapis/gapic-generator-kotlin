@@ -180,9 +180,7 @@ internal abstract class AbstractGenerator {
         // add outermost builder
         val code = CodeBlock.builder()
             .add("%T {\n", kotlinType)
-
-        // indentation helper
-        val indent = { level: Int -> " ".repeat(level * 4) }
+            .indent()
 
         this.visitType(context, messageType, propertyPaths.merge(sample), object : Visitor() {
             override fun onBegin(params: List<ParameterInfo>) {
@@ -198,12 +196,12 @@ internal abstract class AbstractGenerator {
                 val value = explicitValue?.value ?: getParameterName(fieldInfo.field.name)
 
                 // set value or add to appropriate builder
-                val setterCode = getDSLSetterCode(context.typeMap, fieldInfo, value)
+                val setterCode = getSetterCode(context.typeMap, fieldInfo, value, true)
                 if (currentPath.size == 1) {
-                    code.add("${indent(currentPath.size)}$setterCode\n")
+                    code.addStatement("%L", setterCode)
                 } else {
                     val key = currentPath.takeSubPath(currentPath.size - 1).toString()
-                    builders[key]!!.code.add("${indent(currentPath.size)}%L\n", setterCode)
+                    builders[key]!!.code.addStatement("%L", setterCode)
                 }
             }
 
@@ -216,13 +214,18 @@ internal abstract class AbstractGenerator {
                             "%T {\n",
                             context.typeMap.getKotlinType(fieldInfo.field.typeName)
                         )
+                        .indent()
                     builders[key] = CodeBlockBuilder(nestedBuilder, fieldInfo)
                 }
             }
 
             override fun onEnd() {
-                // close the outermost and nested builders
-                builders.forEach { path, builder -> builder.code.add("${indent(path.asPropertyPath().size)}}\n") }
+                // close the nested builders
+                builders.forEach { path, builder ->
+                    builder.code
+                        .add("}\n")
+                        .unindent()
+                }
 
                 // build from innermost to outermost
                 builders.keys.map { it.split(".") }.sortedBy { it.size }.reversed()
@@ -230,16 +233,16 @@ internal abstract class AbstractGenerator {
                     .forEach { currentPath ->
                         val builder = builders[currentPath.toString()]!!
                         code.add(
-                            indent(currentPath.size) + getDSLSetterCode(
-                                context.typeMap, builder.fieldInfo, builder.code.build()
+                            getSetterCode(
+                                context.typeMap, builder.fieldInfo, builder.code.build(), true
                             )
                         )
                     }
             }
         })
 
-        // close outermost type
-        code.add("}")
+        // close outermost builder
+        code.unindent().add("}")
 
         return BuilderCodeBlock(parameters, code.build())
     }
@@ -255,10 +258,15 @@ internal abstract class AbstractGenerator {
      */
     protected fun indentBuilder(context: GeneratorContext, code: CodeBlock, level: Int): CodeBlock {
         val indent = " ".repeat(level * 4)
+
+        // we will get the fully qualified names when turning the code block into a string
+        val specialPackages = "(${context.className.packageName}|com.google.api)"
+
+        // remove fully qualified names and adjust indent
         val formatted = code.toString()
             .replace("\n", "\n$indent")
-            .replace("^[ ]*${context.className.packageName}\\.".toRegex(), "")
-            .replace(" = ${context.className.packageName}\\.".toRegex(), " = ")
+            .replace("^[ ]*$specialPackages\\.".toRegex(), "")
+            .replace(" = $specialPackages\\.".toRegex(), " = ")
         return CodeBlock.of("%L", formatted)
     }
 
@@ -349,66 +357,52 @@ internal abstract class AbstractGenerator {
     protected fun getSetterCode(
         typeMap: ProtobufTypeMapper,
         fieldInfo: ProtoFieldInfo,
-        value: CodeBlock
+        value: CodeBlock,
+        useDSLBuilder: Boolean
     ): CodeBlock {
+        // use implicit this in dsl builders
+        val qualifier = if (useDSLBuilder) {
+            ""
+        } else {
+            "."
+        }
+
+        // map and repeated fields
         if (fieldInfo.field.isMap(typeMap)) {
-            return CodeBlock.of(".${getSetterMapName(fieldInfo.field.name, value)}(%L)", value)
+            return CodeBlock.of(
+                "$qualifier${getSetterMapName(fieldInfo.field.name, value)}(%L)",
+                value
+            )
         } else if (fieldInfo.field.isRepeated()) {
             return if (fieldInfo.index >= 0) {
                 CodeBlock.of(
-                    ".${getSetterRepeatedAtIndexName(
-                        fieldInfo.field.name,
-                        value
+                    "$qualifier${getSetterRepeatedAtIndexName(fieldInfo.field.name, value
                     )}(${fieldInfo.index}, %L)",
                     value
                 )
             } else {
-                CodeBlock.of(".${getSetterRepeatedName(fieldInfo.field.name, value)}(%L)", value)
+                CodeBlock.of(
+                    "$qualifier${getSetterRepeatedName(fieldInfo.field.name, value)}(%L)",
+                    value
+                )
             }
         }
-        return CodeBlock.of(".${getSetterName(fieldInfo.field.name, value)}(%L)", value)
+
+        // normal fields
+        return if (useDSLBuilder) {
+            CodeBlock.of("${getAccessorName(fieldInfo.field.name, value)} = %L", value)
+        } else {
+            CodeBlock.of("$qualifier${getSetterName(fieldInfo.field.name, value)}(%L)", value)
+        }
     }
 
     protected fun getSetterCode(
         typeMap: ProtobufTypeMapper,
         fieldInfo: ProtoFieldInfo,
-        value: String
+        value: String,
+        useDSLBuilder: Boolean
     ) =
-        getSetterCode(typeMap, fieldInfo, CodeBlock.of("%L", value))
-
-    /**
-     * Create setter code based on type of field (map vs. repeated, vs. single object) using
-     * the generated builder DSL.
-     */
-    protected fun getDSLSetterCode(
-        typeMap: ProtobufTypeMapper,
-        fieldInfo: ProtoFieldInfo,
-        value: CodeBlock
-    ): CodeBlock {
-        if (fieldInfo.field.isMap(typeMap)) {
-            return CodeBlock.of("${getSetterMapName(fieldInfo.field.name, value)}(%L)", value)
-        } else if (fieldInfo.field.isRepeated()) {
-            return if (fieldInfo.index >= 0) {
-                CodeBlock.of(
-                    "${getSetterRepeatedAtIndexName(
-                        fieldInfo.field.name,
-                        value
-                    )}(${fieldInfo.index}, %L)",
-                    value
-                )
-            } else {
-                CodeBlock.of("${getSetterRepeatedName(fieldInfo.field.name, value)}(%L)", value)
-            }
-        }
-        return CodeBlock.of("${getAccessorName(fieldInfo.field.name, value)} = %L", value)
-    }
-
-    protected fun getDSLSetterCode(
-        typeMap: ProtobufTypeMapper,
-        fieldInfo: ProtoFieldInfo,
-        value: String
-    ) =
-        getDSLSetterCode(typeMap, fieldInfo, CodeBlock.of("%L", value))
+        getSetterCode(typeMap, fieldInfo, CodeBlock.of("%L", value), useDSLBuilder)
 
     protected fun getAccessorName(typeMap: ProtobufTypeMapper, fieldInfo: ProtoFieldInfo): String {
         if (fieldInfo.field.isMap(typeMap)) {

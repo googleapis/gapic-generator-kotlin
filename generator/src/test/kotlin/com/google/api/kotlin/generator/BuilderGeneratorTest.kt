@@ -20,7 +20,6 @@ import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.common.truth.Truth.assertThat
 import com.nhaarman.mockito_kotlin.mock
-import com.squareup.kotlinpoet.ClassName
 import kotlin.test.Test
 
 class BuilderGeneratorTest {
@@ -48,12 +47,17 @@ class BuilderGeneratorTest {
         assertThat(funs).hasSize(2)
 
         fun methodBody(type: String) =
-            "return com.google.api.$type.newBuilder().apply(init).build()"
+            """
+            |fun $type(
+            |    init: (@com.google.kgax.ProtoBuilder com.google.api.$type.Builder).() -> kotlin.Unit
+            |): com.google.api.$type =
+            |    com.google.api.$type.newBuilder().apply(init).build()
+            |""".trimMargin().asNormalizedString()
+
         listOf("Foo", "Bar").forEach { name ->
             val f = funs.find { it.name == name } ?: throw Exception("fun not found $name")
-            assertThat(f.body.asNormalizedString()).isEqualTo(methodBody(name))
-            assertThat(f.parameters).hasSize(1)
-            assertThat(f.parameters.first().name).isEqualTo("init")
+            val s = f.toString().asNormalizedString()
+            assertThat(f.toString().asNormalizedString()).isEqualTo(methodBody(name))
         }
     }
 
@@ -87,32 +91,24 @@ class BuilderGeneratorTest {
         assertThat(funs).hasSize(9)
 
         fun methodBody(type: String) =
-            "return com.google.api.$type.newBuilder().apply(init).build()"
+            """
+            |fun com.google.api.$type(
+            |    init: (@com.google.kgax.ProtoBuilder com.google.api.$type.Builder).() -> kotlin.Unit
+            |): com.google.api.$type =
+            |    com.google.api.$type.newBuilder().apply(init).build()
+            """.trimMargin().asNormalizedString()
         listOf(
-            "Foo",
             "Foo.A",
             "Foo.A.B",
             "Foo.A.B.C",
-            "Bar",
             "Bar.X",
             "Bar.Y",
-            "Bar.Z",
-            "Baz"
+            "Bar.Z"
         ).forEach { qualifiedName ->
             val path = qualifiedName.split(".")
             val f = funs.find { it.name == path.last() }
                 ?: throw Exception("fun not found $qualifiedName")
-            assertThat(f.body.asNormalizedString()).isEqualTo(methodBody(qualifiedName))
-            assertThat(f.parameters).hasSize(1)
-            assertThat(f.parameters.first().name).isEqualTo("init")
-            if (path.size > 1) {
-                assertThat(f.receiverType).isEqualTo(
-                    ClassName(
-                        "com.google.api",
-                        path.subList(0, path.size - 1).joinToString(".")
-                    )
-                )
-            }
+            assertThat(f.toString().asNormalizedString()).isEqualTo(methodBody(qualifiedName))
         }
     }
 

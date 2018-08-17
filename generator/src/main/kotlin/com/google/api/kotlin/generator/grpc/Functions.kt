@@ -298,11 +298,22 @@ internal class FunctionsImpl(
                         |}
                         |""".trimMargin(),
                         Properties.PROP_STUBS, Stubs.PROP_STUBS_FUTURE,
-                        methodName, requestObject
+                        methodName, requestObject.indent(1)
                     )
                 }
             }
         }
+
+        val xx = documentation.generateMethodKDoc(
+            ctx,
+            method,
+            methodName,
+            samples = samples,
+            flatteningConfig = flatteningConfig,
+            parameters = parameters,
+            paging = paging,
+            extras = extraParamDocs
+        )
 
         // add documentation
         m.addKdoc(
@@ -370,7 +381,7 @@ internal class FunctionsImpl(
                     |return stream
                     |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM, methodName,
-                    request.indent(2)
+                    request.indent(1)
                 )
             } else if (method.hasClientStreaming()) { // client only
                 flattened.addKdoc(
@@ -417,7 +428,7 @@ internal class FunctionsImpl(
                     |}
                     |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM,
-                    methodName, request.indent(3)
+                    methodName, request.indent(2)
                 )
             } else {
                 throw IllegalArgumentException("Unknown streaming type (not client or server)!")
