@@ -53,12 +53,12 @@ internal class DocumentationImpl : AbstractGenerator(), Documentation {
         // add primary (summary) section
         doc.add(
             """
-                |%L
-                |
-                |%L
-                |
-                |[Product Documentation](%L)
-                |""".trimMargin(),
+            |%L
+            |
+            |%L
+            |
+            |[Product Documentation](%L)
+            |""".trimMargin(),
             m.branding.name, m.branding.summary.wrap(), m.branding.url
         )
 
@@ -96,12 +96,7 @@ internal class DocumentationImpl : AbstractGenerator(), Documentation {
             for (sample in samples) {
                 doc.add(
                     generateMethodSample(
-                        ctx,
-                        method,
-                        methodName,
-                        sample,
-                        flatteningConfig,
-                        paging
+                        ctx, method, methodName, sample, flatteningConfig, paging
                     )
                 )
             }
@@ -142,16 +137,15 @@ internal class DocumentationImpl : AbstractGenerator(), Documentation {
             context.className
         )
 
-        if (methodName.toLowerCase() == "longRunningRecognize".toLowerCase()) {
-            val x = 4
-        }
         // create inputs
         val inputType = context.typeMap.getProtoTypeDescriptor(method.inputType)
         val invokeClientParams = if (flatteningConfig != null) {
             flatteningConfig.parameters.map { p ->
                 val type = getProtoFieldInfoForPath(context, p, inputType)
                 if (type.field.isMessageType()) {
-                    getBuilder(context, type.message, type.kotlinType, listOf(p), sample).second
+                    getBuilder(
+                        context, type.message, type.kotlinType, listOf(p.last), sample
+                    ).builder
                 } else {
                     CodeBlock.of(
                         "%L",
@@ -161,22 +155,33 @@ internal class DocumentationImpl : AbstractGenerator(), Documentation {
             }
         } else {
             val inputKotlinType = context.typeMap.getKotlinType(method.inputType)
-            listOf(getBuilder(context, inputType, inputKotlinType, listOf(), sample).second)
+            listOf(getBuilder(context, inputType, inputKotlinType, listOf(), sample).builder)
         }
+
+        // fix indentation (can we make the formatter fix this somehow?)
+        val indentedParams = invokeClientParams.map { indentBuilder(context, it, 1) }
 
         // invoke method
         if (paging != null) {
             call.addStatement(
-                "val resultList = client.%N(${invokeClientParams.joinToString(", ") { "%L" }})",
+                """
+                |val resultList = client.%N(
+                |    ${invokeClientParams.joinToString(",\n    ") { "%L" }}
+                |)
+                |""".trimMargin(),
                 methodName,
-                *invokeClientParams.toTypedArray()
+                *indentedParams.toTypedArray()
             )
             call.addStatement("val page = result.next()")
         } else {
             call.add(
-                "val result = client.%N(${invokeClientParams.joinToString(", ") { "%L" }})\n",
+                """
+                |val result = client.%N(
+                |    ${invokeClientParams.joinToString(",\n    ") { "%L" }}
+                |)
+                |""".trimMargin(),
                 methodName,
-                *invokeClientParams.toTypedArray()
+                *indentedParams.toTypedArray()
             )
         }
 

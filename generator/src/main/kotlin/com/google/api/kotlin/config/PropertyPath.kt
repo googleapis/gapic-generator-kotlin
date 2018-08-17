@@ -24,6 +24,7 @@ internal data class PropertyPath(
 ) {
     val firstSegment get() = this.segments.first()
     val lastSegment get() = this.segments.last()
+    val last get() = this.segments.last().asPropertyPath()
     val size get() = this.segments.size
 
     /** path between the specified [fromIndex] (inclusive) and [toIndex] (exclusive). */
@@ -38,8 +39,17 @@ internal data class PropertyPath(
     companion object {
         /** merges the list of paths into a single list without duplicates */
         fun merge(vararg pathLists: List<PropertyPath>): List<PropertyPath> {
-            val all = pathLists.flatMap { it.map { it.segments.joinToString(".") } }
-            return all.distinct().map { PropertyPath(it.split(".")) }
+            val all = pathLists
+                .flatMap { it.map { it.segments.joinToString(".") } }
+                .distinct()
+
+            // if there are properties such as "a.b.c" and "a.b"
+            // we only want the most specific (i.e. "a.b.c")
+            return all
+                .filter { p ->
+                    all.none { it != p && it.startsWith(p) }
+                }
+                .map { PropertyPath(it.split(".")) }
         }
     }
 }
@@ -49,5 +59,23 @@ internal fun List<String>.asPropertyPath() = PropertyPath(this)
 
 internal fun List<PropertyPath>.merge(vararg pathLists: List<PropertyPath>) =
     PropertyPath.merge(this, *pathLists)
-internal fun List<PropertyPath>.merge(sample: SampleMethod?) =
-    sample?.parameters?.map { PropertyPath(it.parameterPath.split(".")) }?.merge(this) ?: this
+
+/**
+ * Merges all paths from the sample configuration. Note that if the sample configuration
+ * contains references to properties that are not in the original list they will be ignored.
+ *
+ * For example given the list: ["a.b" , "x"]
+ * Sample properties will be included if they start with a or x but not y
+ */
+internal fun List<PropertyPath>.merge(sample: SampleMethod?): List<PropertyPath> {
+    val pathsFromSamples = sample?.parameters?.map {
+        PropertyPath(it.parameterPath.split("."))
+    } ?: listOf()
+
+    val paths = this.map { it.toString() }
+    val usePathsFromSamples = pathsFromSamples.filter { p ->
+        paths.any { p.toString().startsWith(it) }
+    }
+
+    return PropertyPath.merge(this, usePathsFromSamples)
+}

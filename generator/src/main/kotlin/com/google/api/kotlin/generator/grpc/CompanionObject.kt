@@ -65,12 +65,10 @@ internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
         val fromAccessToken = FunSpec.builder("fromAccessToken")
             .addKdoc(
                 """
-                    |Create a %N with the provided [accessToken].
-                    |
-                    |TODO: ADD INFO ABOUT REFRESHING
-                    |
-                    |If a [channel] is not provided one will be created automatically (recommended).
-                    |""".trimMargin(), ctx.className.simpleName
+                |Create a %N with the provided [accessToken].
+                |
+                |If a [channel] is not provided one will be created automatically (recommended).
+                |""".trimMargin(), ctx.className.simpleName
             )
             .addAnnotation(JvmStatic::class)
             .addAnnotation(JvmOverloads::class)
@@ -96,7 +94,12 @@ internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
                 GrpcTypes.Auth.GoogleCredentials
             )
             .addStatement(
-                "return %T(channel ?: createChannel(), %T(%T.from(credentials)))",
+                """
+                |return %T(
+                |    channel ?: createChannel(),
+                |    %T(%T.from(credentials))
+                |)
+                """.trimMargin(),
                 ctx.className,
                 GrpcTypes.Support.ClientCallOptions,
                 GrpcTypes.Auth.MoreCallCredentials
@@ -106,10 +109,10 @@ internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
         val fromServiceAccount = FunSpec.builder("fromServiceAccount")
             .addKdoc(
                 """
-                    |Create a %N with service account credentials from a JSON [keyFile].
-                    |
-                    |If a [channel] is not provided one will be created automatically (recommended).
-                    |""".trimMargin(), ctx.className.simpleName
+                |Create a %N with service account credentials from a JSON [keyFile].
+                |
+                |If a [channel] is not provided one will be created automatically (recommended).
+                |""".trimMargin(), ctx.className.simpleName
             )
             .addAnnotation(JvmStatic::class)
             .addAnnotation(JvmOverloads::class)
@@ -135,7 +138,12 @@ internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
                 GrpcTypes.Auth.GoogleCredentials
             )
             .addStatement(
-                "return %T(channel ?: createChannel(), %T(%T.from(credentials)))",
+                """
+                |return %T(
+                |    channel ?: createChannel(),
+                |    %T(%T.from(credentials))
+                |)
+                """.trimMargin(),
                 ctx.className,
                 GrpcTypes.Support.ClientCallOptions,
                 GrpcTypes.Auth.MoreCallCredentials
@@ -145,10 +153,10 @@ internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
         val fromCredentials = FunSpec.builder("fromCredentials")
             .addKdoc(
                 """
-                    |Create a %N with the provided [credentials].
-                    |
-                    |If a [channel] is not provided one will be created automatically (recommended).
-                    |""".trimMargin(), ctx.className.simpleName
+                |Create a %N with the provided [credentials].
+                |
+                |If a [channel] is not provided one will be created automatically (recommended).
+                |""".trimMargin(), ctx.className.simpleName
             )
             .addAnnotation(JvmStatic::class)
             .addAnnotation(JvmOverloads::class)
@@ -162,7 +170,12 @@ internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
             )
             .returns(ctx.className)
             .addStatement(
-                "return %T(channel ?: createChannel(), %T(%T.from(credentials)))",
+                """
+                |return %T(
+                |    channel ?: createChannel(),
+                |    %T(%T.from(credentials))
+                |)
+                """.trimMargin(),
                 ctx.className,
                 GrpcTypes.Support.ClientCallOptions,
                 GrpcTypes.Auth.MoreCallCredentials
@@ -172,13 +185,13 @@ internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
         val fromStubs = FunSpec.builder("fromStubs")
             .addKdoc(
                 """
-                    |Create a %N with the provided gRPC stubs.
-                    |
-                    |This is an advanced method and should only be used when you need complete
-                    |control over the underlying gRPC stubs that are used by this client.
-                    |
-                    |Prefer to use [fromAccessToken], [fromServiceAccount], or [fromCredentials].
-                    |""".trimMargin(), ctx.className.simpleName
+                |Create a %N with the provided gRPC stubs.
+                |
+                |This is an advanced method and should only be used when you need complete
+                |control over the underlying gRPC stubs that are used by this client.
+                |
+                |Prefer to use [fromAccessToken], [fromServiceAccount], or [fromCredentials].
+                |""".trimMargin(), ctx.className.simpleName
             )
             .addAnnotation(JvmStatic::class)
             .addAnnotation(JvmOverloads::class)
@@ -201,7 +214,13 @@ internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
             )
             .returns(ctx.className)
             .addStatement(
-                "return %T(channel ?: createChannel(), options ?: %T(), factory)",
+                """
+                |return %T(
+                |    channel ?: createChannel(),
+                |    options ?: %T(),
+                |    factory
+                |)
+                """.trimMargin(),
                 ctx.className,
                 GrpcTypes.Support.ClientCallOptions
             )
@@ -210,11 +229,11 @@ internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
         val createChannel = FunSpec.builder("createChannel")
             .addKdoc(
                 """
-                    |Create a [ManagedChannel] to use with a %N.
-                    |
-                    |Prefer to use the default value with [fromAccessToken], [fromServiceAccount],
-                    |or [fromCredentials] unless you need to customize the channel.
-                    |""".trimMargin(), ctx.className.simpleName
+                |Create a [ManagedChannel] to use with a %N.
+                |
+                |Prefer to use the default value with [fromAccessToken], [fromServiceAccount],
+                |or [fromCredentials] unless you need to customize the channel.
+                |""".trimMargin(), ctx.className.simpleName
             )
             .addAnnotation(JvmStatic::class)
             .addAnnotation(JvmOverloads::class)

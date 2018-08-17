@@ -25,6 +25,7 @@ import com.google.api.kotlin.config.PagedResponse
 import com.google.api.kotlin.config.SampleMethod
 import com.google.api.kotlin.generator.AbstractGenerator
 import com.google.api.kotlin.generator.ParameterInfo
+import com.google.api.kotlin.generator.indent
 import com.google.api.kotlin.generator.isLongRunningOperation
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.protobuf.DescriptorProtos
@@ -200,15 +201,19 @@ internal class FunctionsImpl(
                 m.addCode(
                     """
                     |return %T(
-                    |  %N.%N,
-                    |  %N.%N.executeFuture {
-                    |    it.%L(%L)
-                    |  }, %T::class.java)
+                    |    %N.%N,
+                    |    %N.%N.executeFuture {
+                    |        it.%L(
+                    |            %L
+                    |        )
+                    |    },
+                    |    %T::class.java
+                    |)
                     |""".trimMargin(),
                     returnType,
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_OPERATION,
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_FUTURE,
-                    methodName, requestObject,
+                    methodName, requestObject.indent(3),
                     realResponseType
                 )
             }
@@ -253,13 +258,17 @@ internal class FunctionsImpl(
                     |        request.toBuilder().%L(token).build()
                     |    }
                     |    nextPage = { response ->
-                    |        %T(response.body.%L, response.body.%L, response.metadata)
+                    |        %T(
+                    |            response.body.%L,
+                    |            response.body.%L,
+                    |            response.metadata
+                    |        )
                     |    }
                     |}
                     |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_FUTURE,
                     methodName, pageSizeSetter,
-                    requestObject,
+                    requestObject.indent(2),
                     pageTokenSetter,
                     GrpcTypes.Support.PageResult(responseListItemType),
                     responseListGetter, nextPageTokenGetter
@@ -269,15 +278,29 @@ internal class FunctionsImpl(
                 val originalReturnType = ctx.typeMap.getKotlinType(method.outputType)
 
                 m.returns(GrpcTypes.Support.FutureCall(originalReturnType))
-                m.addCode(
-                    """
-                    |return %N.%N.executeFuture {
-                    |  it.%L(%L)
-                    |}
-                    |""".trimMargin(),
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_FUTURE,
-                    methodName, requestObject
-                )
+                if (flatteningConfig?.parameters?.size ?: 0 > 1) {
+                    m.addCode(
+                        """
+                        |return %N.%N.executeFuture {
+                        |    it.%L(
+                        |        %L
+                        |    )
+                        |}
+                        |""".trimMargin(),
+                        Properties.PROP_STUBS, Stubs.PROP_STUBS_FUTURE,
+                        methodName, requestObject.indent(2)
+                    )
+                } else {
+                    m.addCode(
+                        """
+                        |return %N.%N.executeFuture {
+                        |    it.%L(%L)
+                        |}
+                        |""".trimMargin(),
+                        Properties.PROP_STUBS, Stubs.PROP_STUBS_FUTURE,
+                        methodName, requestObject
+                    )
+                }
             }
         }
 
@@ -341,11 +364,13 @@ internal class FunctionsImpl(
                 flattened.addCode(
                     """
                     |val stream = %N.%N.executeStreaming { it::%N }
-                    |stream.requests.send(%L)
+                    |stream.requests.send(
+                    |    %L
+                    |)
                     |return stream
                     |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM, methodName,
-                    request
+                    request.indent(2)
                 )
             } else if (method.hasClientStreaming()) { // client only
                 flattened.addKdoc(
@@ -385,11 +410,14 @@ internal class FunctionsImpl(
                 flattened.addCode(
                     """
                     |return %N.%N.executeServerStreaming { stub, observer ->
-                    |  stub.%N(%L, observer)
+                    |    stub.%N(
+                    |        %L,
+                    |        observer
+                    |    )
                     |}
                     |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM,
-                    methodName, request
+                    methodName, request.indent(3)
                 )
             } else {
                 throw IllegalArgumentException("Unknown streaming type (not client or server)!")
@@ -437,7 +465,7 @@ internal class FunctionsImpl(
                 normal.addCode(
                     """
                     |return %N.%N.executeServerStreaming { stub, observer ->
-                    |  stub.%N(%N, observer)
+                    |    stub.%N(%N, observer)
                     |}
                     |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM,

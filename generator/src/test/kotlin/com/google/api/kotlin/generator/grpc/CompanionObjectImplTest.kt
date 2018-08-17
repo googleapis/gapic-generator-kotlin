@@ -70,8 +70,6 @@ class CompanionObjectImplTest {
             |/**
             |* Create a Clazz with the provided [accessToken].
             |*
-            |* TODO: ADD INFO ABOUT REFRESHING
-            |*
             |* If a [channel] is not provided one will be created automatically (recommended).
             |*/
             |@kotlin.jvm.JvmStatic

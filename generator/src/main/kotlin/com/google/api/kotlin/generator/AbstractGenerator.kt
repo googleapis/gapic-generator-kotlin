@@ -24,17 +24,11 @@ import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.SampleMethod
 import com.google.api.kotlin.config.asPropertyPath
 import com.google.api.kotlin.config.merge
-import com.google.api.kotlin.types.GrpcTypes
 import com.google.common.base.CaseFormat
 import com.google.protobuf.DescriptorProtos
 import com.squareup.kotlinpoet.AnnotationSpec
-import com.squareup.kotlinpoet.BOOLEAN
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.DOUBLE
-import com.squareup.kotlinpoet.FLOAT
-import com.squareup.kotlinpoet.INT
-import com.squareup.kotlinpoet.LONG
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
@@ -47,6 +41,14 @@ internal fun String?.wrap(wrapLength: Int = 100) = if (this != null) {
     WordUtils.wrap(this, wrapLength)
 } else {
     null
+}
+
+internal fun CodeBlock.indent(level: Int): CodeBlock {
+    val builder = CodeBlock.builder()
+    repeat(level) { builder.indent() }
+    builder.add(this)
+    repeat(level) { builder.unindent() }
+    return builder.build()
 }
 
 /**
@@ -99,12 +101,13 @@ internal abstract class AbstractGenerator {
             ?.destructured?.let { (n, i) -> Pair(n, i.toInt()) }
             ?: Pair(path.firstSegment, -1)
 
-        val field = type.fieldList.first { it.name == name }
+        val field = type.fieldList.firstOrNull { it.name == name }
+            ?: throw IllegalStateException("cannot find field '$name' within path: $path found: ${type.fieldList.map { it.name }}")
 
         // only support for 0 index is implemented, so bail out if greater
         if (idx > 0) {
             throw IllegalArgumentException(
-                "using a non-zero field index is not supported: ${path}"
+                "using a non-zero field index is not supported: $path"
             )
         }
 
@@ -133,6 +136,7 @@ internal abstract class AbstractGenerator {
         return ctx.typeMap.getKotlinType(name)
     }
 
+    /** Get the type of element in a paged result list */
     protected fun getResponseListElementType(
         ctx: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
@@ -143,26 +147,42 @@ internal abstract class AbstractGenerator {
         return info.field.asClassName(ctx.typeMap)
     }
 
+    /**
+     * A [builder] CodeBlock that can construct an proto object as a Kotlin type
+     * along with it's corresponding [parameters].
+     */
+    protected data class BuilderCodeBlock(
+        val parameters: List<ParameterInfo>,
+        val builder: CodeBlock
+    )
+
+    /**
+     * Get a builder CodeBlock for constructing the [messageType] via it's [kotlinType]
+     * with the given [propertyPaths] setters filled out.
+     *
+     * If [sample] is non-null and it contains a property path that matches an entry in
+     * [propertyPaths] it's value is used for the setter. Otherwise, the property name
+     * is used as the variable name given to the setter.
+     */
     protected fun getBuilder(
         context: GeneratorContext,
         messageType: DescriptorProtos.DescriptorProto,
         kotlinType: TypeName,
         propertyPaths: List<PropertyPath>,
         sample: SampleMethod? = null
-    ): Pair<List<ParameterInfo>, CodeBlock> {
+    ): BuilderCodeBlock {
         // params for the method signature
         lateinit var parameters: List<ParameterInfo>
 
         // the set of builders to be used to create the request object
-        val builders = mutableMapOf<String, CodeBlock.Builder>()
+        val builders = mutableMapOf<String, CodeBlockBuilder>()
 
         // add outermost builder
         val code = CodeBlock.builder()
-            .add("%T.newBuilder()\n", kotlinType)
+            .add("%T {\n", kotlinType)
 
-        // the indent() and unindent() don't work well with kdoc, so do it manually
+        // indentation helper
         val indent = { level: Int -> " ".repeat(level * 4) }
-
 
         this.visitType(context, messageType, propertyPaths.merge(sample), object : Visitor() {
             override fun onBegin(params: List<ParameterInfo>) {
@@ -170,26 +190,20 @@ internal abstract class AbstractGenerator {
             }
 
             override fun onTerminalParam(currentPath: PropertyPath, fieldInfo: ProtoFieldInfo) {
-                // add to appropriate builder
-                val format = "${getSetterCode(context.typeMap, fieldInfo)}\n"
-
                 // check if an explicit value was set for this property
                 // if not use the parameter name
                 val explicitValue = sample?.parameters?.find {
                     it.parameterPath == currentPath.toString()
                 }
-                val value = if (explicitValue != null) {
-                    explicitValue.value
-                } else {
-                    getParameterName(fieldInfo.field.name)
-                }
+                val value = explicitValue?.value ?: getParameterName(fieldInfo.field.name)
 
-                // set value
+                // set value or add to appropriate builder
+                val setterCode = getDSLSetterCode(context.typeMap, fieldInfo, value)
                 if (currentPath.size == 1) {
-                    code.add(indent(currentPath.size) + format, value)
+                    code.add("${indent(currentPath.size)}$setterCode\n")
                 } else {
                     val key = currentPath.takeSubPath(currentPath.size - 1).toString()
-                    builders[key]!!.add(indent(currentPath.size) + format, value)
+                    builders[key]!!.code.add("${indent(currentPath.size)}%L\n", setterCode)
                 }
             }
 
@@ -199,30 +213,53 @@ internal abstract class AbstractGenerator {
                 if (!builders.containsKey(key)) {
                     val nestedBuilder = CodeBlock.builder()
                         .add(
-                            "${indent(currentPath.size)}%T.newBuilder()\n",
+                            "%T {\n",
                             context.typeMap.getKotlinType(fieldInfo.field.typeName)
                         )
-                    builders[key] = nestedBuilder
+                    builders[key] = CodeBlockBuilder(nestedBuilder, fieldInfo)
                 }
             }
 
             override fun onEnd() {
                 // close the outermost and nested builders
-                builders.forEach { _, builder -> builder.add(".build()\n") }
+                builders.forEach { path, builder -> builder.code.add("${indent(path.asPropertyPath().size)}}\n") }
 
                 // build from innermost to outermost
                 builders.keys.map { it.split(".") }.sortedBy { it.size }.reversed()
                     .map { it.asPropertyPath() }
                     .forEach { currentPath ->
-                        val fieldInfo = getProtoFieldInfoForPath(context, currentPath, messageType)
-                        val value = builders[currentPath.toString()]!!.build()
-                        code.add("${getSetterCode(context.typeMap, fieldInfo)}\n", value)
+                        val builder = builders[currentPath.toString()]!!
+                        code.add(
+                            indent(currentPath.size) + getDSLSetterCode(
+                                context.typeMap, builder.fieldInfo, builder.code.build()
+                            )
+                        )
                     }
-                code.add("${indent(1)}.build()")
             }
         })
 
-        return Pair(parameters, code.build())
+        // close outermost type
+        code.add("}")
+
+        return BuilderCodeBlock(parameters, code.build())
+    }
+
+    private class CodeBlockBuilder(
+        val code: CodeBlock.Builder,
+        val fieldInfo: ProtoFieldInfo
+    )
+
+    /**
+     * Kotlin Poet doesn't handle indented code within Kdoc well so we use this to
+     * correct the indentations for sample code. It would be nice to find an alternative.
+     */
+    protected fun indentBuilder(context: GeneratorContext, code: CodeBlock, level: Int): CodeBlock {
+        val indent = " ".repeat(level * 4)
+        val formatted = code.toString()
+            .replace("\n", "\n$indent")
+            .replace("^[ ]*${context.className.packageName}\\.".toRegex(), "")
+            .replace(" = ${context.className.packageName}\\.".toRegex(), " = ")
+        return CodeBlock.of("%L", formatted)
     }
 
     /** Get the parameters to flatten the [method] using the given [config] and [context]. */
@@ -242,7 +279,12 @@ internal abstract class AbstractGenerator {
         method: DescriptorProtos.MethodDescriptorProto,
         parametersAsPaths: List<PropertyPath>,
         visitor: Visitor
-    ) = visitType(context, context.typeMap.getProtoTypeDescriptor(method.inputType), parametersAsPaths, visitor)
+    ) = visitType(
+        context,
+        context.typeMap.getProtoTypeDescriptor(method.inputType),
+        parametersAsPaths,
+        visitor
+    )
 
     protected abstract class Visitor {
         open fun onBegin(params: List<ParameterInfo>) {}
@@ -300,168 +342,132 @@ internal abstract class AbstractGenerator {
         visitor.onEnd()
     }
 
-    // TODO: update to use the generated builders?
-    // create setter code based on type of field (map vs. repeated, vs. single object)
-    protected fun getSetterCode(typeMap: ProtobufTypeMapper, fieldInfo: ProtoFieldInfo): String {
+    /*
+     * Create setter code based on type of field (map vs. repeated, vs. single object) using
+     * the Java builder for the type.
+     */
+    protected fun getSetterCode(
+        typeMap: ProtobufTypeMapper,
+        fieldInfo: ProtoFieldInfo,
+        value: CodeBlock
+    ): CodeBlock {
         if (fieldInfo.field.isMap(typeMap)) {
-            return ".${getSetterMapName(fieldInfo.field.name)}(%L)"
+            return CodeBlock.of(".${getSetterMapName(fieldInfo.field.name, value)}(%L)", value)
         } else if (fieldInfo.field.isRepeated()) {
             return if (fieldInfo.index >= 0) {
-                ".${getSetterRepeatedAtIndexName(fieldInfo.field.name)}(${fieldInfo.index}, %L)"
+                CodeBlock.of(
+                    ".${getSetterRepeatedAtIndexName(
+                        fieldInfo.field.name,
+                        value
+                    )}(${fieldInfo.index}, %L)",
+                    value
+                )
             } else {
-                ".${getSetterRepeatedName(fieldInfo.field.name)}(%L)"
+                CodeBlock.of(".${getSetterRepeatedName(fieldInfo.field.name, value)}(%L)", value)
             }
         }
-        return ".${getSetterName(fieldInfo.field.name)}(%L)"
+        return CodeBlock.of(".${getSetterName(fieldInfo.field.name, value)}(%L)", value)
     }
 
-    protected fun getAccessorCode(typeMap: ProtobufTypeMapper, fieldInfo: ProtoFieldInfo): String {
+    protected fun getSetterCode(
+        typeMap: ProtobufTypeMapper,
+        fieldInfo: ProtoFieldInfo,
+        value: String
+    ) =
+        getSetterCode(typeMap, fieldInfo, CodeBlock.of("%L", value))
+
+    /**
+     * Create setter code based on type of field (map vs. repeated, vs. single object) using
+     * the generated builder DSL.
+     */
+    protected fun getDSLSetterCode(
+        typeMap: ProtobufTypeMapper,
+        fieldInfo: ProtoFieldInfo,
+        value: CodeBlock
+    ): CodeBlock {
         if (fieldInfo.field.isMap(typeMap)) {
-            return ".${getAccessorMapName(fieldInfo.field.name)}"
+            return CodeBlock.of("${getSetterMapName(fieldInfo.field.name, value)}(%L)", value)
         } else if (fieldInfo.field.isRepeated()) {
             return if (fieldInfo.index >= 0) {
-                ".${getAccessorRepeatedAtIndexName(fieldInfo.field.name)}[${fieldInfo.index}]"
+                CodeBlock.of(
+                    "${getSetterRepeatedAtIndexName(
+                        fieldInfo.field.name,
+                        value
+                    )}(${fieldInfo.index}, %L)",
+                    value
+                )
             } else {
-                ".${getAccessorRepeatedName(fieldInfo.field.name)}"
+                CodeBlock.of("${getSetterRepeatedName(fieldInfo.field.name, value)}(%L)", value)
             }
         }
-        return ".${getAccessorName(fieldInfo.field.name)}"
+        return CodeBlock.of("${getAccessorName(fieldInfo.field.name, value)} = %L", value)
     }
 
-    protected fun getSetterMapName(protoFieldName: String) =
+    protected fun getDSLSetterCode(
+        typeMap: ProtobufTypeMapper,
+        fieldInfo: ProtoFieldInfo,
+        value: String
+    ) =
+        getDSLSetterCode(typeMap, fieldInfo, CodeBlock.of("%L", value))
+
+    protected fun getAccessorName(typeMap: ProtobufTypeMapper, fieldInfo: ProtoFieldInfo): String {
+        if (fieldInfo.field.isMap(typeMap)) {
+            return getAccessorMapName(fieldInfo.field.name)
+        } else if (fieldInfo.field.isRepeated()) {
+            return if (fieldInfo.index >= 0) {
+                "${getAccessorRepeatedAtIndexName(fieldInfo.field.name)}[${fieldInfo.index}]"
+            } else {
+                getAccessorRepeatedName(fieldInfo.field.name)
+            }
+        }
+        return getAccessorName(fieldInfo.field.name)
+    }
+
+    protected fun getSetterMapName(protoFieldName: String, value: CodeBlock? = null) =
         "putAll" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)
 
-    protected fun getSetterRepeatedName(protoFieldName: String) =
+    protected fun getSetterRepeatedName(protoFieldName: String, value: CodeBlock? = null) =
         "addAll" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)
 
-    protected fun getSetterRepeatedAtIndexName(protoFieldName: String) =
+    protected fun getSetterRepeatedAtIndexName(protoFieldName: String, value: CodeBlock? = null) =
         "add" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)
 
-    protected fun getSetterName(protoFieldName: String) =
+    protected fun getSetterName(protoFieldName: String, value: CodeBlock? = null) =
         "set" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)
 
-    protected fun getAccessorMapName(protoFieldName: String) =
+    protected fun getAccessorMapName(protoFieldName: String, value: CodeBlock? = null) =
         CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName) + "Map"
 
-    protected fun getAccessorName(protoFieldName: String) =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName) + ""
+    protected fun getAccessorName(protoFieldName: String, value: CodeBlock? = null) =
+        getQualifier(protoFieldName, value) + CaseFormat.LOWER_UNDERSCORE.to(
+            CaseFormat.LOWER_CAMEL,
+            protoFieldName
+        ) + ""
 
-    protected fun getAccessorRepeatedAtIndexName(protoFieldName: String) =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName) + ""
+    protected fun getAccessorRepeatedAtIndexName(protoFieldName: String, value: CodeBlock? = null) =
+        getQualifier(protoFieldName, value) + CaseFormat.LOWER_UNDERSCORE.to(
+            CaseFormat.LOWER_CAMEL,
+            protoFieldName
+        ) + ""
 
-    protected fun getAccessorRepeatedName(protoFieldName: String) =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName) + "List"
+    protected fun getAccessorRepeatedName(protoFieldName: String, value: CodeBlock? = null) =
+        getQualifier(protoFieldName, value) + CaseFormat.LOWER_UNDERSCORE.to(
+            CaseFormat.LOWER_CAMEL,
+            protoFieldName
+        ) + "List"
 
-    protected fun getParameterName(protoFieldName: String) =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName) + ""
-}
+    protected fun getParameterName(protoFieldName: String, value: CodeBlock? = null) =
+        getQualifier(protoFieldName, value) + CaseFormat.LOWER_UNDERSCORE.to(
+            CaseFormat.LOWER_CAMEL,
+            protoFieldName
+        ) + ""
 
-// -----------------------------------------------------------------
-// Misc. helpers for dealing with proto type descriptors
-// -----------------------------------------------------------------
-
-/** Container for the [file], [message], and [field] and repeated [index] (if applicable) of a proto. */
-internal data class ProtoFieldInfo(
-    val file: DescriptorProtos.FileDescriptorProto,
-    val message: DescriptorProtos.DescriptorProto,
-    val field: DescriptorProtos.FieldDescriptorProto,
-    val index: Int = -1,
-    val kotlinType: TypeName
-)
-
-/** Checks if this methods is a LRO. */
-internal fun DescriptorProtos.MethodDescriptorProto.isLongRunningOperation() =
-    this.outputType == ".google.longrunning.Operation"
-
-/** Checks if this proto field is a map type. */
-internal fun DescriptorProtos.FieldDescriptorProto.isMap(typeMap: ProtobufTypeMapper): Boolean {
-    if (this.hasTypeName()) {
-        if (typeMap.hasProtoEnumDescriptor(this.typeName)) {
-            return false
-        }
-        return typeMap.getProtoTypeDescriptor(this.typeName).options.mapEntry
-    }
-    return false
-}
-
-/** Checks if this proto field is a repeated type. */
-internal fun DescriptorProtos.FieldDescriptorProto.isRepeated() =
-    this.label == DescriptorProtos.FieldDescriptorProto.Label.LABEL_REPEATED
-
-/** Extracts the key and value Kotlin type names of a protobuf map field using the [typeMap]. */
-internal fun DescriptorProtos.FieldDescriptorProto.describeMap(typeMap: ProtobufTypeMapper): Pair<DescriptorProtos.FieldDescriptorProto, DescriptorProtos.FieldDescriptorProto> {
-    val mapType = typeMap.getProtoTypeDescriptor(this.typeName)
-
-    // extract key / value type information
-    val keyType = mapType.fieldList.find { it.name == "key" }
-        ?: throw IllegalStateException("${this.typeName} is not a map type (key type not found)")
-    val valueType = mapType.fieldList.find { it.name == "value" }
-        ?: throw IllegalStateException("${this.typeName} is not a map type (value type not found)")
-
-    return Pair(keyType, valueType)
-}
-
-/** Get the comments of a field in message in this proto file, or null if not available. */
-internal fun DescriptorProtos.FileDescriptorProto.getParameterComments(fieldInfo: ProtoFieldInfo): String? {
-    // find the magic numbers
-    val messageNumber = this.messageTypeList.indexOf(fieldInfo.message)
-    val fieldNumber = fieldInfo.message.fieldList.indexOf(fieldInfo.field)
-
-    // location is [4, messageNumber, 2, fieldNumber]
-    return this.sourceCodeInfo.locationList.filter {
-        it.pathCount == 4 &&
-            it.pathList[0] == 4 && // message types
-            it.pathList[1] == messageNumber &&
-            it.pathList[2] == 2 && // fields
-            it.pathList[3] == fieldNumber
-    }.map { it.leadingComments }.firstOrNull()
-}
-
-/** Get the comments of a service method in this protofile, or null if not available */
-internal fun DescriptorProtos.FileDescriptorProto.getMethodComments(
-    service: DescriptorProtos.ServiceDescriptorProto,
-    method: DescriptorProtos.MethodDescriptorProto
-): String? {
-    // find the magic numbers
-    val serviceNumber = this.serviceList.indexOf(service)
-    val methodNumber = service.methodList.indexOf(method)
-
-    // location is [6, serviceNumber, 2, methodNumber]
-    return this.sourceCodeInfo.locationList.filter {
-        it.pathCount == 4 &&
-            it.pathList[0] == 6 && // 6 is for service
-            it.pathList[1] == serviceNumber &&
-            it.pathList[2] == 2 && // 2 is for method (rpc)
-            it.pathList[3] == methodNumber &&
-            it.hasLeadingComments()
-    }.map { it.leadingComments }.firstOrNull()
-}
-
-/** Get the kotlin class name of this field using the [typeMap] */
-internal fun DescriptorProtos.FieldDescriptorProto.asClassName(typeMap: ProtobufTypeMapper): ClassName {
-    return if (this.hasTypeName()) {
-        typeMap.getKotlinType(this.typeName)
-    } else {
-        when (this.type) {
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING -> String::class.asTypeName()
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_BOOL -> BOOLEAN
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_DOUBLE -> DOUBLE
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_FLOAT -> FLOAT
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32 -> INT
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT32 -> INT
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED32 -> INT
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED32 -> INT
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT32 -> INT
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64 -> LONG
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT64 -> LONG
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED64 -> LONG
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED64 -> LONG
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT64 -> LONG
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_BYTES -> GrpcTypes.ByteString
-            else -> throw IllegalStateException("unexpected or non-primitive type: ${this.type}")
+    protected fun getQualifier(protoFieldName: String, value: CodeBlock? = null): String {
+        val name = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
+        return if (name == value.toString()) {
+            "this."
+        } else {
+            ""
         }
     }
 }
-
-internal fun DescriptorProtos.FieldDescriptorProto.isMessageType() =
-    this.type == DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE

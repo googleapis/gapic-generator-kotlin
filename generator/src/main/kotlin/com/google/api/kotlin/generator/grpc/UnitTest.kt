@@ -480,7 +480,7 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
                     fieldInfo: ProtoFieldInfo
                 ) {
                     val key = getAccessorName(currentPath.lastSegment)
-                    val accessor = getAccessorCode(ctx.typeMap, fieldInfo)
+                    val accessor = getAccessorName(ctx.typeMap, fieldInfo)
                     val variable = given.variables[key]?.variableName
                         ?: throw IllegalStateException("Could not locate variable with name: $key")
 

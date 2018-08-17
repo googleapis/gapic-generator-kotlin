@@ -35,9 +35,6 @@ import com.google.api.kotlin.generator.grpc.UnitTestImpl
 import com.google.api.kotlin.types.GrpcTypes
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeSpec
-import mu.KotlinLogging
-
-private val log = KotlinLogging.logger {}
 
 /**
  * Generates a gRPC client by aggregating the results of the sub-generators.

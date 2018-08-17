@@ -20,6 +20,7 @@ import com.google.api.kotlin.config.BrandingOptions
 import com.google.api.kotlin.config.ConfigurationMetadata
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.ServiceOptions
+import com.google.api.kotlin.config.asPropertyPath
 import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.protobuf.DescriptorProtos
@@ -173,7 +174,9 @@ fun String?.asNormalizedString(marginPrefix: String = "|"): String {
         ?: throw IllegalStateException("String cannot be null")
 }
 
-internal fun List<GeneratedArtifact>.sources()= this
+internal fun props(vararg paths: String) = paths.map { it.asPropertyPath() }.toList()
+
+internal fun List<GeneratedArtifact>.sources() = this
     .mapNotNull { it as? GeneratedSource }
     .filter { it.kind == GeneratedSource.Kind.SOURCE }
 
