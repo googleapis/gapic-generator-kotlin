@@ -20,12 +20,11 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.widget.TextView
-import com.google.api.examples.kotlin.util.OnMainThread
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
 import com.google.kgax.grpc.BasicInterceptor
-import com.google.kgax.grpc.enqueue
+import com.google.kgax.grpc.on
 
 private const val TAG = "Demo"
 
@@ -61,8 +60,9 @@ class MainActivityInterceptor : AppCompatActivity() {
         client.analyzeEntities(document, EncodingType.UTF8)
 
         // do a second call so we can see how the interceptor sees all outbound messages
-        client.analyzeEntitySentiment(document, EncodingType.UTF8)
-                .enqueue(OnMainThread) { textView.text = "The API says: ${it.body}" }
+        client.analyzeEntitySentiment(document, EncodingType.UTF8).on {
+            success = { textView.text = "The API says: ${it.body}" }
+        }
     }
 
     override fun onDestroy() {

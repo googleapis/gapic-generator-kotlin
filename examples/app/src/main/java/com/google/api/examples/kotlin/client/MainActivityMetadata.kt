@@ -19,11 +19,10 @@ package com.google.api.examples.kotlin.client
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.TextView
-import com.google.api.examples.kotlin.util.OnMainThread
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
-import com.google.kgax.grpc.enqueue
+import com.google.kgax.grpc.on
 
 /**
  * Kotlin example showcasing metadata using the client library.
@@ -53,9 +52,11 @@ class MainActivityMetadata : AppCompatActivity() {
         }.analyzeEntities(Document {
             content = "Hi there Joe"
             type = Document.Type.PLAIN_TEXT
-        }, EncodingType.UTF8).enqueue(OnMainThread) {
-            textView.text = "The API says: ${it.body}\n\n" +
-                    "with metadata of: ${it.metadata.keys().joinToString(",")}"
+        }, EncodingType.UTF8).on {
+            success = {
+                textView.text = "The API says: ${it.body}\n\n" +
+                        "with metadata of: ${it.metadata.keys().joinToString(",")}"
+            }
         }
     }
 

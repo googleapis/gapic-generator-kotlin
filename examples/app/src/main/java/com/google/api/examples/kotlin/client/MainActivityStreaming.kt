@@ -24,7 +24,7 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.widget.TextView
 import com.google.api.examples.kotlin.util.AudioEmitter
-import com.google.api.examples.kotlin.util.OnMainThread
+import com.google.api.examples.kotlin.util.MainThread
 import com.google.cloud.speech.v1.RecognitionConfig
 import com.google.cloud.speech.v1.SpeechClient
 import com.google.cloud.speech.v1.StreamingRecognitionConfig
@@ -93,7 +93,7 @@ class MainActivityStreaming : AppCompatActivity() {
             }
 
             // handle incoming responses
-            stream.responses.executor = OnMainThread
+            stream.responses.executor = MainThread
             stream.responses.onNext = { textView.text = it.toString() }
             stream.responses.onError = { Log.e(TAG, "uh oh", it) }
             stream.responses.onCompleted = { Log.i(TAG, "All done!") }

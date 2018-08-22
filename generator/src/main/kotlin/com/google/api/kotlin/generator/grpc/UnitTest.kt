@@ -484,7 +484,7 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
                     val variable = given.variables[key]?.variableName
                         ?: throw IllegalStateException("Could not locate variable with name: $key")
 
-                    nestedAssert.add(CodeBlock.of("assertEquals($variable, it$accessor)"))
+                    nestedAssert.add(CodeBlock.of("assertEquals($variable, it.$accessor)"))
                 }
             })
             if (paging != null && expectedPageSize != null) {

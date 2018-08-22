@@ -30,7 +30,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-class MainActivityEnqueueTest {
+class MainActivityOnTest {
 
     @Rule
     @JvmField

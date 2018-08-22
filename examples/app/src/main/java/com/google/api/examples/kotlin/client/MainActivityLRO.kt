@@ -19,7 +19,7 @@ package com.google.api.examples.kotlin.client
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.TextView
-import com.google.api.examples.kotlin.util.OnMainThread
+import com.google.api.examples.kotlin.util.MainThread
 import com.google.cloud.speech.v1.LongRunningRecognizeRequest
 import com.google.cloud.speech.v1.RecognitionAudio
 import com.google.cloud.speech.v1.RecognitionConfig
@@ -64,8 +64,10 @@ class MainActivityLRO : AppCompatActivity() {
             }
         })
 
-        lro.enqueue(OnMainThread) {
-            textView.text = "The API says: ${it.body}\n via operation: ${lro.operation?.name}"
+        lro.on {
+            success = {
+                textView.text = "The API says: ${it.body}\n via operation: ${lro.operation?.name}"
+            }
         }
     }
 

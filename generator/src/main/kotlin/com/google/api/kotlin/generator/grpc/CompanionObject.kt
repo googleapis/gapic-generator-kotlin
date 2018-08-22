@@ -160,7 +160,13 @@ internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
             )
             .addAnnotation(JvmStatic::class)
             .addAnnotation(JvmOverloads::class)
-            .addParameter("credentials", GrpcTypes.Auth.GoogleCredentials)
+            .addParameter(
+                ParameterSpec.builder(
+                    "credentials", GrpcTypes.Auth.GoogleCredentials.asNullable()
+                )
+                    .defaultValue("null")
+                    .build()
+            )
             .addParameter(
                 ParameterSpec.builder(
                     "channel", GrpcTypes.ManagedChannel.asNullable()
@@ -171,14 +177,15 @@ internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
             .returns(ctx.className)
             .addStatement(
                 """
+                |val cred = credentials?.let { %T.from(it) }
                 |return %T(
                 |    channel ?: createChannel(),
-                |    %T(%T.from(credentials))
+                |    %T(cred)
                 |)
                 """.trimMargin(),
+                GrpcTypes.Auth.MoreCallCredentials,
                 ctx.className,
-                GrpcTypes.Support.ClientCallOptions,
-                GrpcTypes.Auth.MoreCallCredentials
+                GrpcTypes.Support.ClientCallOptions
             )
             .build()
 

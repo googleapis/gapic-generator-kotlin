@@ -21,9 +21,9 @@ import android.os.Handler
 import android.support.v7.app.AppCompatActivity
 import android.widget.TextView
 import com.google.api.MonitoredResource
-import com.google.api.examples.kotlin.util.OnMainThread
+import com.google.api.examples.kotlin.util.MainThread
 import com.google.kgax.ServiceAccount
-import com.google.kgax.grpc.enqueue
+import com.google.kgax.grpc.on
 import com.google.logging.v2.LogEntry
 import com.google.logging.v2.LoggingServiceV2Client
 import java.util.Date
@@ -70,29 +70,31 @@ class MainActivityPaging : AppCompatActivity() {
         }
 
         // write the entries
-        client.writeLogEntries(log, globalResource, mapOf(), entries).enqueue {
-            // the server may respond with an empty set if we immediately try to read the logs
-            // that we just wrote - so we wait for a few seconds before proceeding
-            Handler().postDelayed({
-                // now, read those entries back
-                val pager = client.listLogEntries(
-                        listOf(project), "logName=$log", "timestamp desc", 10)
+        client.writeLogEntries(log, globalResource, mapOf(), entries).on {
+            success = {
+                // the server may respond with an empty set if we immediately try to read the logs
+                // that we just wrote - so we wait for a few seconds before proceeding
+                Handler().postDelayed({
+                    // now, read those entries back
+                    val pager = client.listLogEntries(
+                            listOf(project), "logName=$log", "timestamp desc", 10)
 
-                // go through all the logs, one page at a time
-                pager.forEach(OnMainThread) {
-                    for (entry in it.elements) {
-                        resultText.text = "${resultText.text}\nlog : ${entry.textPayload}"
+                    // go through all the logs, one page at a time
+                    pager.forEach(MainThread) {
+                        for (entry in it.elements) {
+                            resultText.text = "${resultText.text}\nlog : ${entry.textPayload}"
+                        }
                     }
-                }
 
-                // Note: you may use the pager as a normal iterator, as shown below,
-                //       but avoid doing it from the main thread
-                // for (page in pager) {
-                //    for (entry in page.elements) {
-                //        // ...
-                //    }
-                // }
-            }, 2 * 1000)
+                    // Note: you may use the pager as a normal iterator, as shown below,
+                    //       but avoid doing it from the main thread
+                    // for (page in pager) {
+                    //    for (entry in page.elements) {
+                    //        // ...
+                    //    }
+                    // }
+                }, 2 * 1000)
+            }
         }
 
         // prepare for the results

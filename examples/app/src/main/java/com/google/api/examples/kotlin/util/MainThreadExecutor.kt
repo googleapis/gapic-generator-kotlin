@@ -29,4 +29,4 @@ object MainThreadExecutor : Executor {
     }
 }
 
-typealias OnMainThread = MainThreadExecutor
+typealias MainThread = MainThreadExecutor
