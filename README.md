@@ -2,7 +2,7 @@
 
 Kgen creates Kotlin client libraries from a [protocol buffer](https://developers.google.com/protocol-buffers/docs/proto3) description of an API. 
 
-The API must be implemented using gRPC to use the clients, but we plan to support alternative transports soon.
+The clients are currently compatible with gRPC APIs, but we plan to support alternative transports soon.
 
 ## Examples
 
@@ -26,9 +26,9 @@ More complex examples, using Google Cloud APIs on Android, can be found in the
 ## Why Kgen?
 
 Protocol buffers and gRPC have great toolchains, but they do not have first class support for Kotlin and 
-they do not provide many configuration options. Kgen generates ideomatic Kotlin client libraries
-and introduces new configuration options that enable fine-tuning the code to make it easier for users
-to consume an API.
+they do not provide many configuration options for generated code. Kgen generates ideomatic Kotlin client 
+libraries and introduces new configuration options that enable fine-tuning the code to make it easier for 
+users to consume an API.
 
 ## Configuration
 

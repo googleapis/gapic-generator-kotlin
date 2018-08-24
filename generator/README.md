@@ -13,7 +13,7 @@ run the following:
 
 ```bash
 $ cd generator
-$ ./gradlew build && docker build . -t kotlin-generator
+$ ./gradlew build && docker build . -t kgen
 ```
 
 Use the generator by mounting your input protocol buffers directory at `/proto` and mounting an 
@@ -24,7 +24,7 @@ $ mkdir example-output
 $ docker run -it --rm \
          --mount type=bind,source="$(pwd)"/example-server/src/main/proto,target=/proto \
          --mount type=bind,source="$(pwd)"/example-output,target=/generated \
-         kotlin-generator
+         kgen
 ```
 
 *Note* Until `com.google.kgax:kgax-grpc` is published you must build and publish a local
@@ -64,7 +64,7 @@ target. Then, copy your ~/.m2/repository to `generator/repository`. This will be
       protobuf {
           // set the version of protobuf compiler to use
           protoc {
-              artifact = 'com.google.protobuf:protoc:3.6.0'
+              artifact = 'com.google.protobuf:protoc:3.6.1'
           }
           // set the version of the code generators to use
           plugins {
@@ -153,5 +153,5 @@ See the `Dockerfile` for the default set of arugments.
 
 ### Why So Many Formatters
 
-ktlint does not currently fix long lines so the Intellij formatter is being used for now. This is likely 
-to change at some point so we are experimenting with the various options that are available.
+ktlint does not currently fix long lines so the Intellij formatter is being used for now, and it
+gives us options. Alright, perhaps we just like formatters...
