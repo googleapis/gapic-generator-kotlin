@@ -37,6 +37,4 @@
 /build
 /captures
 .externalNativeBuild
-/out
-/bin
-/repository
+.vscode
