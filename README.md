@@ -1,166 +1,76 @@
 # Kgen
 
-Kgen is a protoc plugin for creating client libraries from protocol buffer definitions (version 3).
+Kgen creates Kotlin client libraries from a [protocol buffer](https://developers.google.com/protocol-buffers/docs/proto3) description of an API. 
+
+The API must be implemented using gRPC to use the clients, but we plan to support alternative transports soon.
 
 ## Examples
 
-You can find some examples, using Google Cloud APIs, in the [examples directory](examples/README.md).
+A simple "hello world" style example is in the `generator/example-server` and `generator/example-client` directories. 
 
-## Getting Started
+The [example-server](generator/example-server) directory contains the [API implementation](generator/example-client/src/main/kotlin/example/ExampleServer.kt) 
+and the [proto describing the API](generator/example-client/src/main/proto/google/example/hello.proto).
 
-You can use Kgen with Docker or with Gradle. Using Docker is simplier in most cases, so we'll start
-there, but using Gradle directly may be a better choice if you will be adding your own manually 
-written code to the generated code and will be using Gradle for your project.
+The [example-client](generator/example-client) directory is a snapshot containing all of the generated 
+code when the generator is run using `generator/example-client/src/main/proto` as the input directory.
+It includes the following subdirectories:
+   + `client`: A client for each of the API services and various `KotlinBuilders.kt` that define DSL 
+   builders that may be used as an alternative to the Java builders.
+   + `clientTest`: Test code for the clients.
+   + `grpc`: gRPC stubs (used interally by the clients).
+   + `javalite`: Java message types defined in the API.
 
-### Docker
+More complex examples, using Google Cloud APIs on Android, can be found in the 
+[examples directory](examples/README.md).
 
-The docker images for this project are coming soon, but have not yet been published. To build locally
-run the following:
+## Why Kgen?
 
-```bash
-$ cd generator
-$ ./gradlew build && docker build . -t kotlin-generator
-```
+Protocol buffers and gRPC have great toolchains, but they do not have first class support for Kotlin and 
+they do not provide many configuration options. Kgen generates ideomatic Kotlin client libraries
+and introduces new configuration options that enable fine-tuning the code to make it easier for users
+to consume an API.
 
-Use the generator by mounting your input protocol buffers directory at `/proto` and mounting an 
-output directory at `/generated`. For example:
+## Configuration
 
-```bash
-$ mkdir example-output
-$ docker run -it --rm \
-         --mount type=bind,source="$(pwd)"/example-input,target=/proto \
-         --mount type=bind,source="$(pwd)"/example-output,target=/generated \
-         kotlin-generator
-```
+Kgen currently uses a legacy format based on `.yaml` files for configuration. However, it is being replaced 
+with a set of annotations that can be put directly into the `.proto` files describing the API. We do 
+not recommend using the legacy configuration, so it's not described here. 
 
-*Note* Until `com.google.kgax:kgax-grpc` is published you must build and publish a local
-version of the library by building the kgax-grpc library and running the gradle local publish
-target. Then, copy your ~/.m2/repository to `generator/repository`. This will be removed soon!
+Kgen can be used without any additional configuration :), but you won't be able to use the 
+cutomizations described below just yet :(. We will update our documentation when the new format is ready.
 
-### Gradle
+### Configuration Options
 
-  1. Write your API using proto3 as described in the [Language Guide](https://developers.google.com/protocol-buffers/docs/proto).
-  2. Put all of your `.proto` files in `app/src/main/proto` (Android) or `src/main/proto` (non-Android).
-  3. Configure your application's `build.gradle` as shown below:
-  
-      *Note* the following example is for an Android application, but the process is nearly 
-      identical for a standalone Kotlin application.
-      
-      ```groovy
-      plugins {
-          id "com.google.protobuf" version "0.8.5"
-      }
-      
-      // or the java plugin if your not making an Android app
-      apply plugin: 'com.android.application'
-      apply plugin: 'kotlin-android'
-      apply plugin: 'kotlin-android-extensions'
-      
-      dependencies {
-          // ...
-          
-          // for http/2 gRPC based clients (recommended)
-          implementation 'com.google.kgax:kgax-grpc:0.1.0'
-          
-          // if you prefer to use http/1 use this instead (coming soon)
-          // implementation ...
-      }
-      
-      // compile proto and generate your client library
-      protobuf {
-          // set the version of protobuf compiler to use
-          protoc {
-              artifact = 'com.google.protobuf:protoc:3.6.0'
-          }
-          // set the version of the code generators to use
-          plugins {
-              javalite {
-                  artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0'
-              }
-              grpc {
-                  artifact = 'io.grpc:protoc-gen-grpc-java:1.10.0'
-              }
-              client {
-                  artifact = 'com.google.api:kotlin-client-generator:0.1.0:core@jar'
-              }
-          }
-          // run the code generators
-          generateProtoTasks {
-              all().each { task ->
-                  task.builtins {
-                      // java artifacts are generated by default, so delete them
-                      // the 'javalite' plugin will generate the files we need instead
-                      remove java
-                  }
-                  task.plugins {
-                      // this generates the protocol buffer message types
-                      // which include the inputs and outputs of your API
-                      javalite {}
-                      // this generates a low-level gRPC client for the service defined in your API
-                      grpc {
-                          option 'lite'
-                      }
-                      // this generates your client library!
-                      client {
-                          // TODO: these options will change
-                          // for now we have to tell the plugin where the protos are
-                          option "source_directory=${projectDir}/src/main/proto"
-                      }
-                  }
-              }
-          }
-      }
+1. Method signatures
+  + Specify alternative method signature to simplify your API. For example:
+      ```kotlin
+       // instead of using the signature defined in the proto file:
+       fun myApiMethod(request: CreateUserRequest): CreateUserResponse
+       
+       // generate alternative method(s) that take multiple or smaller arguments
+       // for common use cases. For example:
+       fun myApiMethod(userName: String, userLocation: Location): CreateUserResponse
+       fun myApiMethod(user: User): CreateUserResponse
       ```
-      
-  4. Build your application with gradle:
-        
-        ```bash
-              $ ./gradlew build
-        ```
+1. Example code
+  + Specify values for examples in method documentation. For instance:
+     ```kotlin
+     /**
+     * val result = client.hiThere(
+     *     HiRequest {
+     *         query = "Hey!"
+     *     }
+     * )
+     fun hiThere(request: HiRequest): HiResponse
+     ```
+1. Test code
+   + Generate functional tests using specified data values
+1. Kgax
+   + All API methods are invoked using the [Google API extension library for Kotlin](https://github.com/googleapis/gax-kotlin) 
+   and can take advantage of it's features, including a simplified interface for streaming methods, metadata access, 
+   gRPC interceptors, etc. 
 
-  5. Enjoy your new client library! The generated source code will available on the classpath
-     for your application to use, and you can find it at `app/build/generated/source/proto`
-     (Android) or `build/generated/source/proto` (standalone application).
-     
-## Code Formatting
-
-This project uses dockerized versions of Intellij CE's code formatter,
-[Google Java Format](https://github.com/google/google-java-format) and [ktlint](https://ktlint.github.io/). 
-They can be customized for the generator and they can be used standalone.
-
-### Building
-
-```
-  $ docker build --target formatter . -t formatter
-  $ docker build --target javaformatter . -t javaformatter
-  $ docker build --target ktlint . -t ktlint
-```
-
-### Usage
-
-Run the container and mount the directory that contains the source files that you want to 
-format to `/src` inside the container. It will format all files recursively using the rules defined 
-in `format.xml`. For example, to format the files in the current directory use:
-
-```
-  $ docker run --rm -it -v $PWD:/src formatter
-  $ docker run --rm -it -v $PWD:/src javaformatter
-  $ docker run --rm -it -v $PWD:/src ktlint
-```
-
-### Customizing
-
-You can replace `/usr/ide/format.xml` with your own formatter configuration to customize
-the settings for the intelliJ formatter. See the official [documentation](https://www.jetbrains.com/help/idea/settings-code-style.html)
-for more details.
-
-Alternatively, you may override the defaults for any of the formatters by passing arguments to the commands. 
-See the `Dockerfile` for the default set of arugments.
-
-### Why So Many Formatters
-
-ktlint does not currently fix long lines so the Intellij formatter is being used for now. This is likely 
-to change at some point so we are experimenting with the various options that are available.
+Have a great idea for another option? The next section is for you!
 
 ## Contributing
 

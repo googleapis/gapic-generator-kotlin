@@ -1,0 +1,55 @@
+buildscript {
+  ext.kotlin_version = '1.2.50'
+  ext.grpc_version = '1.14.0'
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.5'
+  }
+}
+
+apply plugin: 'kotlin'
+apply plugin: 'application'
+apply plugin: 'com.google.protobuf'
+apply plugin: 'idea'
+
+mainClassName = 'example.ExampleServer'
+
+defaultTasks 'run'
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+  
+  compile "com.google.api.grpc:proto-google-common-protos:1.0.0"
+  compile "io.grpc:grpc-netty-shaded:$grpc_version"
+  compile "io.grpc:grpc-protobuf:$grpc_version"
+  compile "io.grpc:grpc-stub:$grpc_version"
+
+  testCompile 'junit:junit:4.11'
+  testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
+}
+
+// compile proto and gRPC
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.6.0'
+    }
+    plugins {
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.10.0'
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins { grpc {} }
+    }
+}
+
+task wrapper(type: Wrapper) {
+  gradleVersion = "4.7"
+}
