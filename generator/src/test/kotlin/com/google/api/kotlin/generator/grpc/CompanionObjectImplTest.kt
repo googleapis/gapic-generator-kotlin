@@ -107,12 +107,15 @@ class CompanionObjectImplTest {
             |@kotlin.jvm.JvmStatic
             |@kotlin.jvm.JvmOverloads
             |fun fromCredentials(
-            |    credentials: com.google.auth.oauth2.GoogleCredentials,
+            |    credentials: com.google.auth.oauth2.GoogleCredentials? = null,
             |    channel: io.grpc.ManagedChannel? = null
-            |): r.r.r.Clazz = r.r.r.Clazz(
-            |    channel ?: createChannel(),
-            |    com.google.kgax.grpc.ClientCallOptions(io.grpc.auth.MoreCallCredentials.from(credentials))
-            |)
+            |): r.r.r.Clazz {
+            |    val cred = credentials?.let { io.grpc.auth.MoreCallCredentials.from(it) }
+            |    return r.r.r.Clazz(
+            |        channel ?: createChannel(),
+            |        com.google.kgax.grpc.ClientCallOptions(cred)
+            |    )
+            |}
             |""".asNormalizedString()
         )
     }
