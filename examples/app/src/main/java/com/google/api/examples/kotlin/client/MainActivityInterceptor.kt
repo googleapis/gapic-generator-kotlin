@@ -20,6 +20,7 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.widget.TextView
+import com.google.api.examples.kotlin.util.MainThread
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
@@ -60,14 +61,15 @@ class MainActivityInterceptor : AppCompatActivity() {
         client.analyzeEntities(document, EncodingType.UTF8)
 
         // do a second call so we can see how the interceptor sees all outbound messages
-        client.analyzeEntitySentiment(document, EncodingType.UTF8).on {
+        client.analyzeEntitySentiment(document, EncodingType.UTF8).on(MainThread) {
             success = { textView.text = "The API says: ${it.body}" }
+            error = { textView.text = "Error: $it" }
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
 
-        client.shutdownChannel()
+//        client.shutdownChannel()
     }
 }

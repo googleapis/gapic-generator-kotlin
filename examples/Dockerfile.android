@@ -1,0 +1,17 @@
+FROM openjdk:8
+
+ENV ANDROID_SDK_PACKAGE https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
+ENV ANDROID_SDK_SHA 92ffee5a1d98d856634e8b71132e8a95d96c83a63fde1099be3d86df3106def9  android-sdk.zip
+
+ENV ANDROID_HOME /android
+
+WORKDIR $ANDROID_HOME
+
+# install Android SDK
+RUN curl -sSL $ANDROID_SDK_PACKAGE > android-sdk.zip && \
+    echo "$ANDROID_SDK_SHA" | sha256sum -c - && \
+    unzip android-sdk.zip
+RUN echo "y" | $ANDROID_HOME/tools/bin/sdkmanager "platforms;android-27" "tools" "build-tools;27.0.3"
+ENV PATH $ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools/bin:/bin:$PATH
+
+ENTRYPOINT ["./gradlew", "assembleDebug", "assembleDebugAndroidTest"]

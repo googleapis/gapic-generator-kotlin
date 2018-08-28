@@ -39,6 +39,8 @@ class MainActivityTest {
 
     @Test
     fun returnsIdentifiedEntity() {
+        awaitApiCall()
+
         onView(withId(R.id.text_view))
                 .check(matches(withText(containsString("type: PERSON"))))
     }

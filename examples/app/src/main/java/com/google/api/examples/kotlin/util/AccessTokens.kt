@@ -19,6 +19,8 @@ package com.google.api.examples.kotlin.util
 import com.google.auth.oauth2.AccessToken
 import com.google.auth.oauth2.GoogleCredentials
 import java.io.InputStream
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 /**
  * Example of fetching an access token via service account credentials. The token
@@ -30,7 +32,9 @@ import java.io.InputStream
  *
  * Service account credentials should *not* be embedded in a mobile application.
  */
-class AccessTokens(keyFile: InputStream, scopes: List<String>) {
+class AccessTokens(keyFile: InputStream, scopes: List<String>, executor: ExecutorService? = null) {
+
+    private val ex = executor ?: Executors.newSingleThreadExecutor()
 
     // service account credentials
     private val credentials =
@@ -41,7 +45,7 @@ class AccessTokens(keyFile: InputStream, scopes: List<String>) {
      * is typically about an hour.
      */
     fun fetchToken(): AccessToken {
-        credentials.refresh()
+        ex.submit { credentials.refresh() }.get()
         return credentials.accessToken
     }
 }

@@ -64,10 +64,11 @@ class MainActivityLRO : AppCompatActivity() {
             }
         })
 
-        lro.on {
+        lro.on(MainThread) {
             success = {
                 textView.text = "The API says: ${it.body}\n via operation: ${lro.operation?.name}"
             }
+            error = { textView.text = "Error: $it" }
         }
     }
 

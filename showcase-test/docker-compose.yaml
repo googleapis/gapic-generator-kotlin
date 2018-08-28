@@ -1,0 +1,12 @@
+version: '3'
+services:
+  showcase:
+    build: .
+    container_name: showcase
+    ports:
+     - "7469:7469"
+
+networks:
+  default:
+    external:
+      name: cloudbuild

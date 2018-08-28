@@ -54,6 +54,7 @@ class MainActivityOn : AppCompatActivity() {
 
         call.on(MainThread) {
             success = { textView.text = "The API says: ${it.body}" }
+            error = { textView.text = "Error: $it" }
         }
     }
 

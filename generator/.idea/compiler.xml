@@ -9,8 +9,11 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="generator_main" target="1.8" />
-      <module name="generator_test" target="1.8" />
+      <module name="generator_serviceTest" target="1.8" />
+      <module name="generator_showcaseTest" target="1.8" />
+      <module name="generator_whoTest" target="1.8" />
+      <module name="kotlin-client-generator_main" target="1.8" />
+      <module name="kotlin-client-generator_test" target="1.8" />
       <module name="kotlin-client_main" target="1.8" />
       <module name="kotlin-client_test" target="1.8" />
     </bytecodeTargetLevel>

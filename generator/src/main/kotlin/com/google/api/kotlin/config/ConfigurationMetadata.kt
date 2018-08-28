@@ -96,18 +96,32 @@ internal class ConfigurationMetadataFactory(val rootDirectory: String = "") {
         val matcher = { name: String, pattern: String ->
             FilenameUtils.wildcardMatch(name, pattern, IOCase.INSENSITIVE)
         }
-        val serviceConfig = Files.list(protoPath.parent?.parent)
-            .map { it.toFile() }
-            .filter { it.isFile }
-            .filter { matcher(it.name, "*_$version.yaml") }
-            .findFirst()
-            .orElse(null)
-        val clientConfig = Files.list(protoPath.parent)
-            .map { it.toFile() }
-            .filter { it.isFile }
-            .filter { matcher(it.name, "*_gapic.yaml") }
-            .findFirst()
-            .orElse(null)
+
+        // the service config
+        val serviceConfig = try {
+            Files.list(protoPath.parent?.parent)
+                .map { it.toFile() }
+                .filter { it.isFile }
+                .filter { matcher(it.name, "*_$version.yaml") }
+                .findFirst()
+                .orElseThrow { IllegalStateException("no candidate file found") }
+        } catch (e: Exception) {
+            log.warn(e) { "Unable to find service config" }
+            null
+        }
+
+        // the gapic config
+        val clientConfig = try {
+            Files.list(protoPath.parent)
+                .map { it.toFile() }
+                .filter { it.isFile }
+                .filter { matcher(it.name, "*_gapic.yaml") }
+                .findFirst()
+                .orElseThrow { IllegalStateException("no candidate file found") }
+        } catch (e: Exception) {
+            log.warn(e) { "Unable to find _gapic.yaml" }
+            null
+        }
 
         // parse them
         return parse(proto.`package`, serviceConfig, clientConfig)

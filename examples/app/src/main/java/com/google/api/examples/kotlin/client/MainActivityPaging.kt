@@ -70,7 +70,7 @@ class MainActivityPaging : AppCompatActivity() {
         }
 
         // write the entries
-        client.writeLogEntries(log, globalResource, mapOf(), entries).on {
+        client.writeLogEntries(log, globalResource, mapOf(), entries).on(MainThread) {
             success = {
                 // the server may respond with an empty set if we immediately try to read the logs
                 // that we just wrote - so we wait for a few seconds before proceeding
@@ -95,6 +95,7 @@ class MainActivityPaging : AppCompatActivity() {
                     // }
                 }, 2 * 1000)
             }
+            error = { resultText.text = "Error: $it" }
         }
 
         // prepare for the results

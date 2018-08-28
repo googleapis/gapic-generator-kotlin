@@ -32,6 +32,7 @@
 .idea/modules.xml
 .idea/*.iml
 .idea/modules
+.idea/caches
 
 .DS_Store
 /build

@@ -16,16 +16,16 @@
 
 package com.google.api.examples.kotlin.client
 
-import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.TextView
 import com.google.api.examples.kotlin.util.AccessTokens
-import com.google.cloud.language.v1.AnalyzeEntitiesResponse
+import com.google.api.examples.kotlin.util.MainThread
+import com.google.api.examples.kotlin.util.onUI
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
-import com.google.kgax.grpc.CallResult
+import com.google.kgax.grpc.on
 
 /**
  * Kotlin example calling the language API.
@@ -36,41 +36,34 @@ import com.google.kgax.grpc.CallResult
  */
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var client: LanguageServiceClient
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         val textView: TextView = findViewById(R.id.text_view)
 
-        applicationContext.resources.openRawResource(R.raw.sa).use {
-            val tokenFactory = AccessTokens(it, LanguageServiceClient.ALL_SCOPES)
-            ApiTestTask(tokenFactory) {
-                textView.text = "The API says: $it"
-            }.execute()
+        val tokenFactory = applicationContext.resources.openRawResource(R.raw.sa).use {
+            AccessTokens(it, LanguageServiceClient.ALL_SCOPES)
+        }
+
+        // create a client with an access token
+        client = LanguageServiceClient.fromAccessToken(tokenFactory.fetchToken())
+
+        // call the API
+        client.analyzeEntities(Document {
+            content = "Hi there Joe"
+            type = Document.Type.PLAIN_TEXT
+        }, EncodingType.UTF8).onUI {
+            success = { textView.text = "The API says: $it" }
+            error = { textView.text = "Error: $it" }
         }
     }
 
-    private class ApiTestTask(
-        val tokens: AccessTokens,
-        val callback: (AnalyzeEntitiesResponse) -> Unit
-    ) : AsyncTask<Unit, Unit, CallResult<AnalyzeEntitiesResponse>>() {
-        override fun doInBackground(vararg params: Unit): CallResult<AnalyzeEntitiesResponse> {
-            // create a client with an access token
-            val client = LanguageServiceClient.fromAccessToken(tokens.fetchToken())
+    override fun onDestroy() {
+        super.onDestroy()
 
-            // call the API and shutdown the connection
-            try {
-                return client.analyzeEntities(Document {
-                    content = "Hi there Joe"
-                    type = Document.Type.PLAIN_TEXT
-                }, EncodingType.UTF8).get()
-            } finally {
-                client.shutdownChannel()
-            }
-        }
-
-        override fun onPostExecute(result: CallResult<AnalyzeEntitiesResponse>) {
-            callback(result.body)
-        }
+        client.shutdownChannel()
     }
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>kotlin-client-generator</name>
+	<name>generator</name>
 	<comment>Project kotlin-client-generator created by Buildship.</comment>
 	<projects>
 	</projects>

@@ -34,8 +34,8 @@ class MainActivityOnTest {
 
     @Rule
     @JvmField
-    val activityRule: ActivityTestRule<MainActivity> =
-            ActivityTestRule(MainActivity::class.java)
+    val activityRule: ActivityTestRule<MainActivityOn> =
+            ActivityTestRule(MainActivityOn::class.java)
 
     @Test
     fun returnsIdentifiedEntity() {

@@ -1,0 +1,121 @@
+/*
+ * Copyright 2018 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+buildscript {
+    ext.kotlin_version = '1.2.50'
+
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+plugins {
+    id "com.google.protobuf" version "0.8.5"
+}
+
+group 'com.google.api'
+version '0.1.0'
+
+apply plugin: 'java'
+apply plugin: 'kotlin'
+apply plugin: 'com.google.protobuf'
+
+repositories {
+    google()
+    mavenCentral()
+    jcenter()
+
+    // temporary
+    maven { url 'https://jitpack.io' }
+}
+
+configurations {
+    ktlint
+}
+
+sourceSets {
+    test.kotlin.srcDirs += [
+            'build/generated/source/proto/test/client',
+            'build/generated/source/proto/test/grpc',
+            'build/generated/source/proto/test/javalite'
+    ]
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+
+    // temporary
+    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:7cd3a4c'
+
+    testImplementation 'junit:junit:4.12'
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
+    testImplementation "com.google.truth:truth:0.41"
+
+    ktlint "com.github.shyiko:ktlint:0.27.0"
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+// compile proto and generate gRPC stubs
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.6.1'
+    }
+    plugins {
+        javalite {
+            artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0'
+        }
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.10.0'
+        }
+        client {
+            path = "${projectDir}/runLocalGenerator.sh"
+        }
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins { remove java }
+            task.plugins {
+                javalite {}
+                grpc { option 'lite' }
+                client {}
+            }
+        }
+    }
+}
+
+task ktlint(type: JavaExec, group: "verification") {
+    description = "Check Kotlin code style."
+    main = "com.github.shyiko.ktlint.Main"
+    classpath = configurations.ktlint
+    args "src/**/*.kt", "test/**/*.kt"
+}
+check.dependsOn ktlint
+
+task ktlintFormat(type: JavaExec, group: "formatting") {
+    description = "Fix Kotlin code style deviations."
+    main = "com.github.shyiko.ktlint.Main"
+    classpath = configurations.ktlint
+    args "-F", "src/**/*.kt", "test/**/*.kt"
+}

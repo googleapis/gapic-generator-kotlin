@@ -19,6 +19,7 @@ package com.google.api.examples.kotlin.client
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.TextView
+import com.google.api.examples.kotlin.util.MainThread
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
@@ -52,7 +53,7 @@ class MainActivityMetadata : AppCompatActivity() {
         }.analyzeEntities(Document {
             content = "Hi there Joe"
             type = Document.Type.PLAIN_TEXT
-        }, EncodingType.UTF8).on {
+        }, EncodingType.UTF8).on(MainThread) {
             success = {
                 textView.text = "The API says: ${it.body}\n\n" +
                         "with metadata of: ${it.metadata.keys().joinToString(",")}"

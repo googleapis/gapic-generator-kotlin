@@ -84,13 +84,10 @@ RUN apt-get update && apt-get install -y \
     tree \
     && rm -rf /var/lib/apt/lists/*
 
-# TODO: remove when published
-COPY repository /root/.m2/repository
-
 # copy distribution
-COPY build/distributions/kotlin-client-generator-boot-*.tar /tmp/generator/
+COPY build/distributions/generator-boot-*.tar /tmp/generator/
 RUN mkdir -p /usr/generator && \
-    tar xvf /tmp/generator/kotlin-*.tar --strip-components=1 -C /usr/generator && \
+    tar xvf /tmp/generator/generator-boot-*.tar --strip-components=1 -C /usr/generator && \
     rm -rf /tmp/generator
 
 # move into the gradle project used to run generator

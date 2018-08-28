@@ -34,8 +34,8 @@ class MainActivityInterceptorTest {
 
     @Rule
     @JvmField
-    val activityRule: ActivityTestRule<MainActivity> =
-            ActivityTestRule(MainActivity::class.java)
+    val activityRule: ActivityTestRule<MainActivityInterceptor> =
+            ActivityTestRule(MainActivityInterceptor::class.java)
 
     @Test
     fun returnsIdentifiedEntity() {

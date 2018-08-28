@@ -19,6 +19,9 @@ package com.google.api.examples.kotlin.util
 import android.os.Handler
 import java.util.concurrent.Executor
 import android.os.Looper
+import com.google.kgax.grpc.Callback
+import com.google.kgax.grpc.FutureCall
+import com.google.kgax.grpc.on
 
 /** Executor for the main thread */
 object MainThreadExecutor : Executor {
@@ -30,3 +33,6 @@ object MainThreadExecutor : Executor {
 }
 
 typealias MainThread = MainThreadExecutor
+
+/** extension to make jumping back to the UI more concise */
+fun <T> FutureCall<T>.onUI(callback: Callback<T>.() -> Unit) = this.on(MainThread, callback)
