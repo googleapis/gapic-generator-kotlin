@@ -23,17 +23,12 @@ steps:
     - --key=build-key
   dir: 'examples'
   waitFor: ['-']
-- id: examples_builder
-  name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-f', 'Dockerfile.android', '-t', 'example-builder', '.']
-  dir: 'examples'
-  waitFor: ['-']
 - id: build_examples
-  name: 'example-builder'
+  name: 'gcr.io/lofty-totality-214401/example-builder'
   args: []
   dir: 'examples'
   waitFor:
-    - examples_builder
+    - example_key
 
 # run example tests
 # - id: examples_tester
