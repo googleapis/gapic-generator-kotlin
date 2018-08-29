@@ -48,4 +48,6 @@ steps:
     - start_showcase
     - build_generator
 
+images: ['gcr.io/lofty-totality-214401/kgen']
+
 timeout: 1200s
