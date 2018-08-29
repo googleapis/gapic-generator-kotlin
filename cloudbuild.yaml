@@ -12,15 +12,8 @@ steps:
 
 # build examples
 - id: example_key
-  name: gcr.io/cloud-builders/gcloud
-  args:
-    - kms
-    - decrypt
-    - --ciphertext-file=sa.json.enc
-    - --plaintext-file=app/src/main/res/raw/sa.json
-    - --location=global
-    - --keyring=build-keyring
-    - --key=build-key
+  name: 'ubuntu'
+  args: ['bash', '-c', 'touch app/src/main/res/raw/sa.json']
   dir: 'examples'
   waitFor: ['-']
 - id: build_examples
@@ -30,13 +23,14 @@ steps:
   waitFor:
     - example_key
 
+# TODO:
 # run example tests
-- id: examples_tester
-  name: 'gcr.io/cloud-builders/gcloud'
-  args: ["firebase", "test", "android", "run", "--app", "app/build/outputs/apk/debug/app-debug.apk", "--test", "app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"]
-  dir: 'examples'
-  waitFor:
-    - build_examples
+# - id: examples_tester
+#   name: 'gcr.io/cloud-builders/gcloud'
+#   args: ["firebase", "test", "android", "run", "--app", "app/build/outputs/apk/debug/app-debug.apk", "--test", "app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"]
+#   dir: 'examples'
+#   waitFor:
+#     - build_examples
 
 # spin up showcase server and run tests
 - id: start_showcase
