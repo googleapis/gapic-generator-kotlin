@@ -7,7 +7,7 @@ steps:
   dir: 'generator'
 - id: dockerize_generator
   name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/lofty-totality-214401/kgen', '.']
+  args: ['build', '-t', 'gcr.io/kotlin-gapic/kgen', '.']
   dir: 'generator'
 
 # build examples
@@ -17,7 +17,7 @@ steps:
   dir: 'examples'
   waitFor: ['-']
 - id: build_examples
-  name: 'gcr.io/lofty-totality-214401/example-builder'
+  name: 'gcr.io/kotlin-gapic/example-builder'
   args: []
   dir: 'examples'
   waitFor:
@@ -48,6 +48,6 @@ steps:
     - start_showcase
     - build_generator
 
-images: ['gcr.io/lofty-totality-214401/kgen']
+images: ['gcr.io/kotlin-gapic/kgen']
 
 timeout: 1200s

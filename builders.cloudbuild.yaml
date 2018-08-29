@@ -4,7 +4,7 @@
 #   $ gcloud builds submit --config builders.cloudbuild.yaml .
 steps:
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-f', 'Dockerfile.android', '-t', 'gcr.io/lofty-totality-214401/example-builder', '.']
+  args: ['build', '-f', 'Dockerfile.android', '-t', 'gcr.io/kotlin-gapic/example-builder', '.']
   dir: 'examples'
 
-images: ['gcr.io/lofty-totality-214401/example-builder']
+images: ['gcr.io/kotlin-gapic/example-builder']
