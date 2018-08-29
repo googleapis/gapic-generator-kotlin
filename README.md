@@ -12,7 +12,7 @@ are currently no guarantees for any form of stability or support.
 Kgen can be used with [docker](https://www.docker.com/), [gradle](https://gradle.org/), 
 or as a [protoc plugin](https://developers.google.com/protocol-buffers/). 
 
-To get started with docker, run the following to generate a client library for the [example service](generator/example-server).
+To get started with docker, run the following to generate a client for the [example service](generator/example-server).
 
 ```bash
 $ mkdir my-output 
@@ -27,13 +27,13 @@ your own protos to see what happens.
 
 See the [RUNNING.md](RUNNING.md) for more details, configuration, and command line options.
 
-### Examples
+## Examples
 
 A simple "hello world" style example is in the [generator/example-server](generator/example-server)
 and Kgen's output, using the command in the quick start, is checked into [generator/example-client](generator/example-client). The most relevant files are:
 
-  + The [proto describing the API](generator/example-client/src/main/proto/google/example/hello.proto)
-  + The [API implementation](generator/example-client/src/main/kotlin/example/ExampleServer.kt) 
+  + The [proto describing the API](generator/example-server/src/main/proto/google/example/hello.proto)
+  + The [API implementation](generator/example-server/src/main/kotlin/example/ExampleServer.kt) 
   + The generated [client code](generator/example-client), which includes:
     + `client`: A client for each of the API services and various `KotlinBuilders.kt` that may be used as an alternative to the Java builders.
     + `clientTest`: Test code for the clients.
