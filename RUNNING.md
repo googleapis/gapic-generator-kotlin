@@ -64,7 +64,7 @@ dependencies {
     // ...
     
     // for http/2 gRPC based clients (the only option for now)
-    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:7cd3a4c'
+    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:132f3f5'
 }
 
 // configure the protobuf gradle plugin

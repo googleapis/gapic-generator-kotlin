@@ -21,18 +21,31 @@ import com.google.rpc.Code
 import com.google.rpc.Status
 import com.google.showcase.v1.EchoClient
 import com.google.showcase.v1.EchoRequest
+import com.google.showcase.v1.ExpandRequest
 import io.grpc.StatusRuntimeException
 import io.grpc.okhttp.OkHttpChannelBuilder
+import kotlinx.coroutines.experimental.CoroutineScope
+import kotlinx.coroutines.experimental.channels.Channel
+import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.experimental.withTimeout
 import org.junit.AfterClass
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 
+/**
+ * Integration tests via Showcase:
+ * https://github.com/googleapis/gapic-showcase
+ */
 class ShowcaseTest {
 
+    // client / connection to server
     companion object {
         private val host = System.getenv("HOST") ?: "localhost"
         private val port = System.getenv("PORT") ?: "7469"
 
+        // use insecure client
         val client = EchoClient.fromCredentials(
                 channel = OkHttpChannelBuilder.forAddress(host, port.toInt())
                         .usePlaintext()
@@ -74,4 +87,72 @@ class ShowcaseTest {
             throw e
         }
     }
+
+    @Test
+    fun `can expand a stream of responses`() {
+        val c = Channel<Throwable?>()
+        val expansions = mutableListOf<String>()
+
+        val err = runBlockingWithTimeout {
+            val stream = client.expand(ExpandRequest {
+                content = "well hello there how are you"
+            })
+
+            stream.responses.onNext = { expansions.add(it.content) }
+            stream.responses.onError = { launch { c.send(it) } }
+            stream.responses.onCompleted = { launch { c.send(null) } }
+
+            c.receive()
+        }
+
+        assertThat(err).isNull()
+        assertThat(expansions).containsExactly("well", "hello", "there", "how", "are", "you").inOrder()
+    }
+
+    @Test
+    fun `can expand a stream of responses and then error`() {
+        val c = Channel<Throwable?>()
+        val expansions = mutableListOf<String>()
+
+        val err = runBlockingWithTimeout {
+            val stream = client.expand(ExpandRequest {
+                content = "one two zee"
+                error = Status {
+                    code = Code.ABORTED_VALUE
+                    message = "yikes"
+                }
+            })
+
+            stream.responses.onNext = { expansions.add(it.content) }
+            stream.responses.onError = { launch { c.send(it) } }
+            stream.responses.onCompleted = { launch { c.send(null) } }
+
+            c.receive()
+        }
+
+        assertThat(err).isNotNull()
+        assertThat(expansions).containsExactly("one", "two", "zee").inOrder()
+    }
+
+    @Test
+    fun `can collect a stream of requests`() {
+        val result = runBlockingWithTimeout {
+            val stream = client.collect()
+
+            listOf("a", "b", "c", "done").map {
+                stream.requests.send(EchoRequest { content = it })
+            }
+            stream.requests.end()
+
+            stream.response.get()
+        }
+
+        assertThat(result.content).isEqualTo("a b c done")
+    }
+
+    // standard 5 second timeout handler for streaming tests
+    private fun <T> runBlockingWithTimeout(seconds: Long = 5, block: suspend CoroutineScope.() -> T) = runBlocking {
+        withTimeout(seconds, TimeUnit.SECONDS, block)
+    }
+
 }

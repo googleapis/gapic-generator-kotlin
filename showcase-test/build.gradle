@@ -59,15 +59,22 @@ sourceSets {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:0.25.0"
 
     // temporary
-    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:7cd3a4c'
+    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:132f3f5'
 
     testImplementation 'junit:junit:4.12'
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
     testImplementation "com.google.truth:truth:0.41"
 
     ktlint "com.github.shyiko:ktlint:0.27.0"
+}
+
+kotlin {
+    experimental {
+        coroutines 'enable'
+    }
 }
 
 compileKotlin {
