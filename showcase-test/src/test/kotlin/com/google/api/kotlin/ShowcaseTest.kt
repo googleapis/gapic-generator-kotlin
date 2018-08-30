@@ -154,5 +154,4 @@ class ShowcaseTest {
     private fun <T> runBlockingWithTimeout(seconds: Long = 5, block: suspend CoroutineScope.() -> T) = runBlocking {
         withTimeout(seconds, TimeUnit.SECONDS, block)
     }
-
 }
