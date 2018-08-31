@@ -92,7 +92,7 @@ protobuf {
         }
         client {
             //artifact = 'com.google.api:generator:0.1.0:core@jar'
-            artifact = 'com.github.googleapis:gapic-generator-kotlin:c957593:core@jar'
+            artifact = 'com.github.googleapis:gapic-generator-kotlin:7fa06fc:core@jar'
         }
     }
     generateProtoTasks {
