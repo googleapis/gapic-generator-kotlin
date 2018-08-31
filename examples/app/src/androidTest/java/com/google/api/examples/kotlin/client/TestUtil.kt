@@ -22,10 +22,11 @@ import android.support.test.espresso.matcher.ViewMatchers
 import android.support.test.espresso.matcher.ViewMatchers.withText
 import org.awaitility.Awaitility
 import org.hamcrest.Matchers.not
+import java.util.concurrent.TimeUnit
 
 // waits until the loading text goes away, useful for simple tests
 fun awaitApiCall() {
-    Awaitility.await().untilAsserted {
+    Awaitility.await().atMost(20, TimeUnit.SECONDS).untilAsserted {
         Espresso.onView(ViewMatchers.withId(R.id.text_view))
                 .check(ViewAssertions.matches(not(withText(R.string.loading))))
     }

@@ -22,6 +22,7 @@ import com.google.api.kotlin.FileDescriptorProto
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.MethodDescriptorProto
 import com.google.api.kotlin.ServiceDescriptorProto
+import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.ConfigurationMetadata
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.ServiceOptions
@@ -40,8 +41,11 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-// tests basic functionality
-// more complex tests use the test protos in [GRPCGeneratorTest].
+/**
+ * Tests basic functionality.
+ *
+ * more complex tests use the test protos in [GRPCGeneratorTest].
+ */
 class UnitTestImplTest {
 
     private val documentationGenerator: Documentation = mock()
@@ -63,10 +67,9 @@ class UnitTestImplTest {
 
     @Test
     fun `Generates the prepare fun`() {
-        whenever(stubGenerator.getFutureStubType(ctx)).doReturn(
-            ClassName("hey.there", "Folks").parameterizedBy(ClassName("a.b.c", "Dee"))
+        whenever(stubGenerator.getApiStubType(ctx)).doReturn(
+            ClassName("the.stub", "Stubby").parameterizedBy(ClassName("a.b", "C"))
         )
-
         whenever(types.getKotlinType(".foo.bar.ZaInput")).doReturn(
             ClassName("foo.bar", "ZaInput")
         )
@@ -108,5 +111,29 @@ class UnitTestImplTest {
 
         val prepareFun = result.first { it.function.name == "prepare" }
         Truth.assertThat(prepareFun.unitTestCode).isNull()
+
+        Truth.assertThat(prepareFun.function.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            | * Prepare for an API call by setting any desired options. For example:
+            | *
+            | *
+            | ```
+            | * val client = foo.bar.ZaTest.fromServiceAccount(YOUR_KEY_FILE)
+            | * val response = client.prepare {
+            | *     withMetadata("my-custom-header", listOf("some", "thing"))
+            | * }.funFunction(request).get()
+            | * ```
+            | *
+            | * You may save the client returned by this call and reuse it if you
+            | * plan to make multiple requests with the same settings.
+            | */
+            |fun prepare(init: com.google.kgax.grpc.ClientCallOptions.Builder.() -> kotlin.Unit): foo.bar.ZaTest {
+            |    val options = com.google.kgax.grpc.ClientCallOptions.Builder(options)
+            |    options.init()
+            |    return foo.bar.ZaTest(channel, options.build())
+            |}
+            |""".asNormalizedString()
+        )
     }
 }

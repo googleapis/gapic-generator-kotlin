@@ -22,9 +22,7 @@ import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.common.truth.Truth.assertThat
 import com.google.protobuf.DescriptorProtos
-import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.doReturn
-import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.whenever
@@ -34,8 +32,14 @@ import com.squareup.kotlinpoet.TypeName
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
+/**
+ * Tests basic functionality.
+ *
+ * more complex tests use the test protos in [GRPCGeneratorTest].
+ */
 class StubsImplTest {
 
+    private val baseClassGenerator: BaseClass = mock()
     private val proto: DescriptorProtos.FileDescriptorProto = mock()
     private val service: DescriptorProtos.ServiceDescriptorProto = mock()
     private val types: ProtobufTypeMapper = mock()
@@ -43,32 +47,22 @@ class StubsImplTest {
 
     @BeforeTest
     fun before() {
-        reset(proto, service, types, ctx)
+        reset(baseClassGenerator, proto, service, types, ctx)
         whenever(ctx.proto).doReturn(proto)
         whenever(ctx.service).doReturn(service)
         whenever(ctx.typeMap).doReturn(types)
+        whenever(baseClassGenerator.stubTypeName(ctx)).doReturn(ClassName("a.b.c", "Foo"))
     }
 
     @Test
     fun `Generates a stub holder`() {
         whenever(service.name).doReturn("stub")
-        whenever(
-            types.getKotlinGrpcTypeInnerClass(
-                eq(proto), eq(service), any(), eq("stubFutureStub")
-            )
-        ).doReturn(ClassName("one", "Future"))
-        whenever(
-            types.getKotlinGrpcTypeInnerClass(
-                eq(proto), eq(service), any(), eq("stubStub")
-            )
-        ).doReturn(ClassName("two", "Stream"))
 
-        val result = StubsImpl().generateHolderType(ctx)
+        val result = StubsImpl(baseClassGenerator).generateHolderType(ctx)
 
         assertThat(result.toString().asNormalizedString()).isEqualTo(
             """|class Stubs(
-               |    val stream: com.google.kgax.grpc.GrpcClientStub<two.Stream>,
-               |    val future: com.google.kgax.grpc.GrpcClientStub<one.Future>,
+               |    val api: com.google.kgax.grpc.GrpcClientStub<a.b.c.Foo>,
                |    val operation: com.google.kgax.grpc.GrpcClientStub<com.google.longrunning.OperationsGrpc.OperationsFutureStub>
                |) {
                |    interface Factory {
@@ -79,36 +73,8 @@ class StubsImplTest {
     }
 
     @Test
-    fun `Generates future type name`() {
-        whenever(service.name).doReturn("a_service")
-        whenever(
-            types.getKotlinGrpcTypeInnerClass(
-                eq(proto), eq(service), eq("Grpc"), eq("a_serviceFutureStub")
-            )
-        ).doReturn(ClassName("baz.bar", "AName"))
-
-        val result = StubsImpl().getFutureStubType(ctx)
-
-        assertThat(result).isEqualTo(grpcStub(ClassName("baz.bar", "AName")))
-    }
-
-    @Test
-    fun `Generates stream type name`() {
-        whenever(service.name).doReturn("Someservice")
-        whenever(
-            types.getKotlinGrpcTypeInnerClass(
-                eq(proto), eq(service), eq("Grpc"), eq("SomeserviceStub")
-            )
-        ).doReturn(ClassName("baz.bar.wow", "name"))
-
-        val result = StubsImpl().getStreamStubType(ctx)
-
-        assertThat(result).isEqualTo(grpcStub(ClassName("baz.bar.wow", "name")))
-    }
-
-    @Test
     fun `Generates operation type name`() {
-        val result = StubsImpl().getOperationsStubType(ctx)
+        val result = StubsImpl(baseClassGenerator).getOperationsStubType(ctx)
 
         assertThat(result).isEqualTo(
             grpcStub(

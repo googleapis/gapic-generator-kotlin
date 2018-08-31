@@ -93,9 +93,6 @@ protobuf {
         javalite {
             artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0'
         }
-        grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.10.0'
-        }
         client {
             path = "${projectDir}/runLocalGenerator.sh"
         }
@@ -105,10 +102,15 @@ protobuf {
             task.builtins { remove java }
             task.plugins {
                 javalite {}
-                grpc { option 'lite' }
                 client {}
             }
         }
+    }
+}
+
+test {
+    testLogging {
+        events "PASSED", "FAILED", "SKIPPED"
     }
 }
 

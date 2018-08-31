@@ -78,15 +78,6 @@ internal abstract class BaseGeneratorTest {
     // a type map from the protos
     protected fun getMockedTypeMap(): ProtobufTypeMapper {
         return mock {
-            on { getKotlinGrpcType(any(), any()) } doReturn ClassName(TEST_NAMESPACE, "TestStub")
-            on { getKotlinGrpcType(any(), any(), any()) } doReturn ClassName(
-                TEST_NAMESPACE,
-                "TestStub"
-            )
-            on { getKotlinGrpcTypeInnerClass(any(), any(), any()) } doReturn
-                ClassName(TEST_NAMESPACE, "TestStub")
-            on { getKotlinGrpcTypeInnerClass(any(), any(), any(), any()) } doReturn
-                ClassName(TEST_NAMESPACE, "TestStub")
             on { getKotlinType(any()) } doAnswer {
                 typesOfMessages[it.arguments[0]]
                     ?: throw RuntimeException("unknown type (forget to add it?): ${it.arguments[0]}")

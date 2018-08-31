@@ -90,10 +90,8 @@ protobuf {
         javalite {
             artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0'
         }
-        grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.10.0'
-        }
         client {
+            //artifact = 'com.google.api:generator:0.1.0:core@jar'
             artifact = 'com.github.googleapis:gapic-generator-kotlin:c957593:core@jar'
         }
     }
@@ -104,9 +102,6 @@ protobuf {
             }
             task.plugins {
                 javalite {}
-                grpc {
-                    option 'lite'
-                }
                 client {
                     option "source=${projectDir}/src/main/proto"
                     option "test_output=${project.buildDir}/generated/source/protoTest/debugUnitTest/client"

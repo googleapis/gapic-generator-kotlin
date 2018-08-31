@@ -45,10 +45,6 @@ internal interface Properties {
 internal class PropertiesImpl : AbstractGenerator(), Properties {
 
     override fun generate(ctx: GeneratorContext): List<PropertySpec> {
-        val grpcType = ctx.typeMap.getKotlinGrpcType(
-            ctx.proto, ctx.service, "Grpc"
-        )
-
         val stub = PropertySpec.builder(
             Properties.PROP_STUBS, ClassName.bestGuess(Stubs.CLASS_STUBS)
         )
@@ -63,14 +59,7 @@ internal class PropertiesImpl : AbstractGenerator(), Properties {
                         ClassName.bestGuess(Stubs.CLASS_STUBS)
                     )
                     .add(
-                        "%T.newStub(%N).prepare(%N),\n",
-                        grpcType,
-                        Properties.PROP_CHANNEL,
-                        Properties.PROP_CALL_OPTS
-                    )
-                    .add(
-                        "%T.newFutureStub(%N).prepare(%N),\n",
-                        grpcType,
+                        "Stub(%N).prepare(%N),\n",
                         Properties.PROP_CHANNEL,
                         Properties.PROP_CALL_OPTS
                     )

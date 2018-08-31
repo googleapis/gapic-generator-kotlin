@@ -35,6 +35,7 @@ import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.asTypeName
 import mu.KotlinLogging
+import java.util.concurrent.TimeUnit
 
 private val log = KotlinLogging.logger {}
 
@@ -98,6 +99,20 @@ internal class FunctionsImpl(
                 .addStatement(
                     "return %T(%N, options.build())",
                     ctx.className, Properties.PROP_CHANNEL
+                )
+                .build()
+                .asTestable(),
+
+            FunSpec.builder("shutdownChannel")
+                .addKdoc("Shutdown the [channel] associated with this client.")
+                .addParameter(
+                    ParameterSpec.builder("waitForSeconds", Long::class.java.asTypeName())
+                        .defaultValue("5")
+                        .build()
+                )
+                .addStatement(
+                    "%L.shutdown().awaitTermination(waitForSeconds, %T.SECONDS)",
+                    Properties.PROP_CHANNEL, TimeUnit::class.java.asTypeName()
                 )
                 .build()
                 .asTestable()
@@ -212,7 +227,7 @@ internal class FunctionsImpl(
                     |""".trimMargin(),
                     returnType,
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_OPERATION,
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_FUTURE,
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
                     methodName, requestObject.indent(3),
                     realResponseType
                 )
@@ -266,7 +281,7 @@ internal class FunctionsImpl(
                     |    }
                     |}
                     |""".trimMargin(),
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_FUTURE,
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
                     methodName, pageSizeSetter,
                     requestObject.indent(2),
                     pageTokenSetter,
@@ -287,7 +302,7 @@ internal class FunctionsImpl(
                         |    )
                         |}
                         |""".trimMargin(),
-                        Properties.PROP_STUBS, Stubs.PROP_STUBS_FUTURE,
+                        Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
                         methodName, requestObject.indent(2)
                     )
                 } else {
@@ -297,7 +312,7 @@ internal class FunctionsImpl(
                         |    it.%L(%L)
                         |}
                         |""".trimMargin(),
-                        Properties.PROP_STUBS, Stubs.PROP_STUBS_FUTURE,
+                        Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
                         methodName, requestObject.indent(1)
                     )
                 }
@@ -380,7 +395,7 @@ internal class FunctionsImpl(
                     |)
                     |return stream
                     |""".trimMargin(),
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM, methodName,
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, methodName,
                     request.indent(1)
                 )
             } else if (method.hasClientStreaming()) { // client only
@@ -402,7 +417,7 @@ internal class FunctionsImpl(
                 )
                 flattened.addCode(
                     "return %N.%N.executeClientStreaming { it::%N }",
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM, methodName
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, methodName
                 )
             } else if (method.hasServerStreaming()) { // server only
                 flattened.addKdoc(
@@ -427,7 +442,7 @@ internal class FunctionsImpl(
                     |    )
                     |}
                     |""".trimMargin(),
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM,
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
                     methodName, request.indent(2)
                 )
             } else {
@@ -456,7 +471,7 @@ internal class FunctionsImpl(
                 )
                 normal.addCode(
                     "return %N.%N.executeStreaming { it::%N }",
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM, methodName
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, methodName
                 )
             } else if (method.hasClientStreaming()) { // client only
                 normal.returns(
@@ -466,7 +481,7 @@ internal class FunctionsImpl(
                 )
                 normal.addCode(
                     "return %N.%N.executeClientStreaming { it::%N }",
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM, methodName
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, methodName
                 )
             } else if (method.hasServerStreaming()) { // server only
                 val param = ParameterSpec.builder(Functions.PARAM_REQUEST, normalInputType).build()
@@ -479,7 +494,7 @@ internal class FunctionsImpl(
                     |    stub.%N(%N, observer)
                     |}
                     |""".trimMargin(),
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_STREAM,
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
                     methodName, Functions.PARAM_REQUEST
                 )
             } else {

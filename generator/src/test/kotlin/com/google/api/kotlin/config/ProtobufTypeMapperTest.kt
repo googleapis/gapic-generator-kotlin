@@ -98,23 +98,4 @@ internal class ProtobufTypeMapperTest : BaseGeneratorTest() {
             mapper.getKotlinType(".google.foo.Bar")
         }
     }
-
-    @Test
-    fun `maps a service`() {
-        val mapper = ProtobufTypeMapper.fromProtos(listOf(testProto, testTypesProto))
-
-        assertThat(mapper.getKotlinGrpcType(".google.example.TestService", ""))
-            .isEqualTo(ClassName("google.example", "TestService"))
-        assertThat(mapper.getKotlinGrpcType(".google.example.TestService", "Hi There"))
-            .isEqualTo(ClassName("google.example", "TestServiceHi There"))
-    }
-
-    @Test
-    fun `throws on invalid service`() {
-        val mapper = ProtobufTypeMapper.fromProtos(listOf(testProto, testTypesProto))
-
-        assertFailsWith(IllegalArgumentException::class) {
-            mapper.getKotlinGrpcType(".google.example.Result", "")
-        }
-    }
 }

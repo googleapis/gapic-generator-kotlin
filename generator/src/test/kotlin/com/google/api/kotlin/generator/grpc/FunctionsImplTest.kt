@@ -41,8 +41,11 @@ import com.squareup.kotlinpoet.CodeBlock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-// tests basic functionality
-// more complex tests use the test protos in [GRPCGeneratorTest].
+/**
+ * Tests basic functionality.
+ *
+ * more complex tests use the test protos in [GRPCGeneratorTest].
+ */
 class FunctionsImplTest {
 
     private val documentationGenerator: Documentation = mock()

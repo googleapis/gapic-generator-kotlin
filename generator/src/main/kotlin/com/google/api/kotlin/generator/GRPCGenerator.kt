@@ -20,6 +20,8 @@ import com.google.api.kotlin.ClientGenerator
 import com.google.api.kotlin.GeneratedArtifact
 import com.google.api.kotlin.GeneratedSource
 import com.google.api.kotlin.GeneratorContext
+import com.google.api.kotlin.generator.grpc.BaseClass
+import com.google.api.kotlin.generator.grpc.BaseClassImpl
 import com.google.api.kotlin.generator.grpc.CompanionObject
 import com.google.api.kotlin.generator.grpc.CompanionObjectImpl
 import com.google.api.kotlin.generator.grpc.Documentation
@@ -42,7 +44,8 @@ import com.squareup.kotlinpoet.TypeSpec
  * @author jbolinger
  */
 internal class GRPCGenerator(
-    private val stubs: Stubs = StubsImpl(),
+    private val baseClass: BaseClass = BaseClassImpl(),
+    private val stubs: Stubs = StubsImpl(baseClass),
     private val properties: Properties = PropertiesImpl(),
     private val companion: CompanionObject = CompanionObjectImpl(),
     private val documentation: Documentation = DocumentationImpl(),
@@ -53,12 +56,15 @@ internal class GRPCGenerator(
     override fun generateServiceClient(ctx: GeneratorContext): List<GeneratedArtifact> {
         val artifacts = mutableListOf<GeneratedArtifact>()
 
+        // build base class for client
+        val base = baseClass.generate(ctx)
+
         val clientType = TypeSpec.classBuilder(ctx.className)
         val apiMethods = functions.generate(ctx)
 
         // build client
         clientType.addAnnotation(createGeneratedByAnnotation())
-        clientType.superclass(GrpcTypes.Support.GrpcClient)
+        clientType.superclass(baseClass.typeName(ctx))
         clientType.addSuperclassConstructorParameter("%N", Properties.PROP_CHANNEL)
         clientType.addSuperclassConstructorParameter("%N", Properties.PROP_CALL_OPTS)
         clientType.addKdoc(documentation.generateClassKDoc(ctx))
@@ -83,6 +89,7 @@ internal class GRPCGenerator(
                 imports = imports + grpcImports
             )
         )
+        artifacts.add(base)
 
         // build unit tests
         unitTests.generate(ctx, apiMethods)?.let {

@@ -30,8 +30,10 @@ import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.runBlocking
 import kotlinx.coroutines.experimental.withTimeout
 import org.junit.AfterClass
+import java.util.Random
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
+import kotlin.streams.asSequence
 import kotlin.test.Test
 
 /**
@@ -93,20 +95,24 @@ class ShowcaseTest {
         val c = Channel<Throwable?>()
         val expansions = mutableListOf<String>()
 
-        val err = runBlockingWithTimeout {
-            val stream = client.expand(ExpandRequest {
-                content = "well hello there how are you"
-            })
+        try {
+            val err = runBlockingWithTimeout {
+                val stream = client.expand(ExpandRequest {
+                    content = "well hello there how are you"
+                })
 
-            stream.responses.onNext = { expansions.add(it.content) }
-            stream.responses.onError = { launch { c.send(it) } }
-            stream.responses.onCompleted = { launch { c.send(null) } }
+                stream.responses.onNext = { expansions.add(it.content) }
+                stream.responses.onError = { launch { c.send(it) } }
+                stream.responses.onCompleted = { launch { c.send(null) } }
 
-            c.receive()
+                c.receive()
+            }
+
+            assertThat(err).isNull()
+            assertThat(expansions).containsExactly("well", "hello", "there", "how", "are", "you").inOrder()
+        } catch(e: Throwable) {
+            println(e)
         }
-
-        assertThat(err).isNull()
-        assertThat(expansions).containsExactly("well", "hello", "there", "how", "are", "you").inOrder()
     }
 
     @Test
@@ -148,6 +154,37 @@ class ShowcaseTest {
         }
 
         assertThat(result.content).isEqualTo("a b c done")
+    }
+
+    @Test
+    fun `can have a random chat`() {
+        val c = Channel<Throwable?>()
+
+        val inputs = Array(5) { _ ->
+            Random().ints(20)
+                    .asSequence()
+                    .map { it.toString() }
+                    .joinToString("->")
+        }
+
+        val responses = mutableListOf<String>()
+        val stream = client.chat()
+
+        val err = runBlockingWithTimeout {
+            stream.responses.onNext = { responses.add(it.content) }
+            stream.responses.onError = { launch { c.send(it) } }
+            stream.responses.onCompleted = { launch { c.send(null) } }
+
+            for (str in inputs) {
+                stream.requests.send(EchoRequest { content = str })
+            }
+            stream.requests.end()
+
+            c.receive()
+        }
+
+        assertThat(err).isNull()
+        assertThat(responses).containsExactly(*inputs).inOrder()
     }
 
     // standard 5 second timeout handler for streaming tests

@@ -28,6 +28,11 @@ import com.squareup.kotlinpoet.ClassName
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
+/**
+ * Tests basic functionality.
+ *
+ * more complex tests use the test protos in [GRPCGeneratorTest].
+ */
 class CompanionObjectImplTest {
 
     private val meta: ConfigurationMetadata = mock()

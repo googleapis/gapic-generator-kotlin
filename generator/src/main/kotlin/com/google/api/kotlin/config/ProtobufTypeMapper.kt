@@ -36,29 +36,6 @@ internal class ProtobufTypeMapper private constructor() {
                 ?: throw IllegalArgumentException("proto type: $protoType is not recognized")
         )
 
-    /** Lookup the Kotlin type given a proto service */
-    fun getKotlinGrpcType(protoService: String, suffix: String) =
-        ClassName.bestGuess("${serviceMap[protoService] ?: ""}$suffix")
-
-    /** Same as [getKotlinGrpcType] but changes the output code to use InnerClass instead off Foo.InnerClass  */
-    fun getKotlinGrpcTypeInnerClass(protoService: String, suffix: String, innerClassName: String) =
-        ClassName("${serviceMap[protoService] ?: ""}$suffix", innerClassName)
-
-    fun getKotlinGrpcTypeInnerClass(
-        proto: DescriptorProtos.FileDescriptorProto,
-        service: DescriptorProtos.ServiceDescriptorProto,
-        suffix: String,
-        innerClassName: String
-    ) =
-        getKotlinGrpcTypeInnerClass(".${proto.`package`}.${service.name}", suffix, innerClassName)
-
-    fun getKotlinGrpcType(
-        proto: DescriptorProtos.FileDescriptorProto,
-        service: DescriptorProtos.ServiceDescriptorProto,
-        suffix: String
-    ) =
-        getKotlinGrpcType(".${proto.`package`}.${service.name}", suffix)
-
     /** Get all Kotlin types (excluding enums and map types) */
     fun getAllKotlinTypes() = knownProtoTypes.keys
         .filter { !(knownProtoTypes[it]?.options?.mapEntry ?: false) }

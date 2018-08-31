@@ -78,9 +78,6 @@ protobuf {
         javalite {
             artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0'
         }
-        grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.10.0'
-        }
         client {
             artifact = 'com.github.googleapis:gapic-generator-kotlin:c957593:core@jar'
         }
@@ -97,10 +94,6 @@ protobuf {
                 // this generates the protocol buffer message types
                 // which include the inputs and outputs of your API
                 javalite {}
-                // this generates a low-level gRPC client for the service defined in your API
-                grpc {
-                    option 'lite'
-                }
                 // this generates your client library and helper Kotlin builders!
                 client {
                     // TODO: these options will change

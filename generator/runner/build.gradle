@@ -61,14 +61,11 @@ compileTestKotlin {
 // compile proto and generate gRPC stubs
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.6.0'
+        artifact = 'com.google.protobuf:protoc:3.6.1'
     }
     plugins {
         javalite {
             artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0'
-        }
-        grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.10.0'
         }
         client {
             path = '/usr/generator/bin/generator'
@@ -81,9 +78,6 @@ protobuf {
             }
             task.plugins {
                 javalite {}
-                grpc {
-                    option 'lite'
-                }
                 client {
                     option "source=${projectDir}/src/main/proto"
                     option "test_output=${project.buildDir}/generated/source/protoTest/clientTest"

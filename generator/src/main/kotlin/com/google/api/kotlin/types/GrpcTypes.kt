@@ -27,6 +27,7 @@ import com.squareup.kotlinpoet.TypeName
  */
 internal interface GrpcTypes {
 
+    // auth type
     interface Auth {
         companion object {
             val MoreCallCredentials = ClassName("io.grpc.auth", "MoreCallCredentials")
@@ -35,6 +36,7 @@ internal interface GrpcTypes {
         }
     }
 
+    // kgax types
     interface Support {
         companion object {
             const val SUPPORT_LIB_PACKAGE = "com.google.kgax"
@@ -42,7 +44,6 @@ internal interface GrpcTypes {
 
             val ProtoBuilder = ClassName(SUPPORT_LIB_PACKAGE, "ProtoBuilder")
 
-            val GrpcClient = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "GrpcClient")
             fun GrpcClientStub(type: TypeName) =
                 ClassName(SUPPORT_LIB_GRPC_PACKAGE, "GrpcClientStub").parameterizedBy(type)
 
@@ -89,13 +90,36 @@ internal interface GrpcTypes {
         }
     }
 
+    // guava types
+    interface Guava {
+        companion object {
+            fun ListenableFuture(type: TypeName) =
+                ClassName("com.google.common.util.concurrent", "ListenableFuture")
+                    .parameterizedBy(type)
+        }
+    }
+
+    // grpc types
     companion object {
+        val Channel = ClassName("io.grpc", "Channel")
         val ManagedChannel = ClassName("io.grpc", "ManagedChannel")
+        val CallOptions = ClassName("io.grpc", "CallOptions")
         val OkHttpChannelBuilder = ClassName("io.grpc.okhttp", "OkHttpChannelBuilder")
         val OperationsGrpc = ClassName("com.google.longrunning", "OperationsGrpc")
         val OperationsFutureStub =
             ClassName("com.google.longrunning.OperationsGrpc", "OperationsFutureStub")
         val ByteString = ClassName("com.google.protobuf", "ByteString")
+        val MethodDescriptorType = ClassName("io.grpc", "MethodDescriptor.MethodType")
+        val ProtoLiteUtils = ClassName("io.grpc.protobuf.lite", "ProtoLiteUtils")
+
+        fun AbstractStub(type: TypeName) = ClassName("io.grpc.stub", "AbstractStub")
+            .parameterizedBy(type)
+
+        fun MethodDescriptor(requestType: TypeName, responseType: TypeName) =
+            ClassName("io.grpc", "MethodDescriptor").parameterizedBy(
+                requestType,
+                responseType
+            )
 
         fun StreamObserver(type: TypeName) =
             ClassName("io.grpc.stub", "StreamObserver").parameterizedBy(type)

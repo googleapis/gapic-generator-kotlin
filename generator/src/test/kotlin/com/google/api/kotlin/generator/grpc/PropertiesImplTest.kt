@@ -26,10 +26,14 @@ import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.whenever
-import com.squareup.kotlinpoet.ClassName
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
+/**
+ * Tests basic functionality.
+ *
+ * more complex tests use the test protos in [GRPCGeneratorTest].
+ */
 class PropertiesImplTest {
 
     private val proto: DescriptorProtos.FileDescriptorProto = mock()
@@ -49,20 +53,13 @@ class PropertiesImplTest {
 
     @Test
     fun `Generates client properties`() {
-        whenever(
-            types.getKotlinGrpcType(
-                ctx.proto, ctx.service, "Grpc"
-            )
-        ).doReturn(ClassName("q.w.e.r.t.y", "Key"))
-
         val result = PropertiesImpl().generate(ctx)
 
         assertThat(result).hasSize(1)
         assertThat(result.first().toString().asNormalizedString()).isEqualTo(
             """
             |private val stubs: Stubs = factory?.create(channel, options) ?: Stubs(
-            |    q.w.e.r.t.y.Key.newStub(channel).prepare(options),
-            |    q.w.e.r.t.y.Key.newFutureStub(channel).prepare(options),
+            |    Stub(channel).prepare(options),
             |    com.google.longrunning.OperationsGrpc.newFutureStub(channel).prepare(options)
             |)
             |""".asNormalizedString()

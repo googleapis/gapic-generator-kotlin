@@ -71,8 +71,7 @@ internal interface UnitTest {
     companion object {
         const val FUN_GET_CLIENT = "getClient"
 
-        const val MOCK_STREAM_STUB = "streamingStub"
-        const val MOCK_FUTURE_STUB = "futureStub"
+        const val MOCK_API_STUB = "apiStub"
         const val MOCK_OPS_STUB = "operationsStub"
         const val MOCK_CHANNEL = "channel"
         const val MOCK_CALL_OPTS = "options"
@@ -90,8 +89,7 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
 
         // add props (mocks) that will be used by all test methods
         val mocks = mapOf(
-            UnitTest.MOCK_STREAM_STUB to stubs.getStreamStubType(ctx),
-            UnitTest.MOCK_FUTURE_STUB to stubs.getFutureStubType(ctx),
+            UnitTest.MOCK_API_STUB to stubs.getApiStubType(ctx),
             UnitTest.MOCK_OPS_STUB to stubs.getOperationsStubType(ctx),
             UnitTest.MOCK_CHANNEL to GrpcTypes.ManagedChannel,
             UnitTest.MOCK_CALL_OPTS to GrpcTypes.Support.ClientCallOptions
@@ -109,7 +107,7 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
             FunSpec.builder("resetMocks")
                 .addAnnotation(ClassName("kotlin.test", "BeforeTest"))
                 .addStatement(
-                    "reset(%N, %N, %N, %N, %N)", *mocks.keys.toTypedArray()
+                    "reset(%N, %N, %N, %N)", *mocks.keys.toTypedArray()
                 )
                 .build()
         )
@@ -122,13 +120,13 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
                     """
                         |return %T.fromStubs(object: %T.%L.Factory {
                         |    override fun create(channel: %T, options: %T) =
-                        |        %T.%L(%N, %N, %N)
+                        |        %T.%L(%N, %N)
                         |}, %N, %N)
                         |""".trimMargin(),
                     ctx.className, ctx.className, Stubs.CLASS_STUBS,
                     GrpcTypes.ManagedChannel, GrpcTypes.Support.ClientCallOptions,
                     ctx.className, Stubs.CLASS_STUBS,
-                    UnitTest.MOCK_STREAM_STUB, UnitTest.MOCK_FUTURE_STUB, UnitTest.MOCK_OPS_STUB,
+                    UnitTest.MOCK_API_STUB, UnitTest.MOCK_OPS_STUB,
                     UnitTest.MOCK_CHANNEL, UnitTest.MOCK_CALL_OPTS
                 )
                 .build()
@@ -204,7 +202,7 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
                |whenever(%N.executeFuture<%T>(any())).thenReturn(future)
                |""".trimMargin(),
             GrpcTypes.Support.FutureCall(originalReturnType),
-            UnitTest.MOCK_FUTURE_STUB, originalReturnType
+            UnitTest.MOCK_API_STUB, originalReturnType
         )
 
         // if paging add extra mocks for the page handling
@@ -267,8 +265,8 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
                 |    verify(mock).%N(%L)
                 |})
                 |""".trimMargin(),
-            UnitTest.MOCK_FUTURE_STUB, originalReturnType,
-            stubs.getFutureStubType(ctx).typeArguments.first(),
+            UnitTest.MOCK_API_STUB, originalReturnType,
+            stubs.getApiStubType(ctx).typeArguments.first(),
             methodName, check
         )
 
@@ -334,7 +332,7 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
         }
         givenBlock.code.addStatement(
             "whenever(%N.%L(any())).thenReturn(streaming)",
-            UnitTest.MOCK_STREAM_STUB,
+            UnitTest.MOCK_API_STUB,
             streamMethod
         )
 
@@ -356,8 +354,8 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
                     |    verify(mock).%L(%L, eq(mockObserver))
                     |})
                     |""".trimMargin(),
-                UnitTest.MOCK_STREAM_STUB, streamMethod,
-                stubs.getStreamStubType(ctx).typeArguments.first(),
+                UnitTest.MOCK_API_STUB, streamMethod,
+                stubs.getApiStubType(ctx).typeArguments.first(),
                 GrpcTypes.StreamObserver(originalReturnType),
                 methodName, check
             )
@@ -369,8 +367,8 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
                     |    assertEquals(mock::%L, it(mock))
                     |})
                     |""".trimMargin(),
-                UnitTest.MOCK_STREAM_STUB, streamMethod,
-                stubs.getStreamStubType(ctx).typeArguments.first(),
+                UnitTest.MOCK_API_STUB, streamMethod,
+                stubs.getApiStubType(ctx).typeArguments.first(),
                 methodName
             )
         }

@@ -28,6 +28,7 @@ import org.hamcrest.CoreMatchers.containsString
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
@@ -40,7 +41,7 @@ class MainActivityPagingTest {
 
     @Test
     fun returnsPages() {
-        await().untilAsserted {
+        await().atMost(20, TimeUnit.SECONDS).untilAsserted {
             onView(withId(R.id.text_view))
                     .check(matches(withText(containsString("log number: 40"))))
         }
