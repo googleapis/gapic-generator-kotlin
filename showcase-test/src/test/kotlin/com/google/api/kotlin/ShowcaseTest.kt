@@ -95,24 +95,20 @@ class ShowcaseTest {
         val c = Channel<Throwable?>()
         val expansions = mutableListOf<String>()
 
-        try {
-            val err = runBlockingWithTimeout {
-                val stream = client.expand(ExpandRequest {
-                    content = "well hello there how are you"
-                })
+        val err = runBlockingWithTimeout {
+            val stream = client.expand(ExpandRequest {
+                content = "well hello there how are you"
+            })
 
-                stream.responses.onNext = { expansions.add(it.content) }
-                stream.responses.onError = { launch { c.send(it) } }
-                stream.responses.onCompleted = { launch { c.send(null) } }
+            stream.responses.onNext = { expansions.add(it.content) }
+            stream.responses.onError = { launch { c.send(it) } }
+            stream.responses.onCompleted = { launch { c.send(null) } }
 
-                c.receive()
-            }
-
-            assertThat(err).isNull()
-            assertThat(expansions).containsExactly("well", "hello", "there", "how", "are", "you").inOrder()
-        } catch(e: Throwable) {
-            println(e)
+            c.receive()
         }
+
+        assertThat(err).isNull()
+        assertThat(expansions).containsExactly("well", "hello", "there", "how", "are", "you").inOrder()
     }
 
     @Test
