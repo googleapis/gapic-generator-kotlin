@@ -63,7 +63,7 @@ dependencies {
     implementation 'javax.annotation:javax.annotation-api:1.3.2'
 
     // temporary
-    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:80ff804'
+    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:master-SNAPSHOT'
     //implementation 'com.google.kgax:kgax-grpc:0.1.0-SNAPSHOT'
 
     // TODO: provide a gRPC-fallback example

@@ -63,7 +63,7 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:0.25.0"
 
     // temporary
-    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:80ff804'
+    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:master-SNAPSHOT'
     //implementation 'com.google.kgax:kgax-grpc:0.1.0-SNAPSHOT'
 
     testImplementation 'junit:junit:4.12'
@@ -107,12 +107,6 @@ protobuf {
                 client {}
             }
         }
-    }
-}
-
-test {
-    testLogging {
-        events "PASSED", "FAILED", "SKIPPED"
     }
 }
 
