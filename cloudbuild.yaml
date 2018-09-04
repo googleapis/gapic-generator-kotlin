@@ -21,6 +21,7 @@ steps:
   args: []
   dir: 'examples'
   waitFor:
+    - build_generator
     - example_key
 
 # TODO:
