@@ -100,9 +100,11 @@ class ShowcaseTest {
                 content = "well hello there how are you"
             })
 
-            stream.responses.onNext = { expansions.add(it.content) }
-            stream.responses.onError = { launch { c.send(it) } }
-            stream.responses.onCompleted = { launch { c.send(null) } }
+            stream.start {
+                onNext = { expansions.add(it.content) }
+                onError = { launch { c.send(it) } }
+                onCompleted = { launch { c.send(null) } }
+            }
 
             c.receive()
         }
@@ -125,9 +127,11 @@ class ShowcaseTest {
                 }
             })
 
-            stream.responses.onNext = { expansions.add(it.content) }
-            stream.responses.onError = { launch { c.send(it) } }
-            stream.responses.onCompleted = { launch { c.send(null) } }
+            stream.start {
+                onNext = { expansions.add(it.content) }
+                onError = { launch { c.send(it) } }
+                onCompleted = { launch { c.send(null) } }
+            }
 
             c.receive()
         }
@@ -141,10 +145,11 @@ class ShowcaseTest {
         val result = runBlockingWithTimeout {
             val stream = client.collect()
 
+            stream.start()
             listOf("a", "b", "c", "done").map {
                 stream.requests.send(EchoRequest { content = it })
             }
-            stream.requests.end()
+            stream.requests.close()
 
             stream.response.get()
         }
@@ -167,14 +172,16 @@ class ShowcaseTest {
         val stream = client.chat()
 
         val err = runBlockingWithTimeout {
-            stream.responses.onNext = { responses.add(it.content) }
-            stream.responses.onError = { launch { c.send(it) } }
-            stream.responses.onCompleted = { launch { c.send(null) } }
+            stream.start {
+                onNext = { responses.add(it.content) }
+                onError = { launch { c.send(it) } }
+                onCompleted = { launch { c.send(null) } }
+            }
 
             for (str in inputs) {
                 stream.requests.send(EchoRequest { content = str })
             }
-            stream.requests.end()
+            stream.requests.close()
 
             c.receive()
         }
