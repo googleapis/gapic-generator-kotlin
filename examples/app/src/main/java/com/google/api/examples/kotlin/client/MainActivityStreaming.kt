@@ -93,10 +93,12 @@ class MainActivityStreaming : AppCompatActivity() {
             }
 
             // handle incoming responses
-            stream.responses.executor = MainThread
-            stream.responses.onNext = { textView.text = it.toString() }
-            stream.responses.onError = { Log.e(TAG, "uh oh", it) }
-            stream.responses.onCompleted = { Log.i(TAG, "All done!") }
+            stream.start {
+                executor = MainThread
+                onNext = { textView.text = it.toString() }
+                onError = { Log.e(TAG, "uh oh", it) }
+                onCompleted = { Log.i(TAG, "All done!") }
+            }
         } else {
             Log.e(TAG, "No permission to record! Please allow and then relaunch the app!")
         }

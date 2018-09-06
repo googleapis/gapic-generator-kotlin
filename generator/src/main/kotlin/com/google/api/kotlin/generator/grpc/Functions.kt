@@ -319,17 +319,6 @@ internal class FunctionsImpl(
             }
         }
 
-        val xx = documentation.generateMethodKDoc(
-            ctx,
-            method,
-            methodName,
-            samples = samples,
-            flatteningConfig = flatteningConfig,
-            parameters = parameters,
-            paging = paging,
-            extras = extraParamDocs
-        )
-
         // add documentation
         m.addKdoc(
             documentation.generateMethodKDoc(
@@ -389,14 +378,15 @@ internal class FunctionsImpl(
                 )
                 flattened.addCode(
                     """
-                    |val stream = %N.%N.executeStreaming { it::%N }
-                    |stream.requests.send(
-                    |    %L
-                    |)
-                    |return stream
+                    |return %N.%N.prepare {
+                    |    withInitialRequest(
+                    |        %L
+                    |    )
+                    |}.executeStreaming { it::%N }
                     |""".trimMargin(),
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, methodName,
-                    request.indent(1)
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
+                    request.indent(2),
+                    methodName
                 )
             } else if (method.hasClientStreaming()) { // client only
                 flattened.addKdoc(

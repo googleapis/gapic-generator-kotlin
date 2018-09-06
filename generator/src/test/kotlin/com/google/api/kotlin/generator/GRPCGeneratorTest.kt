@@ -203,13 +203,14 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |*/
             |fun streamTest(
             |    query: kotlin.String
-            |): com.google.kgax.grpc.StreamingCall<google.example.TestRequest, google.example.TestResponse> {
-            |    val stream = stubs.api.executeStreaming { it::streamTest }
-            |    stream.requests.send(google.example.TestRequest {
-            |        this.query = query
-            |    })
-            |    return stream
-            |}
+            |): com.google.kgax.grpc.StreamingCall<google.example.TestRequest, google.example.TestResponse> =
+            |    stubs.api.prepare {
+            |        withInitialRequest(
+            |            google.example.TestRequest {
+            |                this.query = query
+            |            }
+            |        )
+            |    }.executeStreaming { it::streamTest }
             |""".asNormalizedString()
         )
 
@@ -237,14 +238,15 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |fun streamTest(
             |    query: kotlin.String,
             |    mainDetail: google.example.Detail
-            |): com.google.kgax.grpc.StreamingCall<google.example.TestRequest, google.example.TestResponse> {
-            |    val stream = stubs.api.executeStreaming { it::streamTest }
-            |    stream.requests.send(google.example.TestRequest {
-            |        this.query = query
-            |        this.mainDetail = mainDetail
-            |    })
-            |    return stream
-            |}
+            |): com.google.kgax.grpc.StreamingCall<google.example.TestRequest, google.example.TestResponse> =
+            |    stubs.api.prepare {
+            |        withInitialRequest(
+            |            google.example.TestRequest {
+            |                this.query = query
+            |                this.mainDetail = mainDetail
+            |            }
+            |        )
+            }.executeStreaming { it::streamTest }
             |""".asNormalizedString()
         )
     }
