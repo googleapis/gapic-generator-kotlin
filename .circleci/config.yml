@@ -37,7 +37,7 @@ jobs:
           when: always
 
   build_examples:
-    working_directory: ~/gapic-generator-kotlin/generator
+    working_directory: ~/gapic-generator-kotlin/examples
     docker:
       - image: circleci/android:api-27-alpha
     environment:
@@ -66,7 +66,7 @@ jobs:
       - store_test_results:
           path: app/build/test-results
 
-  showcase:
+  test_showcase:
     docker:
       - image: circleci/openjdk:8-jdk
     working_directory: ~/gapic-generator-kotlin/showcase-test
@@ -74,25 +74,31 @@ jobs:
       - checkout:
           path: ~/gapic-generator-kotlin
       - restore_cache:
-          key: gapic-generator-kotlin-{{ checksum "build.gradle" }}
+          key: showcase-{{ checksum "build.gradle" }}
       - run: 
           name: Download Dependencies
           command: ./gradlew dependencies
       - save_cache:
           paths:
             - ~/.gradle
-          key: gapic-generator-kotlin-{{ checksum "build.gradle" }}
+          key: showcase-{{ checksum "build.gradle" }}
       - run:
-          name: Build showcase
-          command: docker build -t showcase .
+          name: Download showcase
+          command: |
+            curl -sSL https://github.com/googleapis/gapic-showcase/releases/download/v0.0.4/gapic-showcase-v1alpha1-0.0.4-linux-amd64 > /usr/local/bin/showcase
+            chmod +x /usr/local/bin/showcase
+      - run:
+          name: Run showcase
+          command: /usr/local/bin/showcase
+          background: true
       - run:
           name: Test showcase
-          command: docker-compose -f ./docker-compose.yaml up -d && ./gradlew test
-     
+          command: ./gradlew test
+      
 workflows:
   version: 2
-  build_all:
+  build_and_test:
     jobs:
       - build
       - build_examples
-      - showcase
+      - test_showcase
