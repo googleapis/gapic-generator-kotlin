@@ -2,6 +2,8 @@
 
 Kgen creates Kotlin API client code from a [protocol buffer](https://developers.google.com/protocol-buffers/docs/proto3) description of the API. 
 
+[![CircleCI](https://circleci.com/gh/googleapis/gapic-generator-kotlin/tree/master.svg?style=svg)](https://circleci.com/gh/googleapis/gapic-generator-kotlin/tree/master)
+
 The clients are currently compatible with gRPC APIs, but we plan to support alternative transports as well.
 
 *Note* This project is a preview. Please try it out and let us know what you think, but there 

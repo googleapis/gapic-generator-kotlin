@@ -36,9 +36,9 @@ jobs:
           command: bash <(curl -s https://codecov.io/bash)
           when: always
       - persist_to_workspace:
-          root: build
+          root: ./..
           paths:
-            - libs
+            - generator/build/libs
 
   build_examples:
     working_directory: ~/gapic-generator-kotlin/examples
@@ -49,6 +49,8 @@ jobs:
     steps:
       - checkout:
           path: ~/gapic-generator-kotlin
+      - attach_workspace:
+          at: ./..
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
       - run:
@@ -77,6 +79,8 @@ jobs:
     steps:
       - checkout:
           path: ~/gapic-generator-kotlin
+      - attach_workspace:
+          at: ./..
       - restore_cache:
           key: showcase-{{ checksum "build.gradle" }}
       - run: 
