@@ -20,12 +20,10 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.TextView
 import com.google.api.examples.kotlin.util.AccessTokens
-import com.google.api.examples.kotlin.util.MainThread
 import com.google.api.examples.kotlin.util.onUI
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
-import com.google.kgax.grpc.on
 
 /**
  * Kotlin example calling the language API.
