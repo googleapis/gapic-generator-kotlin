@@ -36,9 +36,9 @@ jobs:
           command: bash <(curl -s https://codecov.io/bash)
           when: always
       - persist_to_workspace:
-          root: generator
+          root: build
           paths:
-            - build/libs
+            - libs
 
   build_examples:
     working_directory: ~/gapic-generator-kotlin/examples
