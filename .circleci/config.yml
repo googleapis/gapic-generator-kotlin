@@ -85,8 +85,8 @@ jobs:
       - run:
           name: Download showcase
           command: |
-            sudo -c "curl -sSL https://github.com/googleapis/gapic-showcase/releases/download/v0.0.4/gapic-showcase-v1alpha1-0.0.4-linux-amd64 > /usr/local/bin/showcase"
-            sudo -c "chmod +x /usr/local/bin/showcase"
+            sudo sh -c "curl -sSL https://github.com/googleapis/gapic-showcase/releases/download/v0.0.4/gapic-showcase-v1alpha1-0.0.4-linux-amd64 > /usr/local/bin/showcase"
+            sudo sh -c "chmod +x /usr/local/bin/showcase"
       - run:
           name: Run showcase
           command: /usr/local/bin/showcase
