@@ -1,0 +1,98 @@
+version: 2
+
+jobs:
+
+  build:
+    docker:
+      - image: circleci/openjdk:8-jdk
+    working_directory: ~/gapic-generator-kotlin/generator
+    steps:
+      - checkout:
+          path: ~/gapic-generator-kotlin
+      - restore_cache:
+          key: gapic-generator-kotlin-{{ checksum "build.gradle" }}
+      - run: 
+          name: Download Dependencies
+          command: ./gradlew dependencies
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: gapic-generator-kotlin-{{ checksum "build.gradle" }}       
+      - run: 
+           name: Build and run checks
+           command: ./gradlew check
+      - run: 
+          name: Save test results
+          command: |
+            mkdir -p ~/junit/
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} ~/junit/ \;
+          when: always
+      - store_test_results:
+          path: ~/junit
+      - store_artifacts:
+          path: ~/junit        
+      - run: 
+          name: Codecov
+          command: bash <(curl -s https://codecov.io/bash)
+          when: always
+
+  build_examples:
+    working_directory: ~/gapic-generator-kotlin/generator
+    docker:
+      - image: circleci/android:api-27-alpha
+    environment:
+      JVM_OPTS: -Xmx3200m
+    steps:
+      - checkout:
+          path: path: ~/gapic-generator-kotlin
+      - restore_cache:
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
+      - run:
+          name: Download dependencies
+          command: ./gradlew androidDependencies
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
+      - run:
+          name: Create placeholder key
+          command: touch app/src/main/res/raw/sa.json
+      - run:
+          name: Run checks
+          command: ./gradlew check
+      - store_artifacts:
+          path: app/build/reports
+          destination: reports
+      - store_test_results:
+          path: app/build/test-results
+
+  showcase:
+    docker:
+      - image: circleci/openjdk:8-jdk
+    working_directory: ~/gapic-generator-kotlin/showcase-test
+    steps:
+      - checkout:
+          path: ~/gapic-generator-kotlin
+      - restore_cache:
+          key: gapic-generator-kotlin-{{ checksum "build.gradle" }}
+      - run: 
+          name: Download Dependencies
+          command: ./gradlew dependencies
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: gapic-generator-kotlin-{{ checksum "build.gradle" }}
+      - run:
+          name: Build showcase
+          command: docker build -t showcase .
+      - run:
+          name: Test showcase
+          command: docker-compose -f ./docker-compose.yaml up -d && ./gradlew test
+     
+workflows:
+  version: 2
+  build_all:
+    jobs:
+      - build
+      - build_examples
+      - showcase

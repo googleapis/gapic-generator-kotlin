@@ -104,7 +104,7 @@ internal class FunctionsImpl(
                 .asTestable(),
 
             FunSpec.builder("shutdownChannel")
-                .addKdoc("Shutdown the [channel] associated with this client.")
+                .addKdoc("Shutdown the [channel] associated with this client.\n")
                 .addParameter(
                     ParameterSpec.builder("waitForSeconds", Long::class.java.asTypeName())
                         .defaultValue("5")
