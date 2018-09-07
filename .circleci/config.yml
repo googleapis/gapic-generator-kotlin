@@ -20,7 +20,7 @@ jobs:
           key: gapic-generator-kotlin-{{ checksum "build.gradle" }}       
       - run: 
            name: Build and run checks
-           command: ./gradlew check
+           command: ./gradlew build
       - run: 
           name: Save test results
           command: |
