@@ -10,14 +10,14 @@ jobs:
       - checkout:
           path: ~/gapic-generator-kotlin
       - restore_cache:
-          key: gapic-generator-kotlin-{{ checksum "build.gradle" }}
+          key: gapic-generator-kotlin-v0-{{ checksum "build.gradle" }}
       - run: 
           name: Download Dependencies
           command: ./gradlew dependencies
       - save_cache:
           paths:
             - ~/.gradle
-          key: gapic-generator-kotlin-{{ checksum "build.gradle" }}       
+          key: gapic-generator-kotlin-v0-{{ checksum "build.gradle" }}
       - run: 
            name: Build and run checks
            command: ./gradlew build
@@ -52,14 +52,14 @@ jobs:
       - attach_workspace:
           at: ./..
       - restore_cache:
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
+          key: examples-v0-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
       - run:
           name: Download dependencies
           command: ./gradlew androidDependencies
       - save_cache:
           paths:
             - ~/.gradle
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
+          key: examples-v0-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
       - run:
           name: Create placeholder key
           command: touch app/src/main/res/raw/sa.json
@@ -82,14 +82,14 @@ jobs:
       - attach_workspace:
           at: ./..
       - restore_cache:
-          key: showcase-{{ checksum "build.gradle" }}
+          key: showcase-v0-{{ checksum "build.gradle" }}
       - run: 
           name: Download Dependencies
           command: ./gradlew dependencies
       - save_cache:
           paths:
             - ~/.gradle
-          key: showcase-{{ checksum "build.gradle" }}
+          key: showcase-v0-{{ checksum "build.gradle" }}
       - run:
           name: Download showcase
           command: |
