@@ -118,11 +118,11 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
                 .returns(ctx.className)
                 .addStatement(
                     """
-                        |return %T.fromStubs(object: %T.%L.Factory {
-                        |    override fun create(channel: %T, options: %T) =
-                        |        %T.%L(%N, %N)
-                        |}, %N, %N)
-                        |""".trimMargin(),
+                    |return %T.fromStubs(object: %T.%L.Factory {
+                    |    override fun create(channel: %T, options: %T) =
+                    |        %T.%L(%N, %N)
+                    |}, %N, %N)
+                    |""".trimMargin(),
                     ctx.className, ctx.className, Stubs.CLASS_STUBS,
                     GrpcTypes.ManagedChannel, GrpcTypes.Support.ClientCallOptions,
                     ctx.className, Stubs.CLASS_STUBS,
@@ -198,9 +198,9 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
         val givenBlock = createGivenCodeBlock(ctx, parameters)
         givenBlock.code.add(
             """
-               |val future: %T = mock()
-               |whenever(%N.executeFuture<%T>(any())).thenReturn(future)
-               |""".trimMargin(),
+           |val future: %T = mock()
+           |whenever(%N.executeFuture<%T>(any())).thenReturn(future)
+           |""".trimMargin(),
             GrpcTypes.Support.FutureCall(originalReturnType),
             UnitTest.MOCK_API_STUB, originalReturnType
         )
@@ -214,13 +214,13 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
 
             givenBlock.code.add(
                 """
-                    |
-                    |val pageBodyMock: %T = mock {
-                    |    on { %L } doReturn "token"
-                    |    on { %L } doReturn mock<List<%T>>()
-                    |}
-                    |whenever(future.get()).thenReturn(%T(pageBodyMock, mock()))
-                    |""".trimMargin(),
+                |
+                |val pageBodyMock: %T = mock {
+                |    on { %L } doReturn "token"
+                |    on { %L } doReturn mock<List<%T>>()
+                |}
+                |whenever(future.get()).thenReturn(%T(pageBodyMock, mock()))
+                |""".trimMargin(),
                 originalReturnType,
                 nextPageTokenGetter,
                 responseListGetter, responseListItemType,
@@ -233,11 +233,11 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
                 val theRequest = givenBlock.variables.values.map { it.variableName }.first()
                 givenBlock.code.add(
                     """
-                        |val builder: %T.Builder = mock()
-                        |whenever(%N.toBuilder()).thenReturn(builder)
-                        |whenever(builder.%L(any())).thenReturn(builder)
-                        |whenever(builder.build()).thenReturn(%N)
-                        |""".trimMargin(),
+                    |val builder: %T.Builder = mock()
+                    |whenever(%N.toBuilder()).thenReturn(builder)
+                    |whenever(builder.%L(any())).thenReturn(builder)
+                    |whenever(builder.build()).thenReturn(%N)
+                    |""".trimMargin(),
                     originalInputType,
                     theRequest,
                     pageSizeSetter,
@@ -259,12 +259,12 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
         // verify the executeFuture occurred (and use input block to verify)
         thenBlock.code.add(
             """
-                |verify(%N).executeFuture<%T>(check {
-                |    val mock: %T = mock()
-                |    it(mock)
-                |    verify(mock).%N(%L)
-                |})
-                |""".trimMargin(),
+            |verify(%N).executeFuture<%T>(check {
+            |    val mock: %T = mock()
+            |    it(mock)
+            |    verify(mock).%N(%L)
+            |})
+            |""".trimMargin(),
             UnitTest.MOCK_API_STUB, originalReturnType,
             stubs.getApiStubType(ctx).typeArguments.first(),
             methodName, check
@@ -321,14 +321,11 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
         }
 
         // add a mock for the streaming call
-        // if flattened add a mock for the outbound request stream
+        // if flattened we need to check the outbound request stream
         givenBlock.code.addStatement("val streaming: %T = mock()", streamMethodReturnType)
         if (flatteningConfig != null && method.hasClientStreaming()) {
-            givenBlock.code.addStatement(
-                "val streamingRequests: %T = mock()",
-                GrpcTypes.Support.RequestStream(originalInputType)
-            )
-            givenBlock.code.addStatement("whenever(streaming.requests).thenReturn(streamingRequests)")
+            givenBlock.code.addStatement("whenever(%N.prepare(any<%T.() -> Unit>())).thenReturn(%N)",
+                UnitTest.MOCK_API_STUB, GrpcTypes.Support.ClientCallOptionsBuilder, UnitTest.MOCK_API_STUB)
         }
         givenBlock.code.addStatement(
             "whenever(%N.%L(any())).thenReturn(streaming)",
@@ -347,13 +344,13 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
             val check = createStubCheckCode(givenBlock, ctx, method, flatteningConfig)
             thenBlock.code.add(
                 """
-                    |verify(%N).%L(check {
-                    |    val mock: %T = mock()
-                    |    val mockObserver: %T = mock()
-                    |    it(mock, mockObserver)
-                    |    verify(mock).%L(%L, eq(mockObserver))
-                    |})
-                    |""".trimMargin(),
+                |verify(%N).%L(check {
+                |    val mock: %T = mock()
+                |    val mockObserver: %T = mock()
+                |    it(mock, mockObserver)
+                |    verify(mock).%L(%L, eq(mockObserver))
+                |})
+                |""".trimMargin(),
                 UnitTest.MOCK_API_STUB, streamMethod,
                 stubs.getApiStubType(ctx).typeArguments.first(),
                 GrpcTypes.StreamObserver(originalReturnType),
@@ -362,11 +359,11 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
         } else {
             thenBlock.code.add(
                 """
-                    |verify(%N).%L(check {
-                    |    val mock: %T = mock()
-                    |    assertEquals(mock::%L, it(mock))
-                    |})
-                    |""".trimMargin(),
+                |verify(%N).%L(check {
+                |    val mock: %T = mock()
+                |    assertEquals(mock::%L, it(mock))
+                |})
+                |""".trimMargin(),
                 UnitTest.MOCK_API_STUB, streamMethod,
                 stubs.getApiStubType(ctx).typeArguments.first(),
                 methodName
@@ -375,8 +372,22 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
 
         // if flattening was used also verify that the args were sent
         if (flatteningConfig != null && method.hasClientStreaming()) {
-            val check = createStubCheckCode(givenBlock, ctx, method, flatteningConfig)
-            thenBlock.code.add("verify(streamingRequests).send(%L)\n", check)
+            val checks = createNestedAssertCodeForStubCheck(givenBlock, ctx, method, flatteningConfig)
+            thenBlock.code.add(
+                """
+                |verify(%N).prepare(check<%T.() -> Unit> {
+                |    val options = %T().apply(it).build()
+                |    options.initialRequests.map { it as %T }.first().let {
+                |${checks.joinToString("\n") { "        %L" }}
+                |    }
+                |    assertEquals(options.initialRequests.size, 1)
+                |})
+                |""".trimMargin(),
+                UnitTest.MOCK_API_STUB,
+                GrpcTypes.Support.ClientCallOptionsBuilder,
+                GrpcTypes.Support.ClientCallOptionsBuilder,
+                originalInputType,
+                *checks.toTypedArray())
         }
 
         // put it all together
@@ -470,39 +481,54 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
         if (flatteningConfig == null) {
             check.add("eq(%N)", given.variables.values.map { it.variableName }.first())
         } else {
-            val nestedAssert = mutableListOf<CodeBlock>()
-            val paths = flatteningConfig.parameters
-            visitFlattenedMethod(ctx, method, paths, object : Visitor() {
-                override fun onTerminalParam(
-                    currentPath: PropertyPath,
-                    fieldInfo: ProtoFieldInfo
-                ) {
-                    val key = getAccessorName(currentPath.lastSegment)
-                    val accessor = getAccessorName(ctx.typeMap, fieldInfo)
-                    val variable = given.variables[key]?.variableName
-                        ?: throw IllegalStateException("Could not locate variable with name: $key")
+            // get an assert for each parameter
+            val nestedAssert = createNestedAssertCodeForStubCheck(given, ctx, method, flatteningConfig)
 
-                    nestedAssert.add(CodeBlock.of("assertEquals($variable, it.$accessor)"))
-                }
-            })
+            // add page assert
             if (paging != null && expectedPageSize != null) {
                 nestedAssert.add(
                     CodeBlock.of(
-                        "assertEquals($expectedPageSize, it.${getAccessorName(
-                            paging.pageSize
-                        )})"
+                        "assertEquals($expectedPageSize, it.${getAccessorName(paging.pageSize)})"
                     )
                 )
             }
+
+            // put it all together in a check block
             check.add(
                 """
-                    |check {
-                    |${nestedAssert.joinToString("\n") { "    %L" }}
-                    |}""".trimMargin(), *nestedAssert.toTypedArray()
+                |check {
+                |${nestedAssert.joinToString("\n") { "    %L" }}
+                |}""".trimMargin(), *nestedAssert.toTypedArray()
             )
         }
 
         return check.build()
+    }
+
+    // get a list of assertEquals for a flattened method
+    private fun createNestedAssertCodeForStubCheck(
+        given: GivenCodeBlock,
+        ctx: GeneratorContext,
+        method: DescriptorProtos.MethodDescriptorProto,
+        flatteningConfig: FlattenedMethod
+    ): MutableList<CodeBlock> {
+        val nestedAsserts = mutableListOf<CodeBlock>()
+
+        visitFlattenedMethod(ctx, method, flatteningConfig.parameters, object : Visitor() {
+            override fun onTerminalParam(
+                currentPath: PropertyPath,
+                fieldInfo: ProtoFieldInfo
+            ) {
+                val key = getAccessorName(currentPath.lastSegment)
+                val accessor = getAccessorName(ctx.typeMap, fieldInfo)
+                val variable = given.variables[key]?.variableName
+                    ?: throw IllegalStateException("Could not locate variable with name: $key")
+
+                nestedAsserts.add(CodeBlock.of("assertEquals($variable, it.$accessor)"))
+            }
+        })
+
+        return nestedAsserts
     }
 
     // merge all the code blocks into a single block
@@ -513,9 +539,9 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
     ) =
         CodeBlock.of(
             """
-                |%L
-                |%L
-                |%L""".trimMargin(),
+            |%L
+            |%L
+            |%L""".trimMargin(),
             givenBlock.code.build(),
             whenBlock.code.build(),
             thenBlock.code.build()

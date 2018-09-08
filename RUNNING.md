@@ -64,7 +64,7 @@ dependencies {
     // ...
     
     // for http/2 gRPC based clients (the only option for now)
-    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:132f3f5'
+    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:master-SNAPSHOT'
 }
 
 // configure the protobuf gradle plugin
@@ -79,7 +79,7 @@ protobuf {
             artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0'
         }
         client {
-            artifact = 'com.github.googleapis:gapic-generator-kotlin:c957593:core@jar'
+            artifact = 'com.github.googleapis:gapic-generator-kotlin:master-SNAPSHOT:core@jar'
         }
     }
     // run the code generators
@@ -134,7 +134,7 @@ repositories {
 
 dependencies {
     // ...
-    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:7cd3a4c'
+    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:master-SNAPSHOT'
 }
 ```
 
