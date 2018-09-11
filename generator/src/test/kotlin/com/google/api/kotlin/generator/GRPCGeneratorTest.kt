@@ -93,7 +93,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
         assertThat(methods.first().toString().asNormalizedString()).isEqualTo(
             """
             |/**
-            |*
+            |* This is the test method
             |*
             |* For example:
             |* ```
@@ -199,7 +199,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |*)
             |* ```
             |*
-            |* @param query
+            |* @param query the query
             |*/
             |fun streamTest(
             |    query: kotlin.String
@@ -231,7 +231,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |*)
             |* ```
             |*
-            |* @param query
+            |* @param query the query
             |*
             |* @param mainDetail
             |*/
@@ -415,7 +415,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |*)
             |* ```
             |*
-            |* @param query
+            |* @param query the query
             |*/
             |fun testFlat(
             |    query: kotlin.String
@@ -444,7 +444,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |*)
             |* ```
             |*
-            |* @param query
+            |* @param query the query
             |*
             |* @param mainDetail
             |*/

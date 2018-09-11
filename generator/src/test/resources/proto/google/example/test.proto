@@ -7,7 +7,9 @@ import "google/longrunning/test_longrunning.proto";
 
 option java_multiple_files = true;
 
+// This is the test service
 service TestService {
+    // This is the test method
     rpc Test (TestRequest) returns (TestResponse);
     rpc TestFlat (TestRequest) returns (TestResponse);
     rpc TestFlatWithoutOriginal (TestRequest) returns (TestResponse);
@@ -23,6 +25,7 @@ service TestService {
 }
 
 message TestRequest {
+    // the query
     string query = 1;
     Detail main_detail = 2;
     repeated Detail more_details = 3;
