@@ -22,7 +22,7 @@ import com.google.common.truth.Truth.assertThat
 import com.nhaarman.mockito_kotlin.mock
 import kotlin.test.Test
 
-class BuilderGeneratorTest {
+internal class BuilderGeneratorTest {
 
     @Test
     fun `generates builders`() {
@@ -56,7 +56,6 @@ class BuilderGeneratorTest {
 
         listOf("Foo", "Bar").forEach { name ->
             val f = funs.find { it.name == name } ?: throw Exception("fun not found $name")
-            val s = f.toString().asNormalizedString()
             assertThat(f.toString().asNormalizedString()).isEqualTo(methodBody(name))
         }
     }

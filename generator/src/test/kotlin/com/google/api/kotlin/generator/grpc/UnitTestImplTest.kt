@@ -23,7 +23,7 @@ import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.MethodDescriptorProto
 import com.google.api.kotlin.ServiceDescriptorProto
 import com.google.api.kotlin.asNormalizedString
-import com.google.api.kotlin.config.ConfigurationMetadata
+import com.google.api.kotlin.config.Configuration
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.ServiceOptions
 import com.google.common.truth.Truth
@@ -46,13 +46,13 @@ import kotlin.test.Test
  *
  * more complex tests use the test protos in [GRPCGeneratorTest].
  */
-class UnitTestImplTest {
+internal class UnitTestImplTest {
 
     private val documentationGenerator: Documentation = mock()
     private val stubGenerator: StubsImpl = mock()
     private val proto: DescriptorProtos.FileDescriptorProto = mock()
     private val service: DescriptorProtos.ServiceDescriptorProto = mock()
-    private val meta: ConfigurationMetadata = mock()
+    private val meta: Configuration = mock()
     private val types: ProtobufTypeMapper = mock()
     private val ctx: GeneratorContext = mock()
 

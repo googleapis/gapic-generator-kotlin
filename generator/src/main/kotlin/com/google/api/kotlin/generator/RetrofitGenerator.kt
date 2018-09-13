@@ -174,7 +174,7 @@ internal class RetrofitGenerator : AbstractGenerator(), ClientGenerator {
             .addParameter("keyFile", InputStream::class)
             .addParameter(
                 ParameterSpec.builder("host", String::class)
-                    .defaultValue("%S", "https://${ctx.metadata.host}")
+                    .defaultValue("%S", "https://${ctx.serviceOptions.host}")
                     .build()
             )
             .addParameter(
@@ -182,7 +182,7 @@ internal class RetrofitGenerator : AbstractGenerator(), ClientGenerator {
                     "scopes",
                     List::class.parameterizedBy(String::class)
                 )
-                    .defaultValue("listOf(%L)", ctx.metadata.scopesAsLiteral)
+                    .defaultValue("listOf(%L)", ctx.serviceOptions.scopes.joinToString(", ") { "\"$it\"" })
                     .build()
             )
             .returns(ctx.className)

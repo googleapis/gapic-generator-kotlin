@@ -18,7 +18,8 @@ package com.google.api.kotlin.generator.grpc
 
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.asNormalizedString
-import com.google.api.kotlin.config.ConfigurationMetadata
+import com.google.api.kotlin.config.Configuration
+import com.google.api.kotlin.config.ServiceOptions
 import com.google.common.truth.Truth.assertThat
 import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
@@ -33,27 +34,29 @@ import kotlin.test.Test
  *
  * more complex tests use the test protos in [GRPCGeneratorTest].
  */
-class CompanionObjectImplTest {
+internal class CompanionObjectImplTest {
 
-    private val meta: ConfigurationMetadata = mock()
     private val ctx: GeneratorContext = mock()
+    private val meta: Configuration = mock()
+    private val serviceOptions: ServiceOptions = mock()
 
     @BeforeTest
     fun before() {
-        reset(meta, ctx)
+        reset(ctx, meta, serviceOptions)
         whenever(ctx.metadata).doReturn(meta)
+        whenever(ctx.serviceOptions).doReturn(serviceOptions)
     }
 
     @Test
     fun `Generates default scopes property`() {
-        whenever(meta.scopesAsLiteral).doReturn("\"a\", \"b c d e\"")
+        whenever(serviceOptions.scopes).doReturn(listOf("a", "b c d e"))
         whenever(ctx.className).doReturn(ClassName("foo.bar", "ScopesTest"))
 
         val type = CompanionObjectImpl().generate(ctx)
 
         assertThat(type.propertySpecs).hasSize(1)
 
-        val prop = type.propertySpecs.first()
+        val prop = type.propertySpecs.first { it.name == "ALL_SCOPES" }
         assertThat(prop.toString().asNormalizedString()).isEqualTo(
             """
             |@kotlin.jvm.JvmStatic
@@ -64,7 +67,7 @@ class CompanionObjectImplTest {
 
     @Test
     fun `Generates factory with access token`() {
-        whenever(meta.scopesAsLiteral).doReturn("\"a\", \"b c d e\"")
+        whenever(serviceOptions.scopes).doReturn(listOf("a", "b c d e"))
         whenever(ctx.className).doReturn(ClassName("r.r.r", "Clazz"))
 
         val type = CompanionObjectImpl().generate(ctx)
@@ -96,7 +99,7 @@ class CompanionObjectImplTest {
 
     @Test
     fun `Generates factory with credentials`() {
-        whenever(meta.scopesAsLiteral).doReturn("\"a\", \"b c d e\"")
+        whenever(serviceOptions.scopes).doReturn(listOf("a", "b c d e"))
         whenever(ctx.className).doReturn(ClassName("r.r.r", "Clazz"))
 
         val type = CompanionObjectImpl().generate(ctx)
@@ -127,7 +130,7 @@ class CompanionObjectImplTest {
 
     @Test
     fun `Generates factory with serviceAccount`() {
-        whenever(meta.scopesAsLiteral).doReturn("\"a\", \"b c d e\"")
+        whenever(serviceOptions.scopes).doReturn(listOf("a", "b c d e"))
         whenever(ctx.className).doReturn(ClassName("r.r.r", "Clazz"))
 
         val type = CompanionObjectImpl().generate(ctx)
@@ -159,7 +162,7 @@ class CompanionObjectImplTest {
 
     @Test
     fun `Generates factory with stubs`() {
-        whenever(meta.scopesAsLiteral).doReturn("\"a\", \"b c d e\"")
+        whenever(serviceOptions.scopes).doReturn(listOf("a", "b c d e"))
         whenever(ctx.className).doReturn(ClassName("r.r.r", "Clazz"))
 
         val type = CompanionObjectImpl().generate(ctx)
@@ -191,7 +194,7 @@ class CompanionObjectImplTest {
 
     @Test
     fun `Generates create channel method`() {
-        whenever(meta.scopesAsLiteral).doReturn("\"x\", \"y\"")
+        whenever(serviceOptions.scopes).doReturn(listOf("x", "y"))
         whenever(ctx.className).doReturn(ClassName("a.b.c", "Clazz"))
 
         val type = CompanionObjectImpl().generate(ctx)

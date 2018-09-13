@@ -21,7 +21,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.kotlinpoet.ClassName
 import kotlin.test.Test
 
-internal class ProtoFieldInfoTest : BaseGeneratorTest() {
+internal class ProtoFieldInfoTest : BaseGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `can find service level comments`() {

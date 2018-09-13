@@ -14,4 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-protoc --plugin=protoc-gen-testdata=plugin.sh --testdata_out=. --proto_path=proto proto/google/example/test.proto
+protoc --plugin=protoc-gen-testdata=plugin.sh \
+       --testdata_out=. \
+       --proto_path=proto \
+       --proto_path=../../../api-common-protos \
+   proto/google/example/test.proto

@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package google.longrunning;
-
-option java_multiple_files = true;
-
-message Operation {
-    string name = 1;
-}

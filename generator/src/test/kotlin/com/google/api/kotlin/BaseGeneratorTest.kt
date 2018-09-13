@@ -17,12 +17,10 @@
 package com.google.api.kotlin
 
 import com.google.api.kotlin.config.BrandingOptions
-import com.google.api.kotlin.config.ConfigurationMetadata
+import com.google.api.kotlin.config.Configuration
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.ServiceOptions
 import com.google.api.kotlin.config.asPropertyPath
-import com.google.api.kotlin.generator.GRPCGenerator
-import com.google.api.kotlin.types.GrpcTypes
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.compiler.PluginProtos
 import com.nhaarman.mockito_kotlin.any
@@ -42,38 +40,59 @@ private val TEST_CLASSNAME = ClassName(TEST_NAMESPACE, "TheTest")
  *
  * Not all tests should inherit from this class (only tests that use the test protos).
  */
-internal abstract class BaseGeneratorTest {
+internal abstract class BaseGeneratorTest(private val generator: ClientGenerator) {
 
     // accessors for the test protos
     protected val generatorRequest = PluginProtos.CodeGeneratorRequest.parseFrom(
         javaClass.getResourceAsStream("/generate.data")
     )
+
     protected val testProto =
         generatorRequest.protoFileList.find { it.name == "google/example/test.proto" }
             ?: throw RuntimeException("Missing test.proto")
     protected val testTypesProto =
         generatorRequest.protoFileList.find { it.name == "google/example/test_types.proto" }
             ?: throw RuntimeException("Missing test_types.proto")
-    protected val testLROProto =
-        generatorRequest.protoFileList.find { it.name == "google/longrunning/test_longrunning.proto" }
-            ?: throw RuntimeException("Missing test_longrunning.proto")
+    protected val testLongrunningProto =
+        generatorRequest.protoFileList.find { it.name == "google/longrunning/operations.proto" }
+            ?: throw RuntimeException("Missing test_types.proto")
+    protected val testAnnotationsProto =
+        generatorRequest.protoFileList.find { it.name == "google/example/test_annotations.proto" }
+            ?: throw RuntimeException("Missing test_annotations.proto")
+
+    private val protoMessageTypes = listOf("Empty", "Any")
+    private val operationMessageTypes = listOf(
+        "Operation",
+        "GetOperationRequest", "GetOperationResponse",
+        "ListOperationsRequest", "ListOperationsResponse",
+        "CancelOperationRequest", "DeleteOperationRequest",
+        "OperationTypes"
+    )
 
     // mock type mapper
     private val typesOfMessages = mapOf(
-        ".google.longrunning.Operation" to ClassName("com.google.longrunning", "Operation"),
         ".$TEST_NAMESPACE.TestRequest" to ClassName(TEST_NAMESPACE, "TestRequest"),
         ".$TEST_NAMESPACE.TestResponse" to ClassName(TEST_NAMESPACE, "TestResponse"),
         ".$TEST_NAMESPACE.Result" to ClassName(TEST_NAMESPACE, "Result"),
         ".$TEST_NAMESPACE.Detail" to ClassName(TEST_NAMESPACE, "Detail"),
         ".$TEST_NAMESPACE.MoreDetail" to ClassName(TEST_NAMESPACE, "MoreDetail")
-    )
+    ) + protoMessageTypes.associate {
+        ".google.protobuf.$it" to ClassName("com.google.protobuf", it)
+    } + operationMessageTypes.associate {
+        ".google.longrunning.$it" to ClassName("com.google.longrunning", it)
+    }
+
     private val typesDeclaredIn = mapOf(
-        ".google.longrunning.Operation" to testLROProto.messageTypeList.find { it.name == "Operation" },
         ".$TEST_NAMESPACE.TestRequest" to testProto.messageTypeList.find { it.name == "TestRequest" },
         ".$TEST_NAMESPACE.TestResponse" to testProto.messageTypeList.find { it.name == "TestResponse" },
         ".$TEST_NAMESPACE.Result" to testTypesProto.messageTypeList.find { it.name == "Result" },
         ".$TEST_NAMESPACE.Detail" to testTypesProto.messageTypeList.find { it.name == "Detail" },
-        ".$TEST_NAMESPACE.MoreDetail" to testTypesProto.messageTypeList.find { it.name == "MoreDetail" })
+        ".$TEST_NAMESPACE.MoreDetail" to testTypesProto.messageTypeList.find { it.name == "MoreDetail" }
+    ) + protoMessageTypes.associate {
+        ".google.protobuf.$it" to testAnnotationsProto.messageTypeList.find { m -> m.name == it }
+    } + operationMessageTypes.associate {
+        ".google.longrunning.$it" to testLongrunningProto.messageTypeList.find { m -> m.name == it }
+    }
 
     // a type map from the protos
     protected fun getMockedTypeMap(): ProtobufTypeMapper {
@@ -92,11 +111,8 @@ internal abstract class BaseGeneratorTest {
         }
     }
 
-    protected fun getMockedConfig(options: ServiceOptions): ConfigurationMetadata =
+    protected fun getMockedConfig(options: ServiceOptions): Configuration =
         mock {
-            on { host } doReturn "my.host"
-            on { scopes } doReturn listOf("scope_1", "scope_2")
-            on { scopesAsLiteral } doReturn "\"scope_1\", \"scope_2\""
             on { branding } doReturn BrandingOptions("testing", "just a simple test")
             on { get(any<String>()) } doReturn options
             on { get(any<DescriptorProtos.ServiceDescriptorProto>()) } doReturn options
@@ -107,8 +123,9 @@ internal abstract class BaseGeneratorTest {
         val map = getMockedTypeMap()
 
         return mock {
-            on { proto } doReturn generatorRequest.protoFileList.find { it.serviceCount > 0 }!!
-            on { service } doReturn generatorRequest.protoFileList.find { it.serviceCount > 0 }!!.serviceList.first()
+            on { proto } doReturn generatorRequest.protoFileList.find { p -> p.name == "google/example/test.proto" }!!
+            on { service } doReturn generatorRequest.protoFileList.find { p -> p.name == "google/example/test.proto" }!!.serviceList.first()
+            on { serviceOptions } doReturn options
             on { metadata } doReturn config
             on { className } doReturn TEST_CLASSNAME
             on { typeMap } doReturn map
@@ -117,36 +134,11 @@ internal abstract class BaseGeneratorTest {
 
     // invoke the generator
     protected fun generate(options: ServiceOptions) =
-        GRPCGenerator().generateServiceClient(getMockedContext(options))
+        generator.generateServiceClient(getMockedContext(options))
 }
 
 // helpers to make code a bit shorter when dealing with names
 fun messageType(name: String, packageName: String = "google.example") = ClassName(packageName, name)
-
-fun futureCall(name: String, packageName: String = "google.example") =
-    GrpcTypes.Support.FutureCall(messageType(name, packageName))
-
-fun longRunning(name: String, packageName: String = "google.example") =
-    GrpcTypes.Support.LongRunningCall(messageType(name, packageName))
-
-fun stream(requestName: String, responseName: String, packageName: String = "google.example") =
-    GrpcTypes.Support.StreamingCall(
-        messageType(requestName, packageName),
-        messageType(responseName, packageName)
-    )
-
-fun clientStream(
-    requestName: String,
-    responseName: String,
-    packageName: String = "google.example"
-) =
-    GrpcTypes.Support.ClientStreamingCall(
-        messageType(requestName, packageName),
-        messageType(responseName, packageName)
-    )
-
-fun serverStream(responseName: String, packageName: String = "google.example") =
-    GrpcTypes.Support.ServerStreamingCall(messageType(responseName, packageName))
 
 // ignore indentation in tests
 fun CodeBlock?.asNormalizedString(): String {

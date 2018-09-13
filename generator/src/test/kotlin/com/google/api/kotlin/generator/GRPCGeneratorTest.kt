@@ -24,24 +24,23 @@ import com.google.api.kotlin.config.ServiceOptions
 import com.google.api.kotlin.firstSourceType
 import com.google.api.kotlin.props
 import com.google.api.kotlin.sources
-import com.google.api.kotlin.stream
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.common.truth.Truth.assertThat
 import com.squareup.kotlinpoet.ClassName
 import kotlin.test.Test
 
-internal class GRPCGeneratorTest : BaseGeneratorTest() {
+internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `Generates with class documentation`() {
-        val opts = ServiceOptions(listOf())
+        val opts = ServiceOptions(methods = listOf())
 
         assertThat(generate(opts).firstSourceType().kdoc.toString()).isNotEmpty()
     }
 
     @Test
     fun `Generates with prepare`() {
-        val opts = ServiceOptions(listOf())
+        val opts = ServiceOptions(methods = listOf())
 
         val methods = generate(opts).firstSourceType().funSpecs
 
@@ -74,7 +73,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
 
     @Test
     fun `Generates with required static imports`() {
-        val opts = ServiceOptions(listOf())
+        val opts = ServiceOptions(methods = listOf())
 
         val imports = generate(opts).sources().first().imports
         assertThat(imports).containsExactly(
@@ -85,7 +84,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
 
     @Test
     fun `Generates the test method`() {
-        val opts = ServiceOptions(listOf(MethodOptions(name = "Test")))
+        val opts = ServiceOptions(methods = listOf(MethodOptions(name = "Test")))
 
         val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "test" }
         assertThat(methods).hasSize(1)
@@ -101,7 +100,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |* val result = client.test(
             |*     TestRequest {
             |*     }
-            |*)
+            |* )
             |* ```
             |*
             |* @param request the request object for the API call
@@ -117,7 +116,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
 
     @Test
     fun `Generates the LRO test method`() {
-        val opts = ServiceOptions(listOf(MethodOptions(name = "OperationTest")))
+        val opts = ServiceOptions(methods = listOf(MethodOptions(name = "OperationTest")))
 
         val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "operationTest" }
         assertThat(methods).hasSize(1)
@@ -134,7 +133,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |* val result = client.operationTest(
             |*     TestRequest {
             |*     }
-            |*)
+            |* )
             |* ```
             |*
             |* @param request the request object for the API call
@@ -152,17 +151,27 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
 
     @Test
     fun `Generates the streamTest method`() {
-        val opts = ServiceOptions(listOf(MethodOptions(name = "StreamTest")))
+        val opts = ServiceOptions(methods = listOf(MethodOptions(name = "StreamTest")))
 
         val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "streamTest" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
-        assertThat(method.returnType).isEqualTo(stream("TestRequest", "TestResponse"))
-        assertThat(method.parameters).isEmpty()
-        assertThat(method.body.asNormalizedString()).isEqualTo(
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
             """
-            |return stubs.api.executeStreaming { it::streamTest }
+            |/**
+            | *
+            | *
+            | * For example:
+            | * ```
+            | * val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            | * val result = client.streamTest(
+            | *     TestRequest {
+            | *     }
+            | * )
+            | * ```
+            | */
+            | fun streamTest(): com.google.kgax.grpc.StreamingCall<google.example.TestRequest, google.example.TestResponse> = stubs.api.executeStreaming { it::streamTest }
             """.asNormalizedString()
         )
     }
@@ -170,7 +179,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
     @Test
     fun `Generates the streamTest method with flattening`() {
         val opts = ServiceOptions(
-            listOf(
+            methods = listOf(
                 MethodOptions(
                     name = "StreamTest",
                     flattenedMethods = listOf(
@@ -196,7 +205,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val result = client.streamTest(
             |*     query
-            |*)
+            |* )
             |* ```
             |*
             |* @param query the query
@@ -228,7 +237,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |*     Detail {
             |*         this.mainDetail = mainDetail
             |*     }
-            |*)
+            |* )
             |* ```
             |*
             |* @param query the query
@@ -253,7 +262,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
 
     @Test
     fun `Generates the streamClientTest method`() {
-        val opts = ServiceOptions(listOf(MethodOptions(name = "StreamClientTest")))
+        val opts = ServiceOptions(methods = listOf(MethodOptions(name = "StreamClientTest")))
 
         val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "streamClientTest" }
         assertThat(methods).hasSize(1)
@@ -270,7 +279,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |* val result = client.streamClientTest(
             |*     TestRequest {
             |*     }
-            |*)
+            |* )
             |* ```
             |*/
             |fun streamClientTest(): com.google.kgax.grpc.ClientStreamingCall<google.example.TestRequest, google.example.TestResponse> = stubs.api.executeClientStreaming {
@@ -282,7 +291,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
 
     @Test
     fun `Generates the streamServerTest method`() {
-        val opts = ServiceOptions(listOf(MethodOptions(name = "StreamServerTest")))
+        val opts = ServiceOptions(methods = listOf(MethodOptions(name = "StreamServerTest")))
 
         val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "streamServerTest" }
         assertThat(methods).hasSize(1)
@@ -299,7 +308,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |* val result = client.streamServerTest(
             |*     TestRequest {
             |*     }
-            |*)
+            |* )
             |* ```
             |*/
             |fun streamServerTest(
@@ -314,7 +323,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
     @Test
     fun `Generates the streamServerTest method with flattening`() {
         val opts = ServiceOptions(
-            listOf(
+            methods = listOf(
                 MethodOptions(
                     name = "StreamServerTest",
                     flattenedMethods = listOf(
@@ -340,7 +349,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |*     MoreDetail {
             |*         this.evenMore = evenMore
             |*     }
-            |*)
+            |* )
             |* ```
             |*/
             |fun streamServerTest(
@@ -360,7 +369,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
     @Test
     fun `Generates the testFlat methods`() {
         val opts = ServiceOptions(
-            listOf(
+            methods = listOf(
                 MethodOptions(
                     name = "TestFlat",
                     flattenedMethods = listOf(
@@ -388,7 +397,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |* val result = client.testFlat(
             |*     TestRequest {
             |*     }
-            |*)
+            |* )
             |* ```
             |*
             |* @param request the request object for the API call
@@ -412,7 +421,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val result = client.testFlat(
             |*     query
-            |*)
+            |* )
             |* ```
             |*
             |* @param query the query
@@ -441,7 +450,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |*     Detail {
             |*         this.mainDetail = mainDetail
             |*     }
-            |*)
+            |* )
             |* ```
             |*
             |* @param query the query
@@ -463,7 +472,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
     @Test
     fun `Generates the TestFlatWithoutOriginal methods`() {
         val opts = ServiceOptions(
-            listOf(
+            methods = listOf(
                 MethodOptions(
                     name = "TestFlatWithoutOriginal",
                     flattenedMethods = listOf(
@@ -491,7 +500,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
                 |*     Detail {
                 |*         this.mainDetail = mainDetail
                 |*     }
-                |*)
+                |* )
                 |* ```
                 |*
                 |* @param mainDetail
@@ -512,7 +521,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
     @Test
     fun `Generates the NestedFlat methods`() {
         val opts = ServiceOptions(
-            listOf(
+            methods = listOf(
                 MethodOptions(
                     name = "NestedFlat",
                     flattenedMethods = listOf(
@@ -538,7 +547,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |*     MoreDetail {
             |*         this.evenMore = evenMore
             |*     }
-            |*)
+            |* )
             |* ```
             |*/
             |fun nestedFlat(
@@ -557,7 +566,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
     @Test
     fun `Generates the NestedFlat methods with repeated fields`() {
         val opts = ServiceOptions(
-            listOf(
+            methods = listOf(
                 MethodOptions(
                     name = "NestedFlat",
                     flattenedMethods = listOf(
@@ -583,7 +592,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |*     Detail {
             |*         addAllMoreDetails(moreDetails)
             |*     }
-            |*)
+            |* )
             |* ```
             |*
             |* @param moreDetails
@@ -604,7 +613,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
     @Test
     fun `Generates the NestedFlat methods with repeated nested fields`() {
         val opts = ServiceOptions(
-            listOf(
+            methods = listOf(
                 MethodOptions(
                     name = "NestedFlat",
                     flattenedMethods = listOf(
@@ -631,7 +640,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |*     MoreDetail {
             |*         this.evenMore = evenMore
             |*     }
-            |*)
+            |* )
             |* ```
             |*/
             |fun nestedFlat(
@@ -650,7 +659,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
     @Test
     fun `Generates the NestedFlatPrimitive methods`() {
         val opts = ServiceOptions(
-            listOf(
+            methods = listOf(
                 MethodOptions(
                     name = "NestedFlatPrimitive",
                     flattenedMethods = listOf(
@@ -665,7 +674,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             generate(opts).firstSourceType().funSpecs.filter { it.name == "nestedFlatPrimitive" }
         assertThat(methods).hasSize(1)
 
-        val method = methods.first() { it.parameters.size == 1 }
+        val method = methods.first { it.parameters.size == 1 }
         assertThat(method.toString().asNormalizedString()).isEqualTo(
             """
             |/**
@@ -676,7 +685,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest() {
             |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val result = client.nestedFlatPrimitive(
             |*     main_detail.useful
-            |*)
+            |* )
             |* ```
             |*/
             |fun nestedFlatPrimitive(

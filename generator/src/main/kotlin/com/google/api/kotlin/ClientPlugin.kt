@@ -16,7 +16,7 @@
 
 package com.google.api.kotlin
 
-import com.google.api.kotlin.config.ConfigurationMetadataFactory
+import com.google.api.kotlin.config.LegacyConfigurationFactory
 import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.api.kotlin.generator.RetrofitGenerator
@@ -83,7 +83,7 @@ fun main(args: Array<String>) {
         when {
             options.fallback -> RetrofitGenerator()
             else -> GRPCGenerator()
-        }, ConfigurationMetadataFactory(sourceDirectory), BuilderGenerator()
+        }, LegacyConfigurationFactory(sourceDirectory), BuilderGenerator()
     )
     val (sourceCode, testCode) = generator.generate(request)
 

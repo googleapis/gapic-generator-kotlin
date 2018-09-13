@@ -52,7 +52,7 @@ internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
                     CompanionObject.VAL_ALL_SCOPES, List::class.parameterizedBy(String::class)
                 )
                     .addAnnotation(JvmStatic::class)
-                    .initializer("listOf(%L)", ctx.metadata.scopesAsLiteral)
+                    .initializer("listOf(%L)", ctx.serviceOptions.scopes.joinToString(", ") { "\"$it\"" })
                     .build()
             )
             .addFunctions(createClientFactories(ctx))
@@ -246,7 +246,7 @@ internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
             .addAnnotation(JvmOverloads::class)
             .addParameter(
                 ParameterSpec.builder("host", String::class)
-                    .defaultValue("%S", ctx.metadata.host)
+                    .defaultValue("%S", ctx.serviceOptions.host)
                     .build()
             )
             .addParameter(

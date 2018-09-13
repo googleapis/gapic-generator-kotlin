@@ -16,6 +16,9 @@
 
 package com.google.api.kotlin.config
 
+import com.google.api.AnnotationsProto
+import com.google.api.Metadata
+import com.google.api.kotlin.ConfigurationFactory
 import com.google.protobuf.DescriptorProtos
 import mu.KotlinLogging
 import org.apache.commons.io.FilenameUtils
@@ -31,18 +34,13 @@ import java.nio.file.Paths
 private val log = KotlinLogging.logger {}
 
 /**
- * Metadata not in the proto file (i.e. info from the service config).
- *
- * Note: this will need to change significantly when the configuration is moved into the
- * protos, so this implementation is being kept to a minimum in the meantime.
+ * Configuration metadata for customizing the API surface for a set of RPC services.
  *
  * @author jbolinger
  */
-internal class ConfigurationMetadata constructor(
-    val host: String,
-    val scopes: List<String>,
+internal class Configuration constructor(
+    val packageName: String,
     val branding: BrandingOptions,
-    private val packageName: String,
     private val serviceOptions: Map<String, ServiceOptions>
 ) {
 
@@ -57,21 +55,48 @@ internal class ConfigurationMetadata constructor(
 
     operator fun get(service: DescriptorProtos.ServiceDescriptorProto) =
         get("$packageName.${service.name}")
-
-    /**
-     * Get the scopes as a formatted literal string (for use with $L).
-     *
-     * @return formatted string
-     */
-    val scopesAsLiteral: String
-        get() {
-            if (scopes.isEmpty()) return ""
-            return '"'.toString() + scopes.joinToString("\",\n\"") + '"'.toString()
-        }
 }
 
-/** Factory from creating new [ConfigurationMetadata] */
-internal class ConfigurationMetadataFactory(val rootDirectory: String = "") {
+/** Factory for creating a new [Configuration]. */
+internal class AnnotationConfigurationFactory : ConfigurationFactory {
+
+    override fun fromProto(proto: DescriptorProtos.FileDescriptorProto): Configuration {
+        val metadata = parseMetadata(proto)
+
+        val packageName = proto.`package`
+        val branding = BrandingOptions(
+            name = metadata?.productName ?: "",
+            url = metadata?.productUri ?: ""
+        )
+        val apiConfig = getOptionsForServices(proto)
+
+        return Configuration(packageName, branding, apiConfig)
+    }
+
+    // parse API level metadata
+    private fun parseMetadata(proto: DescriptorProtos.FileDescriptorProto): Metadata? {
+        try {
+            val field = proto.options.unknownFields.getField(AnnotationsProto.METADATA_FIELD_NUMBER)
+            return Metadata.parseFrom(field.lengthDelimitedList.first())
+        } catch (e: Exception) {
+            log.warn(e) { "Unable to parse metadata from annotation (not present?)" }
+        }
+        return null
+    }
+
+    private fun getOptionsForServices(proto: DescriptorProtos.FileDescriptorProto): Map<String, ServiceOptions> {
+        return mapOf()
+    }
+}
+
+/**
+ * Factory for creating a new [Configuration].
+ *
+ * This use the legacy configuration yaml file and must be removed before any stable release.
+ */
+internal class LegacyConfigurationFactory(
+    private val rootDirectory: String = ""
+) : ConfigurationFactory {
     private val yaml: Yaml
         get() {
             val representer = Representer()
@@ -87,7 +112,7 @@ internal class ConfigurationMetadataFactory(val rootDirectory: String = "") {
      *    /api/v1/my_gapic.yaml
      *    /api/my_v1.yaml
      */
-    fun find(proto: DescriptorProtos.FileDescriptorProto): ConfigurationMetadata {
+    override fun fromProto(proto: DescriptorProtos.FileDescriptorProto): Configuration {
         val protoPath = Paths.get(rootDirectory, proto.name)
 
         val version = protoPath.parent?.fileName ?: "unknown_version"
@@ -132,62 +157,64 @@ internal class ConfigurationMetadataFactory(val rootDirectory: String = "") {
         packageName: String,
         serviceFile: File?,
         clientFile: File?
-    ): ConfigurationMetadata {
-        val apiConfig = if (clientFile != null) {
-            log.debug { "parsing config file: ${clientFile.absolutePath}" }
-            parseClient(clientFile)
-        } else {
-            log.warn { "No service configuration found for package: $packageName (using defaults)" }
-            mapOf()
-        }
+    ): Configuration {
+        // defaults
+        var name = ""
+        var summary = ""
+        var host = ""
+        var scopes = setOf<String>()
 
+        // try and parse service config
         if (serviceFile != null) {
             FileInputStream(serviceFile).use { ins ->
                 val config = yaml.loadAs(ins, ServiceConfigYaml::class.java)
 
                 // parse out the useful info
-                val name = config.title
-                val summary = config.documentation?.summary
+                name = config.title
+                summary = config.documentation?.summary
                     ?: "Client library for a wonderful product!"
-                val host = config.name
-                val scopes = config.authentication?.rules
+                host = config.name
+                scopes = config.authentication?.rules
                     ?.filter { it.oauth != null }
                     ?.map { it.oauth!! }
                     ?.map { it.canonical_scopes }
-                    ?.map { it.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray() }
+                    ?.map {
+                        it.split(",".toRegex()).dropLastWhile { str -> str.isEmpty() }
+                            .toTypedArray()
+                    }
                     ?.flatMap { it.asIterable() }
-                    ?.map { it.replace("\n".toRegex(), "").trim { it <= ' ' } }
+                    ?.map { it.replace("\n".toRegex(), "").trim { c -> c <= ' ' } }
                     ?.toSet() ?: setOf()
-
-                // put it all together
-                return ConfigurationMetadata(
-                    host, scopes.toList(),
-                    BrandingOptions(name, summary),
-                    packageName, apiConfig
-                )
             }
-        } else {
-            // use defaults
-            log.warn { "No gapic configuration found for package: $packageName (using defaults)" }
-            return ConfigurationMetadata(
-                "service.example.com", listOf("https://example.com/auth/scope"),
-                BrandingOptions("Example API", "No configuration was provided for this API!"),
-                packageName, apiConfig
-            )
         }
+
+        // parse API config options
+        val apiConfig = if (clientFile != null) {
+            log.debug { "parsing config file: ${clientFile.absolutePath}" }
+            parseClient(clientFile, host, scopes)
+        } else {
+            log.warn { "No service configuration found for package: $packageName (using defaults)" }
+            mapOf()
+        }
+
+        // put it all together
+        return Configuration(
+            packageName,
+            BrandingOptions(name, summary),
+            apiConfig)
     }
 
     // parses the config (gapic yaml) files
-    private fun parseClient(file: File): Map<String, ServiceOptions> {
+    private fun parseClient(file: File, host: String, scopes: Set<String>): Map<String, ServiceOptions> {
         FileInputStream(file).use { ins ->
             val config = yaml.loadAs(ins, GapicYaml::class.java)
 
             // parse method configuration
             val services = mutableMapOf<String, ServiceOptions>()
             config.interfaces.forEach { service ->
-                services[service.name] = ServiceOptions(service.methods.map { method ->
+                val methods = service.methods.map { method ->
                     val flattening =
-                        method.flattening?.groups?.map { FlattenedMethod(it.parameters.map { it.asPropertyPath() }) }
+                        method.flattening?.groups?.map { FlattenedMethod(it.parameters.map { p -> p.asPropertyPath() }) }
                             ?: listOf()
 
                     // collect samples
@@ -215,7 +242,8 @@ internal class ConfigurationMetadataFactory(val rootDirectory: String = "") {
                         paging,
                         samples
                     )
-                })
+                }
+                services[service.name] = ServiceOptions(host, scopes.toList(), methods)
             }
             return services.toMap()
         }
@@ -224,13 +252,17 @@ internal class ConfigurationMetadataFactory(val rootDirectory: String = "") {
 
 /** Branding options for product [name], [url], etc. */
 internal data class BrandingOptions(
-    val name: String,
-    val summary: String,
+    val name: String = "",
+    val summary: String = "",
     val url: String = "http://www.google.com"
 )
 
 /** Code generator options for a set of APIs methods within a protobuf service */
-internal data class ServiceOptions(val methods: List<MethodOptions> = listOf())
+internal data class ServiceOptions(
+    val host: String = "",
+    val scopes: List<String> = listOf(),
+    val methods: List<MethodOptions> = listOf()
+)
 
 /** Code generation options for an API method */
 internal data class MethodOptions(

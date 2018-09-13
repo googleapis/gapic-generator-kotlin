@@ -16,9 +16,10 @@
 
 package com.google.api.kotlin
 
-import com.google.api.kotlin.config.ConfigurationMetadataFactory
+import com.google.api.kotlin.config.LegacyConfigurationFactory
 import com.google.api.kotlin.config.ServiceOptions
 import com.google.api.kotlin.generator.BuilderGenerator
+import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.common.truth.Truth.assertThat
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.check
@@ -29,7 +30,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeSpec
 import kotlin.test.Test
 
-internal class KotlinClientGeneratorTest : BaseGeneratorTest() {
+internal class KotlinClientGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `generates a class with context and a license`() {
@@ -45,8 +46,8 @@ internal class KotlinClientGeneratorTest : BaseGeneratorTest() {
             )
         }
         val config = getMockedConfig(ServiceOptions())
-        val clientConfigFactory: ConfigurationMetadataFactory = mock {
-            on { find(any()) }.doReturn(config)
+        val clientConfigFactory: LegacyConfigurationFactory = mock {
+            on { fromProto(any()) }.doReturn(config)
         }
 
         val generator = KotlinClientGenerator(clientGenerator, clientConfigFactory)
@@ -61,9 +62,8 @@ internal class KotlinClientGeneratorTest : BaseGeneratorTest() {
         verify(clientGenerator).generateServiceClient(check {
             assertThat(it.className).isEqualTo(ClassName("google.example", "TestServiceClient"))
             assertThat(it.metadata).isEqualTo(config)
-            val proto = generatorRequest.protoFileList.find { it.serviceCount > 0 }!!
-            assertThat(it.proto).isEqualTo(proto)
-            assertThat(it.service).isEqualTo(proto.serviceList.first())
+            assertThat(it.proto).isEqualTo(testProto)
+            assertThat(it.service).isEqualTo(testProto.serviceList.find { s -> s.name == "TestService" })
         })
     }
 
@@ -92,8 +92,8 @@ internal class KotlinClientGeneratorTest : BaseGeneratorTest() {
             )
         }
         val config = getMockedConfig(ServiceOptions())
-        val clientConfigFactory: ConfigurationMetadataFactory = mock {
-            on { find(any()) }.doReturn(config)
+        val clientConfigFactory: LegacyConfigurationFactory = mock {
+            on { fromProto(any()) }.doReturn(config)
         }
 
         val generator =

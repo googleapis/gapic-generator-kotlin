@@ -17,12 +17,13 @@
 package com.google.api.kotlin.config
 
 import com.google.api.kotlin.BaseGeneratorTest
+import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.common.truth.Truth.assertThat
 import com.squareup.kotlinpoet.ClassName
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
-internal class ProtobufTypeMapperTest : BaseGeneratorTest() {
+internal class ProtobufTypeMapperTest : BaseGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `maps all Kotlin types`() {

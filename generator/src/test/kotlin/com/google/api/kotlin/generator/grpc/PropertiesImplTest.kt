@@ -18,7 +18,7 @@ package com.google.api.kotlin.generator.grpc
 
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.asNormalizedString
-import com.google.api.kotlin.config.ConfigurationMetadata
+import com.google.api.kotlin.config.Configuration
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.common.truth.Truth.assertThat
 import com.google.protobuf.DescriptorProtos
@@ -34,11 +34,11 @@ import kotlin.test.Test
  *
  * more complex tests use the test protos in [GRPCGeneratorTest].
  */
-class PropertiesImplTest {
+internal class PropertiesImplTest {
 
     private val proto: DescriptorProtos.FileDescriptorProto = mock()
     private val service: DescriptorProtos.ServiceDescriptorProto = mock()
-    private val meta: ConfigurationMetadata = mock()
+    private val meta: Configuration = mock()
     private val types: ProtobufTypeMapper = mock()
     private val ctx: GeneratorContext = mock()
 

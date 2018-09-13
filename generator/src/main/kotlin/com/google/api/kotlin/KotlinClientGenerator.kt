@@ -16,9 +16,9 @@
 
 package com.google.api.kotlin
 
-import com.google.api.kotlin.config.ConfigurationMetadata
-import com.google.api.kotlin.config.ConfigurationMetadataFactory
+import com.google.api.kotlin.config.Configuration
 import com.google.api.kotlin.config.ProtobufTypeMapper
+import com.google.api.kotlin.config.ServiceOptions
 import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.compiler.PluginProtos
@@ -41,7 +41,7 @@ private val log = KotlinLogging.logger {}
  */
 internal class KotlinClientGenerator(
     private val clientGenerator: ClientGenerator,
-    private val clientConfigFactory: ConfigurationMetadataFactory,
+    private val clientConfigFactory: ConfigurationFactory,
     private val builderGenerator: BuilderGenerator? = null
 ) {
 
@@ -59,10 +59,8 @@ internal class KotlinClientGenerator(
     )
 
     /**
-     * Generate the client.
-     *
-     * @param request protobuf code generation request
-     * @return response from this plugin to forward to the protobuf code generator
+     * Generate the client from the protobuf code generation [request] and return
+     * the response to forward to the protobuf code generator.
      */
     fun generate(request: CodeGeneratorRequest): Artifacts {
         // create type map
@@ -78,7 +76,7 @@ internal class KotlinClientGenerator(
                 it.serviceList.mapNotNull { service ->
                     try {
                         processProtoService(
-                            it, service, clientConfigFactory.find(it), typeMap
+                            it, service, clientConfigFactory.fromProto(it), typeMap
                         )
                     } catch (e: Throwable) {
                         log.error(e) { "Failed to generate client for: ${it.name}" }
@@ -122,7 +120,7 @@ internal class KotlinClientGenerator(
     private fun processProtoService(
         proto: DescriptorProtos.FileDescriptorProto,
         service: DescriptorProtos.ServiceDescriptorProto,
-        metadata: ConfigurationMetadata,
+        metadata: Configuration,
         typeMap: ProtobufTypeMapper
     ): List<GeneratedArtifact> {
         log.debug { "processing proto: ${proto.name} -> service: ${service.name}" }
@@ -191,23 +189,28 @@ internal class KotlinClientGenerator(
  */
 internal interface ClientGenerator {
 
-    /**
-     * Generate the client.
-     *
-     * @param ctx content
-     * @return
-     */
+    /** Generate the client. */
     fun generateServiceClient(ctx: GeneratorContext): List<GeneratedArtifact>
+}
+
+/** Generate a configuration from a protocol buffer file. */
+internal interface ConfigurationFactory {
+
+    /** Generate a configuration */
+    fun fromProto(proto: DescriptorProtos.FileDescriptorProto): Configuration
 }
 
 /** Data model for client generation */
 internal class GeneratorContext(
     val proto: DescriptorProtos.FileDescriptorProto,
     val service: DescriptorProtos.ServiceDescriptorProto,
-    val metadata: ConfigurationMetadata,
+    val metadata: Configuration,
     val className: ClassName,
     val typeMap: ProtobufTypeMapper
-)
+) {
+    val serviceOptions: ServiceOptions
+        get() = metadata[service]
+}
 
 internal abstract class GeneratedArtifact()
 

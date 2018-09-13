@@ -18,31 +18,27 @@ syntax = "proto3";
 
 package google.example;
 
+import "google/example/test.proto";
+import "google/api/annotations.proto";
+import "google/longrunning/operations.proto";
+
 option java_multiple_files = true;
 
-message Result {
-    int32 an_int = 1;
-    string a_string = 2;
-    Detail a_detail = 3;
-}
+option (google.api.metadata) = {
+  product_name: "The Test Product"
+  product_uri: "https://github.com/googleapis/gapic-generator-kotlin"
+};
 
-message Detail {
-    bool useful = 1;
-    MoreDetail even_more = 2;
-    repeated MoreDetail lots_more = 3;
-}
+// This a proto for testing the config annotations
+service AnnotationService {
 
-message MoreDetail {
-    enum HowMuchMore {
-        Some = 0;
-        More = 1;
-        Lots = 2;
+    option (google.api.default_host) = "localhost:7469";
+
+    rpc AnnotationTest (TestRequest) returns (TestResponse) {
+        option (google.api.http) = {
+          post: "/foo/annotation:annotation"
+          body: "*"
+        };
     }
-    string very_detailed = 1;
-    HowMuchMore level = 2;
-}
 
-enum AnEnum {
-    ZERO = 0;
-    ONE = 1;
 }

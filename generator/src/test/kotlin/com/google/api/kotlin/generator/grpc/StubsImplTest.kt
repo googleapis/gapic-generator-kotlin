@@ -37,7 +37,7 @@ import kotlin.test.Test
  *
  * more complex tests use the test protos in [GRPCGeneratorTest].
  */
-class StubsImplTest {
+internal class StubsImplTest {
 
     private val baseClassGenerator: BaseClass = mock()
     private val proto: DescriptorProtos.FileDescriptorProto = mock()
