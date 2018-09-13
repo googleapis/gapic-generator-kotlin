@@ -63,7 +63,12 @@ internal class AnnotationConfigurationFactory : ConfigurationFactory {
     override fun fromProto(proto: DescriptorProtos.FileDescriptorProto): Configuration {
         val metadata = parseMetadata(proto)
 
-        val packageName = proto.`package`
+        val packageName = if (metadata != null && metadata.packageNamespaceCount > 0) {
+            metadata.packageNamespaceList.joinToString(".")
+        } else {
+            proto.`package`!!
+        }.toLowerCase().replace("\\s".toRegex(), "")
+
         val branding = BrandingOptions(
             name = metadata?.productName ?: "",
             url = metadata?.productUri ?: ""

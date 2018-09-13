@@ -20,12 +20,13 @@ import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.PagedResponse
 import com.google.api.kotlin.config.SampleMethod
-import com.google.api.kotlin.generator.AbstractGenerator
-import com.google.api.kotlin.generator.ParameterInfo
-import com.google.api.kotlin.generator.getMethodComments
-import com.google.api.kotlin.generator.getParameterComments
-import com.google.api.kotlin.generator.isMessageType
-import com.google.api.kotlin.generator.wrap
+import com.google.api.kotlin.util.getMethodComments
+import com.google.api.kotlin.util.ParameterInfo
+import com.google.api.kotlin.util.RequestObject.getBuilder
+import com.google.api.kotlin.util.getParameterComments
+import com.google.api.kotlin.util.getProtoFieldInfoForPath
+import com.google.api.kotlin.util.isMessageType
+import com.google.api.kotlin.wrap
 import com.google.protobuf.DescriptorProtos
 import com.squareup.kotlinpoet.CodeBlock
 
@@ -44,7 +45,7 @@ internal interface Documentation {
     ): CodeBlock
 }
 
-internal class DocumentationImpl : AbstractGenerator(), Documentation {
+internal class DocumentationImpl : Documentation {
 
     override fun generateClassKDoc(ctx: GeneratorContext): CodeBlock {
         val doc = CodeBlock.builder()
@@ -189,5 +190,23 @@ internal class DocumentationImpl : AbstractGenerator(), Documentation {
         call.addStatement("```")
 
         return call.build()
+    }
+
+    /**
+     * Kotlin Poet doesn't handle indented code within Kdoc well so we use this to
+     * correct the indentations for sample code. It would be nice to find an alternative.
+     */
+    private fun indentBuilder(context: GeneratorContext, code: CodeBlock, level: Int): CodeBlock {
+        val indent = " ".repeat(level * 4)
+
+        // we will get the fully qualified names when turning the code block into a string
+        val specialPackages = "(${context.className.packageName}|com.google.api)"
+
+        // remove fully qualified names and adjust indent
+        val formatted = code.toString()
+            .replace("\n", "\n$indent")
+            .replace("^[ ]*$specialPackages\\.".toRegex(), "")
+            .replace(" = $specialPackages\\.".toRegex(), " = ")
+        return CodeBlock.of("%L", formatted)
     }
 }

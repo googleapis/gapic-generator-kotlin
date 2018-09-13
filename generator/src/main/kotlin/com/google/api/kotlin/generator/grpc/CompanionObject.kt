@@ -17,7 +17,6 @@
 package com.google.api.kotlin.generator.grpc
 
 import com.google.api.kotlin.GeneratorContext
-import com.google.api.kotlin.generator.AbstractGenerator
 import com.google.api.kotlin.types.GrpcTypes
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
@@ -39,7 +38,7 @@ internal interface CompanionObject {
     }
 }
 
-internal class CompanionObjectImpl : AbstractGenerator(), CompanionObject {
+internal class CompanionObjectImpl : CompanionObject {
 
     override fun generate(ctx: GeneratorContext): TypeSpec {
         return TypeSpec.companionObjectBuilder()

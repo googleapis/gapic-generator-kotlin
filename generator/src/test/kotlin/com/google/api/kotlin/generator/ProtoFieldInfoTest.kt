@@ -17,6 +17,9 @@
 package com.google.api.kotlin.generator
 
 import com.google.api.kotlin.BaseGeneratorTest
+import com.google.api.kotlin.util.ProtoFieldInfo
+import com.google.api.kotlin.util.getMethodComments
+import com.google.api.kotlin.util.getParameterComments
 import com.google.common.truth.Truth.assertThat
 import com.squareup.kotlinpoet.ClassName
 import kotlin.test.Test
@@ -39,7 +42,8 @@ internal class ProtoFieldInfoTest : BaseGeneratorTest(GRPCGenerator()) {
         val field = message.fieldList.find { it.name == "query" }!!
         val kotlinType = ClassName("a", "Foo")
 
-        val fieldInfo = ProtoFieldInfo(testProto, message, field, -1, kotlinType)
+        val fieldInfo =
+            ProtoFieldInfo(testProto, message, field, -1, kotlinType)
         val comment = fieldInfo.file.getParameterComments(fieldInfo)
 
         assertThat(comment?.trim()).isEqualTo("the query")

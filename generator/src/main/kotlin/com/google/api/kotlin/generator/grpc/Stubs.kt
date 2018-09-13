@@ -17,7 +17,6 @@
 package com.google.api.kotlin.generator.grpc
 
 import com.google.api.kotlin.GeneratorContext
-import com.google.api.kotlin.generator.AbstractGenerator
 import com.google.api.kotlin.generator.grpc.Stubs.Companion.PROP_STUBS_API
 import com.google.api.kotlin.generator.grpc.Stubs.Companion.PROP_STUBS_OPERATION
 import com.google.api.kotlin.types.GrpcTypes
@@ -49,7 +48,7 @@ internal interface Stubs {
     }
 }
 
-internal class StubsImpl(val baseClass: BaseClass) : AbstractGenerator(), Stubs {
+internal class StubsImpl(val baseClass: BaseClass) : Stubs {
 
     override fun generateHolderType(ctx: GeneratorContext): TypeSpec {
         val apiType = getApiStubType(ctx)

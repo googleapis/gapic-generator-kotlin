@@ -17,7 +17,6 @@
 package com.google.api.kotlin.generator.grpc
 
 import com.google.api.kotlin.GeneratorContext
-import com.google.api.kotlin.generator.AbstractGenerator
 import com.google.api.kotlin.types.GrpcTypes
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
@@ -42,7 +41,7 @@ internal interface Properties {
     }
 }
 
-internal class PropertiesImpl : AbstractGenerator(), Properties {
+internal class PropertiesImpl : Properties {
 
     override fun generate(ctx: GeneratorContext): List<PropertySpec> {
         val stub = PropertySpec.builder(

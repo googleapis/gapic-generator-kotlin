@@ -35,8 +35,10 @@ import com.google.api.kotlin.generator.grpc.StubsImpl
 import com.google.api.kotlin.generator.grpc.UnitTest
 import com.google.api.kotlin.generator.grpc.UnitTestImpl
 import com.google.api.kotlin.types.GrpcTypes
+import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeSpec
+import javax.annotation.Generated
 
 /**
  * Generates a gRPC client by aggregating the results of the sub-generators.
@@ -51,19 +53,24 @@ internal class GRPCGenerator(
     private val documentation: Documentation = DocumentationImpl(),
     private val unitTests: UnitTest = UnitTestImpl(stubs),
     private val functions: Functions = FunctionsImpl(documentation, unitTests)
-) : AbstractGenerator(), ClientGenerator {
+) : ClientGenerator {
 
     override fun generateServiceClient(ctx: GeneratorContext): List<GeneratedArtifact> {
         val artifacts = mutableListOf<GeneratedArtifact>()
 
+        // hallmark
+        val byAnnotation = AnnotationSpec.builder(Generated::class)
+            .addMember("%S", this::class.qualifiedName!!)
+            .build()
+
         // build base class for client
-        val base = baseClass.generate(ctx)
+        val base = baseClass.generate(ctx, byAnnotation)
 
         val clientType = TypeSpec.classBuilder(ctx.className)
         val apiMethods = functions.generate(ctx)
 
         // build client
-        clientType.addAnnotation(createGeneratedByAnnotation())
+        clientType.addAnnotation(byAnnotation)
         clientType.superclass(baseClass.typeName(ctx))
         clientType.addSuperclassConstructorParameter("%N", Properties.PROP_CHANNEL)
         clientType.addSuperclassConstructorParameter("%N", Properties.PROP_CALL_OPTS)

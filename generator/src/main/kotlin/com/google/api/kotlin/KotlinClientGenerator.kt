@@ -30,6 +30,7 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.TypeSpec
 import mu.KotlinLogging
+import org.apache.commons.text.WordUtils
 import java.util.Calendar
 
 private val log = KotlinLogging.logger {}
@@ -212,8 +213,9 @@ internal class GeneratorContext(
         get() = metadata[service]
 }
 
-internal abstract class GeneratedArtifact()
+internal abstract class GeneratedArtifact
 
+/** Represents a generated source code artifact */
 internal class GeneratedSource(
     val packageName: String,
     val name: String,
@@ -227,11 +229,28 @@ internal class GeneratedSource(
     }
 }
 
-/** FunSpec with additional code blocks that can be used to, optionally, generate tests */
+/** FunSpec with additional code blocks that can be used to, optionally, generate tests. */
 internal class TestableFunSpec(
     val function: FunSpec,
     val unitTestCode: CodeBlock? = null
 )
 
+/** Transforms a [FunSpec] to a [TestableFunSpec]. */
 internal fun FunSpec.asTestable(unitTestCode: CodeBlock? = null) =
     TestableFunSpec(this, unitTestCode)
+
+/** line wrapping at to the [wrapLength]. */
+internal fun String?.wrap(wrapLength: Int = 100) = if (this != null) {
+    WordUtils.wrap(this, wrapLength)
+} else {
+    null
+}
+
+/** Indent to the given [level]. */
+internal fun CodeBlock.indent(level: Int): CodeBlock {
+    val builder = CodeBlock.builder()
+    repeat(level) { builder.indent() }
+    builder.add(this)
+    repeat(level) { builder.unindent() }
+    return builder.build()
+}

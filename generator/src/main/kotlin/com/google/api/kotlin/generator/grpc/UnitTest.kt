@@ -23,14 +23,18 @@ import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.PagedResponse
 import com.google.api.kotlin.config.PropertyPath
 import com.google.api.kotlin.config.ProtobufTypeMapper
-import com.google.api.kotlin.generator.AbstractGenerator
-import com.google.api.kotlin.generator.ParameterInfo
-import com.google.api.kotlin.generator.ProtoFieldInfo
-import com.google.api.kotlin.generator.describeMap
-import com.google.api.kotlin.generator.isLongRunningOperation
-import com.google.api.kotlin.generator.isMap
-import com.google.api.kotlin.generator.isRepeated
 import com.google.api.kotlin.types.GrpcTypes
+import com.google.api.kotlin.util.FieldNamer.getAccessorName
+import com.google.api.kotlin.util.FieldNamer.getAccessorRepeatedName
+import com.google.api.kotlin.util.FieldNamer.getSetterName
+import com.google.api.kotlin.util.Flattening
+import com.google.api.kotlin.util.ParameterInfo
+import com.google.api.kotlin.util.ProtoFieldInfo
+import com.google.api.kotlin.util.ResponseTypes.getResponseListElementType
+import com.google.api.kotlin.util.describeMap
+import com.google.api.kotlin.util.isLongRunningOperation
+import com.google.api.kotlin.util.isMap
+import com.google.api.kotlin.util.isRepeated
 import com.google.protobuf.DescriptorProtos
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
@@ -78,7 +82,7 @@ internal interface UnitTest {
     }
 }
 
-internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), UnitTest {
+internal class UnitTestImpl(private val stubs: Stubs) : UnitTest {
 
     override fun generate(
         ctx: GeneratorContext,
@@ -324,8 +328,12 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
         // if flattened we need to check the outbound request stream
         givenBlock.code.addStatement("val streaming: %T = mock()", streamMethodReturnType)
         if (flatteningConfig != null && method.hasClientStreaming()) {
-            givenBlock.code.addStatement("whenever(%N.prepare(any<%T.() -> Unit>())).thenReturn(%N)",
-                UnitTest.MOCK_API_STUB, GrpcTypes.Support.ClientCallOptionsBuilder, UnitTest.MOCK_API_STUB)
+            givenBlock.code.addStatement(
+                "whenever(%N.prepare(any<%T.() -> Unit>())).thenReturn(%N)",
+                UnitTest.MOCK_API_STUB,
+                GrpcTypes.Support.ClientCallOptionsBuilder,
+                UnitTest.MOCK_API_STUB
+            )
         }
         givenBlock.code.addStatement(
             "whenever(%N.%L(any())).thenReturn(streaming)",
@@ -372,7 +380,8 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
 
         // if flattening was used also verify that the args were sent
         if (flatteningConfig != null && method.hasClientStreaming()) {
-            val checks = createNestedAssertCodeForStubCheck(givenBlock, ctx, method, flatteningConfig)
+            val checks =
+                createNestedAssertCodeForStubCheck(givenBlock, ctx, method, flatteningConfig)
             thenBlock.code.add(
                 """
                 |verify(%N).prepare(check<%T.() -> Unit> {
@@ -387,7 +396,8 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
                 GrpcTypes.Support.ClientCallOptionsBuilder,
                 GrpcTypes.Support.ClientCallOptionsBuilder,
                 originalInputType,
-                *checks.toTypedArray())
+                *checks.toTypedArray()
+            )
         }
 
         // put it all together
@@ -482,7 +492,8 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
             check.add("eq(%N)", given.variables.values.map { it.variableName }.first())
         } else {
             // get an assert for each parameter
-            val nestedAssert = createNestedAssertCodeForStubCheck(given, ctx, method, flatteningConfig)
+            val nestedAssert =
+                createNestedAssertCodeForStubCheck(given, ctx, method, flatteningConfig)
 
             // add page assert
             if (paging != null && expectedPageSize != null) {
@@ -514,19 +525,23 @@ internal class UnitTestImpl(private val stubs: Stubs) : AbstractGenerator(), Uni
     ): MutableList<CodeBlock> {
         val nestedAsserts = mutableListOf<CodeBlock>()
 
-        visitFlattenedMethod(ctx, method, flatteningConfig.parameters, object : Visitor() {
-            override fun onTerminalParam(
-                currentPath: PropertyPath,
-                fieldInfo: ProtoFieldInfo
-            ) {
-                val key = getAccessorName(currentPath.lastSegment)
-                val accessor = getAccessorName(ctx.typeMap, fieldInfo)
-                val variable = given.variables[key]?.variableName
-                    ?: throw IllegalStateException("Could not locate variable with name: $key")
+        Flattening.visitFlattenedMethod(
+            ctx,
+            method,
+            flatteningConfig.parameters,
+            object : Flattening.Visitor() {
+                override fun onTerminalParam(
+                    currentPath: PropertyPath,
+                    fieldInfo: ProtoFieldInfo
+                ) {
+                    val key = getAccessorName(currentPath.lastSegment)
+                    val accessor = getAccessorName(ctx.typeMap, fieldInfo)
+                    val variable = given.variables[key]?.variableName
+                        ?: throw IllegalStateException("Could not locate variable with name: $key")
 
-                nestedAsserts.add(CodeBlock.of("assertEquals($variable, it.$accessor)"))
-            }
-        })
+                    nestedAsserts.add(CodeBlock.of("assertEquals($variable, it.$accessor)"))
+                }
+            })
 
         return nestedAsserts
     }

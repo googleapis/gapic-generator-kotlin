@@ -23,11 +23,17 @@ import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.MethodOptions
 import com.google.api.kotlin.config.PagedResponse
 import com.google.api.kotlin.config.SampleMethod
-import com.google.api.kotlin.generator.AbstractGenerator
-import com.google.api.kotlin.generator.ParameterInfo
-import com.google.api.kotlin.generator.indent
-import com.google.api.kotlin.generator.isLongRunningOperation
+import com.google.api.kotlin.indent
 import com.google.api.kotlin.types.GrpcTypes
+import com.google.api.kotlin.util.FieldNamer.getAccessorName
+import com.google.api.kotlin.util.FieldNamer.getAccessorRepeatedName
+import com.google.api.kotlin.util.FieldNamer.getSetterName
+import com.google.api.kotlin.util.Flattening
+import com.google.api.kotlin.util.Flattening.getFlattenedParameters
+import com.google.api.kotlin.util.ParameterInfo
+import com.google.api.kotlin.util.ResponseTypes.getLongRunningResponseType
+import com.google.api.kotlin.util.ResponseTypes.getResponseListElementType
+import com.google.api.kotlin.util.isLongRunningOperation
 import com.google.protobuf.DescriptorProtos
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
@@ -52,7 +58,7 @@ internal interface Functions {
 internal class FunctionsImpl(
     private val documentation: Documentation,
     private val unitTest: UnitTest
-) : AbstractGenerator(), Functions {
+) : Functions {
 
     override fun generate(ctx: GeneratorContext): List<TestableFunSpec> {
         // we'll use this in the example text
@@ -145,7 +151,11 @@ internal class FunctionsImpl(
 
         // add flattened methods
         methods.addAll(options.flattenedMethods.map { flattenedMethod ->
-            val (parameters, request) = getFlattenedParameters(ctx, method, flattenedMethod)
+            val (parameters, request) = Flattening.getFlattenedParameters(
+                ctx,
+                method,
+                flattenedMethod
+            )
             createUnaryMethod(
                 ctx, method, methodName,
                 parameters = parameters,

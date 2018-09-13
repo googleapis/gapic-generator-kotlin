@@ -33,6 +33,7 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import mu.KotlinLogging
 import java.io.InputStream
+import javax.annotation.Generated
 
 private val log = KotlinLogging.logger {}
 
@@ -46,13 +47,17 @@ private const val RETROFIT_INTERFACE_NAME = "RPC"
  *
  * @author jbolinger
  */
-internal class RetrofitGenerator : AbstractGenerator(), ClientGenerator {
+internal class RetrofitGenerator : ClientGenerator {
 
     override fun generateServiceClient(ctx: GeneratorContext): List<GeneratedArtifact> {
         val type = TypeSpec.classBuilder(ctx.className)
 
         // build client
-        type.addAnnotation(createGeneratedByAnnotation())
+        type.addAnnotation(
+            AnnotationSpec.builder(Generated::class)
+                .addMember("%S", this::class.qualifiedName!!)
+                .build()
+        )
         type.primaryConstructor(createPrimaryConstructor(ctx))
         type.addProperties(createParameters(ctx))
         type.addFunctions(createMethods(ctx))

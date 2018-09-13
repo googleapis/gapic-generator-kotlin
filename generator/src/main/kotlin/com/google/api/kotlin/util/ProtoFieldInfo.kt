@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.api.kotlin.generator
+package com.google.api.kotlin.util
 
+import com.google.api.kotlin.GeneratorContext
+import com.google.api.kotlin.config.PropertyPath
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.protobuf.DescriptorProtos
@@ -25,6 +27,7 @@ import com.squareup.kotlinpoet.DOUBLE
 import com.squareup.kotlinpoet.FLOAT
 import com.squareup.kotlinpoet.INT
 import com.squareup.kotlinpoet.LONG
+import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asTypeName
 
@@ -39,6 +42,61 @@ internal data class ProtoFieldInfo(
     val index: Int = -1,
     val kotlinType: TypeName
 )
+
+/**
+ * A wrapper for a ParameterSpec that includes type information if the parameter is
+ * from a flattened method and the path that it was referenced from.
+ */
+internal data class ParameterInfo(
+    val spec: ParameterSpec,
+    val flattenedPath: PropertyPath? = null,
+    val flattenedFieldInfo: ProtoFieldInfo? = null
+)
+
+/**
+ * Get info about a proto field at the [path] of given [type].
+ *
+ * For direct properties of the type the path is should contain 1 element (the
+ * name of the field). For nested properties more than 1 element can be given.
+ */
+internal fun getProtoFieldInfoForPath(
+    context: GeneratorContext,
+    path: PropertyPath,
+    type: DescriptorProtos.DescriptorProto
+): ProtoFieldInfo {
+    // find current field
+    val (name, idx) = "(.+)\\[([0-9])+]".toRegex().matchEntire(path.firstSegment)
+        ?.destructured?.let { (n, i) -> Pair(n, i.toInt()) }
+        ?: Pair(path.firstSegment, -1)
+
+    val field = type.fieldList.firstOrNull { it.name == name }
+        ?: throw IllegalStateException("cannot find field '$name' within path: $path found: ${type.fieldList.map { it.name }}")
+
+    // only support for 0 index is implemented, so bail out if greater
+    if (idx > 0) {
+        throw IllegalArgumentException(
+            "using a non-zero field index is not supported: $path"
+        )
+    }
+
+    // if no nesting, we're done
+    if (path.size == 1) {
+        val kotlinType = field.asClassName(context.typeMap)
+        return ProtoFieldInfo(
+            context.proto,
+            type,
+            field,
+            idx,
+            kotlinType
+        )
+    }
+
+    if (context.typeMap.hasProtoTypeDescriptor(field.typeName)) {
+        val t = context.typeMap.getProtoTypeDescriptor(field.typeName)
+        return getProtoFieldInfoForPath(context, path.subPath(1, path.size), t)
+    }
+    throw IllegalStateException("Type could not be traversed: ${field.typeName}")
+}
 
 // -----------------------------------------------------------------
 // Misc. helpers for dealing with proto type descriptors

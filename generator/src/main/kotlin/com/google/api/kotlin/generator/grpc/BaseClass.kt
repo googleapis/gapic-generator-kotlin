@@ -18,9 +18,9 @@ package com.google.api.kotlin.generator.grpc
 
 import com.google.api.kotlin.GeneratedSource
 import com.google.api.kotlin.GeneratorContext
-import com.google.api.kotlin.generator.AbstractGenerator
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.protobuf.DescriptorProtos
+import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
@@ -35,7 +35,7 @@ import com.squareup.kotlinpoet.TypeSpec
  * that should rarely be viewed by client users.
  */
 internal interface BaseClass {
-    fun generate(ctx: GeneratorContext): GeneratedSource
+    fun generate(ctx: GeneratorContext, by: AnnotationSpec): GeneratedSource
     fun typeName(ctx: GeneratorContext): TypeName
     fun stubTypeName(ctx: GeneratorContext): TypeName
 
@@ -45,7 +45,7 @@ internal interface BaseClass {
     }
 }
 
-internal class BaseClassImpl : AbstractGenerator(), BaseClass {
+internal class BaseClassImpl : BaseClass {
 
     override fun typeName(ctx: GeneratorContext) =
         ClassName(ctx.className.packageName, "Abstract${ctx.className.simpleName}")
@@ -53,9 +53,9 @@ internal class BaseClassImpl : AbstractGenerator(), BaseClass {
     override fun stubTypeName(ctx: GeneratorContext) =
         ClassName("${ctx.className.packageName}.Abstract${ctx.className.simpleName}", "Stub")
 
-    override fun generate(ctx: GeneratorContext): GeneratedSource {
+    override fun generate(ctx: GeneratorContext, by: AnnotationSpec): GeneratedSource {
         // create type
-        val type = createType(ctx)
+        val type = createType(ctx, by)
 
         // add static imports
         val imports = listOf(
@@ -76,10 +76,10 @@ internal class BaseClassImpl : AbstractGenerator(), BaseClass {
     }
 
     // creates the base class type
-    private fun createType(ctx: GeneratorContext): TypeSpec {
+    private fun createType(ctx: GeneratorContext, by: AnnotationSpec): TypeSpec {
         val type = TypeSpec.classBuilder(typeName(ctx))
             .addModifiers(KModifier.ABSTRACT)
-            .addAnnotation(createGeneratedByAnnotation())
+            .addAnnotation(by)
 
         // add constructor
         type.primaryConstructor(
