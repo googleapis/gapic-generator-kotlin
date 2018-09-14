@@ -45,19 +45,18 @@ internal object FieldNamer {
         // map and repeated fields
         if (fieldInfo.field.isMap(typeMap)) {
             return CodeBlock.of(
-                "$qualifier${getSetterMapName(fieldInfo.field.name, value)}(%L)",
+                "$qualifier${getSetterMapName(fieldInfo.field.name)}(%L)",
                 value
             )
         } else if (fieldInfo.field.isRepeated()) {
             return if (fieldInfo.index >= 0) {
                 CodeBlock.of(
-                    "$qualifier${getSetterRepeatedAtIndexName(fieldInfo.field.name, value
-                    )}(${fieldInfo.index}, %L)",
+                    "$qualifier${getSetterRepeatedAtIndexName(fieldInfo.field.name)}(${fieldInfo.index}, %L)",
                     value
                 )
             } else {
                 CodeBlock.of(
-                    "$qualifier${getSetterRepeatedName(fieldInfo.field.name, value)}(%L)",
+                    "$qualifier${getSetterRepeatedName(fieldInfo.field.name)}(%L)",
                     value
                 )
             }
@@ -67,7 +66,7 @@ internal object FieldNamer {
         return if (useDSLBuilder) {
             CodeBlock.of("${getAccessorName(fieldInfo.field.name, value)} = %L", value)
         } else {
-            CodeBlock.of("$qualifier${getSetterName(fieldInfo.field.name, value)}(%L)", value)
+            CodeBlock.of("$qualifier${getSetterName(fieldInfo.field.name)}(%L)", value)
         }
     }
 
@@ -92,19 +91,19 @@ internal object FieldNamer {
         return getAccessorName(fieldInfo.field.name)
     }
 
-    fun getSetterMapName(protoFieldName: String, value: CodeBlock? = null) =
+    fun getSetterMapName(protoFieldName: String) =
         "putAll" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)
 
-    fun getSetterRepeatedName(protoFieldName: String, value: CodeBlock? = null) =
+    fun getSetterRepeatedName(protoFieldName: String) =
         "addAll" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)
 
-    fun getSetterRepeatedAtIndexName(protoFieldName: String, value: CodeBlock? = null) =
+    fun getSetterRepeatedAtIndexName(protoFieldName: String) =
         "add" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)
 
-    fun getSetterName(protoFieldName: String, value: CodeBlock? = null) =
+    fun getSetterName(protoFieldName: String) =
         "set" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)
 
-    fun getAccessorMapName(protoFieldName: String, value: CodeBlock? = null) =
+    fun getAccessorMapName(protoFieldName: String) =
         CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName) + "Map"
 
     fun getAccessorName(protoFieldName: String, value: CodeBlock? = null) =
