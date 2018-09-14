@@ -17,7 +17,7 @@
 package com.google.api.kotlin.config
 
 import com.google.api.AnnotationsProto
-import com.google.api.Metadata
+import com.google.api.MethodSignature
 import com.google.api.kotlin.ConfigurationFactory
 import com.google.protobuf.DescriptorProtos
 import mu.KotlinLogging
@@ -61,36 +61,77 @@ internal class Configuration constructor(
 internal class AnnotationConfigurationFactory : ConfigurationFactory {
 
     override fun fromProto(proto: DescriptorProtos.FileDescriptorProto): Configuration {
-        val metadata = parseMetadata(proto)
+        val metadata = proto.options.getExtensionOrNull(AnnotationsProto.metadata)
 
+        // parse package name
         val packageName = if (metadata != null && metadata.packageNamespaceCount > 0) {
             metadata.packageNamespaceList.joinToString(".")
         } else {
             proto.`package`!!
         }.toLowerCase().replace("\\s".toRegex(), "")
 
+        // parse branding (non-code) items
         val branding = BrandingOptions(
             name = metadata?.productName ?: "",
             url = metadata?.productUri ?: ""
         )
-        val apiConfig = getOptionsForServices(proto)
 
+        // parse API method config for each service
+        val apiConfig = proto.serviceList.associate { it.name to getOptionsForService(it) }
+
+        // put it all together
         return Configuration(packageName, branding, apiConfig)
     }
 
-    // parse API level metadata
-    private fun parseMetadata(proto: DescriptorProtos.FileDescriptorProto): Metadata? {
-        try {
-            val field = proto.options.unknownFields.getField(AnnotationsProto.METADATA_FIELD_NUMBER)
-            return Metadata.parseFrom(field.lengthDelimitedList.first())
-        } catch (e: Exception) {
-            log.warn(e) { "Unable to parse metadata from annotation (not present?)" }
-        }
-        return null
+    // parse service level metadata
+    private fun getOptionsForService(
+        service: DescriptorProtos.ServiceDescriptorProto
+    ): ServiceOptions {
+        val host = service.options.getExtensionOrNull(AnnotationsProto.defaultHost)
+        val scopes = service.options.getExtensionOrNull(AnnotationsProto.oauth)
+        val methods = service.methodList.map { getOptionsForServiceMethod(it) }
+
+        return ServiceOptions(
+            host = host ?: "localhost",
+            scopes = scopes?.scopesList ?: listOf(),
+            methods = methods
+        )
     }
 
-    private fun getOptionsForServices(proto: DescriptorProtos.FileDescriptorProto): Map<String, ServiceOptions> {
-        return mapOf()
+    // parse method level metadata
+    private fun getOptionsForServiceMethod(
+        method: DescriptorProtos.MethodDescriptorProto
+    ): MethodOptions {
+        val signature = method.options.getExtensionOrNull(AnnotationsProto.methodSignature)
+        val retry = method.options.getExtensionOrNull(AnnotationsProto.retry)
+        val httpBindings = method.options.getExtensionOrNull(AnnotationsProto.http)
+
+        if (retry != null) {
+            log.warn { "Retries are not implemented!" }
+        }
+        if (httpBindings != null) {
+            log.warn { "Regional headers are not implemented!" }
+        }
+
+        // TODO: paging and samples?
+        return MethodOptions(
+            name = method.name,
+            flattenedMethods = getMethodFrom(signature),
+            keepOriginalMethod = true
+        )
+    }
+
+    // parse method signatures
+    private fun getMethodFrom(signature: MethodSignature?): List<FlattenedMethod> {
+        if (signature == null) {
+            return listOf()
+        }
+
+        // construct signature
+        val method = FlattenedMethod(signature.fieldsList.map { it.asPropertyPath() })
+
+        // add this method and any nested signature
+        return listOf(method) + signature.additionalSignaturesList.flatMap { getMethodFrom(it) }
     }
 }
 
@@ -105,7 +146,7 @@ internal class LegacyConfigurationFactory(
     private val yaml: Yaml
         get() {
             val representer = Representer()
-            representer.getPropertyUtils().setSkipMissingProperties(true)
+            representer.propertyUtils.isSkipMissingProperties = true
             return Yaml(Constructor(ServiceConfigYaml::class.java), representer)
         }
 
@@ -206,11 +247,16 @@ internal class LegacyConfigurationFactory(
         return Configuration(
             packageName,
             BrandingOptions(name, summary),
-            apiConfig)
+            apiConfig
+        )
     }
 
     // parses the config (gapic yaml) files
-    private fun parseClient(file: File, host: String, scopes: Set<String>): Map<String, ServiceOptions> {
+    private fun parseClient(
+        file: File,
+        host: String,
+        scopes: Set<String>
+    ): Map<String, ServiceOptions> {
         FileInputStream(file).use { ins ->
             val config = yaml.loadAs(ins, GapicYaml::class.java)
 

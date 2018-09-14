@@ -17,6 +17,7 @@
 package com.google.api.kotlin
 
 import com.google.api.kotlin.config.LegacyConfigurationFactory
+import com.google.api.kotlin.config.ProtobufExtensionRegistry
 import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.api.kotlin.generator.RetrofitGenerator
@@ -55,10 +56,10 @@ fun main(args: Array<String>) {
     // parse request
     val runAsPlugin = options.inputFile.isNullOrBlank()
     val request = if (runAsPlugin) {
-        CodeGeneratorRequest.parseFrom(System.`in`)
+        CodeGeneratorRequest.parseFrom(System.`in`, ProtobufExtensionRegistry.INSTANCE)
     } else {
         FileInputStream(options.inputFile).use {
-            CodeGeneratorRequest.parseFrom(it)
+            CodeGeneratorRequest.parseFrom(it, ProtobufExtensionRegistry.INSTANCE)
         }
     }
 

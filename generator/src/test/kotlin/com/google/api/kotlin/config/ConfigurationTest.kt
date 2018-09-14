@@ -24,11 +24,22 @@ import kotlin.test.Test
 internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
 
     @Test
-    fun `can parse proto annotations`() {
+    fun `can use default for file level proto annotations`() {
+        val factory = AnnotationConfigurationFactory()
+        val config = factory.fromProto(testProto)
+
+        assertThat(config.branding.name).isEqualTo("")
+        assertThat(config.branding.url).isEqualTo("")
+        assertThat(config.packageName).isEqualTo("google.example")
+    }
+
+    @Test
+    fun `can parse file level proto annotations`() {
         val factory = AnnotationConfigurationFactory()
         val config = factory.fromProto(testAnnotationsProto)
 
         assertThat(config.branding.name).isEqualTo("The Test Product")
         assertThat(config.branding.url).isEqualTo("https://github.com/googleapis/gapic-generator-kotlin")
+        assertThat(config.packageName).isEqualTo("a.name.space")
     }
 }

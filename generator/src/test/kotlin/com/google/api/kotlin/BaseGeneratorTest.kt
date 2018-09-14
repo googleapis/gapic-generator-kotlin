@@ -18,6 +18,7 @@ package com.google.api.kotlin
 
 import com.google.api.kotlin.config.BrandingOptions
 import com.google.api.kotlin.config.Configuration
+import com.google.api.kotlin.config.ProtobufExtensionRegistry
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.ServiceOptions
 import com.google.api.kotlin.config.asPropertyPath
@@ -44,7 +45,8 @@ internal abstract class BaseGeneratorTest(private val generator: ClientGenerator
 
     // accessors for the test protos
     protected val generatorRequest = PluginProtos.CodeGeneratorRequest.parseFrom(
-        javaClass.getResourceAsStream("/generate.data")
+        javaClass.getResourceAsStream("/generate.data"),
+        ProtobufExtensionRegistry.INSTANCE
     )
 
     protected val testProto =
