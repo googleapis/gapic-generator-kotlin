@@ -32,7 +32,6 @@ import com.google.api.kotlin.util.ParameterInfo
 import com.google.api.kotlin.util.ProtoFieldInfo
 import com.google.api.kotlin.util.ResponseTypes.getResponseListElementType
 import com.google.api.kotlin.util.describeMap
-import com.google.api.kotlin.util.isLongRunningOperation
 import com.google.api.kotlin.util.isMap
 import com.google.api.kotlin.util.isRepeated
 import com.google.protobuf.DescriptorProtos
@@ -251,14 +250,19 @@ internal class UnitTestImpl(private val stubs: Stubs) : UnitTest {
         }
 
         // invoke client
-        val expectedPageSize = 14
-        val whenBlock =
-            createWhenCodeBlock(givenBlock, methodName, parameters, paging, expectedPageSize)
+        val responseParameterName = if (paging != null) "page" else "result"
+        val whenBlock = createWhenCodeBlock(
+            given = givenBlock,
+            methodName = methodName,
+            parameters = parameters,
+            responseParameterName = responseParameterName,
+            isPager = paging != null
+        )
 
         // verify the returned values
-        val thenBlock = createThenCode("future", method, paging)
+        val thenBlock = ThenCodeBlock()
         val check =
-            createStubCheckCode(givenBlock, ctx, method, flatteningConfig, paging, expectedPageSize)
+            createStubCheckCode(givenBlock, ctx, method, flatteningConfig)
 
         // verify the executeFuture occurred (and use input block to verify)
         thenBlock.code.add(
@@ -273,14 +277,6 @@ internal class UnitTestImpl(private val stubs: Stubs) : UnitTest {
             stubs.getApiStubType(ctx).typeArguments.first(),
             methodName, check
         )
-
-        // verify page size was set (for flattened methods this happens in the check block)
-        if (paging != null && flatteningConfig == null) {
-            thenBlock.code.addStatement(
-                "verify(builder, times(2)).%L(eq($expectedPageSize))",
-                getSetterName(paging.pageSize)
-            )
-        }
 
         // put it all together
         return createUnitTest(givenBlock, whenBlock, thenBlock)
@@ -342,10 +338,16 @@ internal class UnitTestImpl(private val stubs: Stubs) : UnitTest {
         )
 
         // invoke client
-        val whenBlock = createWhenCodeBlock(givenBlock, methodName, parameters)
+        val whenBlock = createWhenCodeBlock(
+            given = givenBlock,
+            methodName = methodName,
+            parameters = parameters,
+            responseParameterName = "result",
+            isPager = false
+        )
 
         // verify the returned values
-        val thenBlock = createThenCode("streaming", method)
+        val thenBlock = ThenCodeBlock()
 
         // verify the executeFuture occurred (and use input block to verify)
         if (method.hasServerStreaming() && !method.hasClientStreaming()) {
@@ -434,48 +436,32 @@ internal class UnitTestImpl(private val stubs: Stubs) : UnitTest {
         given: GivenCodeBlock,
         methodName: String,
         parameters: List<ParameterInfo>,
-        paging: PagedResponse? = null,
-        pageSize: Int? = null
+        responseParameterName: String,
+        isPager: Boolean
     ): WhenCodeBlock {
         // invoke call to client using mocks
         val invokeClientParams = parameters.map {
             given.variables[it.spec.name]?.variableName
                 ?: throw IllegalStateException("unable to determine variable name: ${it.spec.name}")
         }
-        val testWhen = CodeBlock.builder()
-            .addStatement("val client = %N()", UnitTest.FUN_GET_CLIENT)
-        if (paging != null && pageSize != null) {
-            testWhen.addStatement(
-                "val result = client.%N(${invokeClientParams.joinToString(", ") { "%N" }}, $pageSize)",
-                methodName,
-                *invokeClientParams.toTypedArray()
-            )
-            testWhen.addStatement("val page = result.next()")
-        } else {
-            testWhen.addStatement(
-                "val result = client.%N(${invokeClientParams.joinToString(", ") { "%N" }})",
-                methodName,
-                *invokeClientParams.toTypedArray()
-            )
-        }
+
+        // create and call client with all parameters
+        // add a call to next for paged responses so we don't end up with the pager object
+        val params = invokeClientParams.joinToString(", ") { "%N" }
+        val extra = if (isPager) ".next()" else ""
+        val testWhen = CodeBlock.builder().add(
+            """
+            |val client = %N()
+            |val %L = client.%N($params)$extra
+            |
+            |assertNotNull(%L)
+            """.trimMargin(),
+            UnitTest.FUN_GET_CLIENT,
+            responseParameterName, methodName, *invokeClientParams.toTypedArray(),
+            responseParameterName
+        )
 
         return WhenCodeBlock(testWhen)
-    }
-
-    // common code for verifying the result of the client call
-    private fun createThenCode(
-        mockName: String,
-        method: DescriptorProtos.MethodDescriptorProto,
-        paging: PagedResponse? = null
-    ): ThenCodeBlock {
-        val then = CodeBlock.builder()
-        when {
-            method.isLongRunningOperation() -> then.addStatement("assertNotNull(result)")
-            paging != null -> then.addStatement("assertNotNull(page)")
-            else -> then.addStatement("assertEquals($mockName, result)")
-        }
-
-        return ThenCodeBlock(then)
     }
 
     // common code for checking that a stub was invoked with correct params
@@ -483,9 +469,7 @@ internal class UnitTestImpl(private val stubs: Stubs) : UnitTest {
         given: GivenCodeBlock,
         ctx: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
-        flatteningConfig: FlattenedMethod?,
-        paging: PagedResponse? = null,
-        expectedPageSize: Int? = null
+        flatteningConfig: FlattenedMethod?
     ): CodeBlock {
         val check = CodeBlock.builder()
         if (flatteningConfig == null) {
@@ -494,15 +478,6 @@ internal class UnitTestImpl(private val stubs: Stubs) : UnitTest {
             // get an assert for each parameter
             val nestedAssert =
                 createNestedAssertCodeForStubCheck(given, ctx, method, flatteningConfig)
-
-            // add page assert
-            if (paging != null && expectedPageSize != null) {
-                nestedAssert.add(
-                    CodeBlock.of(
-                        "assertEquals($expectedPageSize, it.${getAccessorName(paging.pageSize)})"
-                    )
-                )
-            }
 
             // put it all together in a check block
             check.add(
@@ -618,6 +593,6 @@ private class GivenCodeBlock(
     val code: CodeBlock.Builder
 )
 
-private class WhenCodeBlock(val code: CodeBlock.Builder)
-private class ThenCodeBlock(val code: CodeBlock.Builder)
+private class WhenCodeBlock(val code: CodeBlock.Builder = CodeBlock.Builder())
+private class ThenCodeBlock(val code: CodeBlock.Builder = CodeBlock.builder())
 private class UnitTestVariable(val variableName: String, val initializer: CodeBlock)

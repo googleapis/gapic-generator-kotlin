@@ -1,5 +1,11 @@
 steps:
 
+# checkout submodules
+- name: gcr.io/cloud-builders/git
+  args: ['submodule', 'init']
+- name: gcr.io/cloud-builders/git
+  args: ['submodule', 'update', '--remote']
+
 # build generator  
 - id: build_generator
   name: 'gcr.io/cloud-builders/gradle'

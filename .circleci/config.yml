@@ -102,7 +102,7 @@ jobs:
             sudo sh -c "chmod +x /usr/local/bin/showcase"
       - run:
           name: Run showcase
-          command: /usr/local/bin/showcase
+          command: /usr/local/bin/showcase start
           background: true
       - run:
           name: Test showcase
