@@ -20,9 +20,10 @@ import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.PagedResponse
 import com.google.api.kotlin.config.SampleMethod
-import com.google.api.kotlin.util.getMethodComments
+import com.google.api.kotlin.util.FieldNamer
 import com.google.api.kotlin.util.ParameterInfo
 import com.google.api.kotlin.util.RequestObject.getBuilder
+import com.google.api.kotlin.util.getMethodComments
 import com.google.api.kotlin.util.getParameterComments
 import com.google.api.kotlin.util.getProtoFieldInfoForPath
 import com.google.api.kotlin.util.isMessageType
@@ -148,10 +149,11 @@ internal class DocumentationImpl : Documentation {
                         context, type.message, type.kotlinType, listOf(p.last), sample
                     ).builder
                 } else {
-                    CodeBlock.of(
-                        "%L",
-                        sample?.parameters?.find { it.parameterPath == p.toString() }?.value ?: p
+                    val prop = FieldNamer.getAccessorName(
+                        sample?.parameters?.find { it.parameterPath == p.toString() }?.value
+                            ?: p.toString()
                     )
+                    CodeBlock.of("%L", prop)
                 }
             }
         } else {

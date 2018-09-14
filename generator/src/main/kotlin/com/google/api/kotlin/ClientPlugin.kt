@@ -16,8 +16,9 @@
 
 package com.google.api.kotlin
 
-import com.google.api.kotlin.config.LegacyConfigurationFactory
 import com.google.api.kotlin.config.ProtobufExtensionRegistry
+import com.google.api.kotlin.config.ProtobufTypeMapper
+import com.google.api.kotlin.config.SwappableConfigurationFactory
 import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.api.kotlin.generator.RetrofitGenerator
@@ -79,14 +80,18 @@ fun main(args: Array<String>) {
     val sourceDirectory = options.sourceDirectory ?: request.parameter
     log.info { "Using source directory: $sourceDirectory" }
 
+    // create type map
+    val typeMap = ProtobufTypeMapper.fromProtos(request.protoFileList)
+    log.debug { "Discovered type: $typeMap" }
+
     // create & run generator
     val generator = KotlinClientGenerator(
         when {
             options.fallback -> RetrofitGenerator()
             else -> GRPCGenerator()
-        }, LegacyConfigurationFactory(sourceDirectory), BuilderGenerator()
+        }, SwappableConfigurationFactory(sourceDirectory, typeMap), BuilderGenerator()
     )
-    val (sourceCode, testCode) = generator.generate(request)
+    val (sourceCode, testCode) = generator.generate(request, typeMap)
 
     // utility for creating files
     val writeFile = { directory: String, file: PluginProtos.CodeGeneratorResponse.File ->

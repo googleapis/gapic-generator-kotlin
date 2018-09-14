@@ -19,9 +19,10 @@ package com.google.api.kotlin
 import com.google.common.truth.Truth.assertThat
 import com.google.rpc.Code
 import com.google.rpc.Status
-import com.google.showcase.v1.EchoClient
-import com.google.showcase.v1.EchoRequest
-import com.google.showcase.v1.ExpandRequest
+import com.google.showcase.v1alpha2.EchoClient
+import com.google.showcase.v1alpha2.EchoRequest
+import com.google.showcase.v1alpha2.ExpandRequest
+import com.google.showcase.v1alpha2.PaginationRequest
 import io.grpc.StatusRuntimeException
 import io.grpc.okhttp.OkHttpChannelBuilder
 import kotlinx.coroutines.experimental.CoroutineScope
@@ -188,6 +189,26 @@ class ShowcaseTest {
 
         assertThat(err).isNull()
         assertThat(responses).containsExactly(*inputs).inOrder()
+    }
+
+    @Test
+    fun `pages chucks of responses`() {
+        val numbers = mutableListOf<Int>()
+        var pageCount = 0
+
+        val pager = client.pagination(PaginationRequest {
+            pageSize = 10
+            pageToken = "0"
+            maxResponse = 39
+        })
+
+        for (page in pager) {
+            numbers.addAll(page.elements)
+            pageCount++
+        }
+
+        assertThat(pageCount).isEqualTo(4)
+        assertThat(numbers).containsExactlyElementsIn((0 until 39).map { it })
     }
 
     // standard 5 second timeout handler for streaming tests

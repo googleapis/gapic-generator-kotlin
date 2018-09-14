@@ -51,7 +51,7 @@ internal class KotlinClientGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
         }
 
         val generator = KotlinClientGenerator(clientGenerator, clientConfigFactory)
-        val result = generator.generate(generatorRequest)
+        val result = generator.generate(generatorRequest, getMockedTypeMap())
 
         assertThat(result.sourceCode.fileCount).isEqualTo(1)
         val file = result.sourceCode.fileList.first()
@@ -98,7 +98,7 @@ internal class KotlinClientGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
 
         val generator =
             KotlinClientGenerator(clientGenerator, clientConfigFactory, builderGenerator)
-        val result = generator.generate(generatorRequest)
+        val result = generator.generate(generatorRequest, getMockedTypeMap())
 
         assertThat(result.sourceCode.fileCount).isEqualTo(2)
         assertThat(result.sourceCode.fileList.map { it.name }).containsExactly(

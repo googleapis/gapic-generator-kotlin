@@ -39,6 +39,11 @@ service TestService {
 
     rpc NestedFlat (TestRequest) returns (TestResponse);
     rpc NestedFlatPrimitive (TestRequest) returns (TestResponse);
+
+    rpc PagedTest (PagedRequest) returns (PagedResponse);
+    rpc NotPagedTest (NotPagedRequest) returns (PagedResponse);
+    rpc StillNotPagedTest (PagedRequest) returns (StillNotPagedResponse);
+    rpc NotPagedTest2 (PagedRequest) returns (NotPagedResponse);
 }
 
 message TestRequest {
@@ -50,4 +55,30 @@ message TestRequest {
 
 message TestResponse {
     Result result = 1;
+}
+
+message PagedRequest {
+    int32 page_size = 1;
+    string page_token = 2;
+    bool flag = 3;
+}
+
+message NotPagedRequest {
+    int32 page_size = 1;
+    int32 page_token = 2;
+}
+
+message PagedResponse {
+    repeated int32 responses = 1;
+    string next_page_token = 2;
+}
+
+message NotPagedResponse {
+    int32 responses = 1;
+    string next_page_token = 2;
+}
+
+message StillNotPagedResponse {
+    repeated string responses = 1;
+    int32 next_page_token = 2;
 }

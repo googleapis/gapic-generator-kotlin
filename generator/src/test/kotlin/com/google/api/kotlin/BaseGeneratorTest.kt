@@ -70,27 +70,31 @@ internal abstract class BaseGeneratorTest(private val generator: ClientGenerator
         "CancelOperationRequest", "DeleteOperationRequest",
         "OperationTypes"
     )
+    private val testMessageTypes = listOf(
+        "TestRequest", "TestResponse",
+        "PagedRequest", "PagedResponse", "NotPagedRequest", "NotPagedResponse",
+        "StillNotPagedResponse"
+    )
+    private val testMessageMoreTypes = listOf("Result", "Detail", "MoreDetail")
+    private val annotationMessageTypes = listOf("FooRequest", "BarResponse")
 
     // mock type mapper
-    private val typesOfMessages = mapOf(
-        ".$TEST_NAMESPACE.TestRequest" to ClassName(TEST_NAMESPACE, "TestRequest"),
-        ".$TEST_NAMESPACE.TestResponse" to ClassName(TEST_NAMESPACE, "TestResponse"),
-        ".$TEST_NAMESPACE.Result" to ClassName(TEST_NAMESPACE, "Result"),
-        ".$TEST_NAMESPACE.Detail" to ClassName(TEST_NAMESPACE, "Detail"),
-        ".$TEST_NAMESPACE.MoreDetail" to ClassName(TEST_NAMESPACE, "MoreDetail")
-    ) + protoMessageTypes.associate {
-        ".google.protobuf.$it" to ClassName("com.google.protobuf", it)
-    } + operationMessageTypes.associate {
-        ".google.longrunning.$it" to ClassName("com.google.longrunning", it)
-    }
+    private val typesOfMessages =
+        (testMessageTypes + testMessageMoreTypes + annotationMessageTypes).associate {
+            ".$TEST_NAMESPACE.$it" to ClassName(TEST_NAMESPACE, it)
+        } + protoMessageTypes.associate {
+            ".google.protobuf.$it" to ClassName("com.google.protobuf", it)
+        } + operationMessageTypes.associate {
+            ".google.longrunning.$it" to ClassName("com.google.longrunning", it)
+        }
 
-    private val typesDeclaredIn = mapOf(
-        ".$TEST_NAMESPACE.TestRequest" to testProto.messageTypeList.find { it.name == "TestRequest" },
-        ".$TEST_NAMESPACE.TestResponse" to testProto.messageTypeList.find { it.name == "TestResponse" },
-        ".$TEST_NAMESPACE.Result" to testTypesProto.messageTypeList.find { it.name == "Result" },
-        ".$TEST_NAMESPACE.Detail" to testTypesProto.messageTypeList.find { it.name == "Detail" },
-        ".$TEST_NAMESPACE.MoreDetail" to testTypesProto.messageTypeList.find { it.name == "MoreDetail" }
-    ) + protoMessageTypes.associate {
+    private val typesDeclaredIn = testMessageTypes.associate {
+        ".$TEST_NAMESPACE.$it" to testProto.messageTypeList.find { m -> m.name == it }
+    } + testMessageMoreTypes.associate {
+        ".$TEST_NAMESPACE.$it" to testTypesProto.messageTypeList.find { m -> m.name == it }
+    } + annotationMessageTypes.associate {
+        ".$TEST_NAMESPACE.$it" to testAnnotationsProto.messageTypeList.find { m -> m.name == it }
+    } + protoMessageTypes.associate {
         ".google.protobuf.$it" to testAnnotationsProto.messageTypeList.find { m -> m.name == it }
     } + operationMessageTypes.associate {
         ".google.longrunning.$it" to testLongrunningProto.messageTypeList.find { m -> m.name == it }
@@ -108,7 +112,7 @@ internal abstract class BaseGeneratorTest(private val generator: ClientGenerator
             }
             on { getProtoTypeDescriptor(any()) } doAnswer {
                 typesDeclaredIn[it.arguments[0]]
-                    ?: throw RuntimeException("unknown proto (forget to add it?)")
+                    ?: throw RuntimeException("unknown proto (forget to add it: ${it.arguments[0]}?)")
             }
         }
     }

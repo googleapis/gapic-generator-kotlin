@@ -19,6 +19,9 @@ package com.google.api.kotlin.config
 import com.google.api.AnnotationsProto
 import com.google.api.MethodSignature
 import com.google.api.kotlin.ConfigurationFactory
+import com.google.api.kotlin.util.isIntOrLong
+import com.google.api.kotlin.util.isRepeated
+import com.google.api.kotlin.util.isString
 import com.google.protobuf.DescriptorProtos
 import mu.KotlinLogging
 import org.apache.commons.io.FilenameUtils
@@ -48,17 +51,25 @@ internal class Configuration constructor(
     operator fun get(serviceName: String): ServiceOptions {
         val opt = serviceOptions[serviceName]
         if (opt == null) {
-            log.warn { "No service defined with name: $serviceName (using default optioons)" }
+            log.warn { "No service defined with name: $serviceName (using default options)" }
         }
         return opt ?: ServiceOptions()
     }
 
+    /** Get the options for the given service */
     operator fun get(service: DescriptorProtos.ServiceDescriptorProto) =
         get("$packageName.${service.name}")
 }
 
+private const val PAGE_FIELD_RESPONSES = "responses"
+private const val PAGE_FIELD_SIZE = "page_size"
+private const val PAGE_FIELD_TOKEN = "page_token"
+private const val PAGE_FIELD_NEXT_TOKEN = "next_page_token"
+
 /** Factory for creating a new [Configuration]. */
-internal class AnnotationConfigurationFactory : ConfigurationFactory {
+internal class AnnotationConfigurationFactory(
+    private val typeMap: ProtobufTypeMapper
+) : ConfigurationFactory {
 
     override fun fromProto(proto: DescriptorProtos.FileDescriptorProto): Configuration {
         val metadata = proto.options.getExtensionOrNull(AnnotationsProto.metadata)
@@ -77,7 +88,9 @@ internal class AnnotationConfigurationFactory : ConfigurationFactory {
         )
 
         // parse API method config for each service
-        val apiConfig = proto.serviceList.associate { it.name to getOptionsForService(it) }
+        val apiConfig = proto.serviceList.associate {
+            "${proto.`package`}.${it.name}" to getOptionsForService(it)
+        }
 
         // put it all together
         return Configuration(packageName, branding, apiConfig)
@@ -91,11 +104,15 @@ internal class AnnotationConfigurationFactory : ConfigurationFactory {
         val scopes = service.options.getExtensionOrNull(AnnotationsProto.oauth)
         val methods = service.methodList.map { getOptionsForServiceMethod(it) }
 
-        return ServiceOptions(
+        val options = ServiceOptions(
             host = host ?: "localhost",
             scopes = scopes?.scopesList ?: listOf(),
             methods = methods
         )
+
+        log.debug { "Using the following settings for service: ${service.name}:\n$options" }
+
+        return options
     }
 
     // parse method level metadata
@@ -106,6 +123,7 @@ internal class AnnotationConfigurationFactory : ConfigurationFactory {
         val retry = method.options.getExtensionOrNull(AnnotationsProto.retry)
         val httpBindings = method.options.getExtensionOrNull(AnnotationsProto.http)
 
+        // TODO
         if (retry != null) {
             log.warn { "Retries are not implemented!" }
         }
@@ -113,32 +131,100 @@ internal class AnnotationConfigurationFactory : ConfigurationFactory {
             log.warn { "Regional headers are not implemented!" }
         }
 
-        // TODO: paging and samples?
+        // TODO: samples?
+        val pagedResponse = getMethodPagedResponse(method)
         return MethodOptions(
             name = method.name,
-            flattenedMethods = getMethodFrom(signature),
-            keepOriginalMethod = true
+            flattenedMethods = getMethodsFrom(signature, pagedResponse),
+            keepOriginalMethod = true,
+            pagedResponse = pagedResponse
         )
     }
 
     // parse method signatures
-    private fun getMethodFrom(signature: MethodSignature?): List<FlattenedMethod> {
+    private fun getMethodsFrom(signature: MethodSignature?, paging: PagedResponse?): List<FlattenedMethod> {
         if (signature == null) {
             return listOf()
         }
 
-        // construct signature
-        val method = FlattenedMethod(signature.fieldsList.map { it.asPropertyPath() })
+        // add all paths
+        var paths = signature.fieldsList.map { it.asPropertyPath() }
+
+        // when paging always embed the page size at the end
+        if (paging != null) {
+            paths += paging.pageSize.asPropertyPath()
+        }
 
         // add this method and any nested signature
-        return listOf(method) + signature.additionalSignaturesList.flatMap { getMethodFrom(it) }
+        val method = FlattenedMethod(paths)
+        return listOf(method) + signature.additionalSignaturesList.flatMap { getMethodsFrom(it, paging) }
+    }
+
+    // determine if a method can be paged
+    private fun getMethodPagedResponse(
+        method: DescriptorProtos.MethodDescriptorProto
+    ): PagedResponse? {
+        // look for the required input fields and bail out if they are missing
+        val outputType = typeMap.getProtoTypeDescriptor(method.outputType)
+        val responsesField = outputType.fieldList.find { it.name == PAGE_FIELD_RESPONSES } ?: return null
+        val nextPageTokenField = outputType.fieldList.find { it.name == PAGE_FIELD_NEXT_TOKEN } ?: return null
+
+        // do the same for the output fields
+        val inputType = typeMap.getProtoTypeDescriptor(method.inputType)
+        val pageSizeField = inputType.fieldList.find { it.name == PAGE_FIELD_SIZE } ?: return null
+        val pageTokenField = inputType.fieldList.find { it.name == PAGE_FIELD_TOKEN } ?: return null
+
+        // verify the types
+        if (!responsesField.isRepeated()) return null
+        if (!nextPageTokenField.isString() || nextPageTokenField.isRepeated()) return null
+        if (!pageTokenField.isString() || pageTokenField.isRepeated()) return null
+        if (!pageSizeField.isIntOrLong() || pageTokenField.isRepeated()) return null
+
+        return PagedResponse(
+            pageSize = pageSizeField.name,
+            requestPageToken = pageTokenField.name,
+            responsePageToken = nextPageTokenField.name,
+            responseList = responsesField.name
+        )
+    }
+}
+
+/**
+ * Factory for creating a new [Configuration] by delegating to the annotation or legacy
+ * configuration factory (uses annotation if the product_name or product_uri annotation
+ * is found.
+ *
+ * This will be removed before any stable release.
+ */
+internal class SwappableConfigurationFactory(
+    rootDirectory: String = "",
+    typeMap: ProtobufTypeMapper
+) : ConfigurationFactory {
+    private val annotation = AnnotationConfigurationFactory(typeMap)
+    private val legacy = LegacyConfigurationFactory(rootDirectory)
+
+    override fun fromProto(proto: DescriptorProtos.FileDescriptorProto) =
+        getFactory(proto).fromProto(proto)
+
+    private fun getFactory(proto: DescriptorProtos.FileDescriptorProto): ConfigurationFactory {
+        val metadata = proto.options.getExtensionOrNull(AnnotationsProto.metadata)
+        val hasAnnotation = metadata?.productName?.length ?: 0 > 0 ||
+            metadata?.productUri?.length ?: 0 > 0
+
+        return if (hasAnnotation) {
+            log.debug { "Using annotation based config for ${proto.name}" }
+            annotation
+        } else {
+            log.debug { "Using yaml based config for ${proto.name}" }
+            legacy
+        }
     }
 }
 
 /**
  * Factory for creating a new [Configuration].
  *
- * This use the legacy configuration yaml file and must be removed before any stable release.
+ * This uses the legacy configuration yaml file and will be removed before any stable release.
  */
 internal class LegacyConfigurationFactory(
     private val rootDirectory: String = ""
@@ -264,9 +350,23 @@ internal class LegacyConfigurationFactory(
             val services = mutableMapOf<String, ServiceOptions>()
             config.interfaces.forEach { service ->
                 val methods = service.methods.map { method ->
+                    // parse paging setup
+                    val paging = method.page_streaming?.let {
+                        PagedResponse(
+                            it.request.page_size_field, it.request.token_field,
+                            it.response.token_field, it.response.resources_field
+                        )
+                    }
+
+                    // parse flattening setup
                     val flattening =
-                        method.flattening?.groups?.map { FlattenedMethod(it.parameters.map { p -> p.asPropertyPath() }) }
-                            ?: listOf()
+                        method.flattening?.groups?.map {
+                            var paths = it.parameters.map { p -> p.asPropertyPath() }
+                            if (paging != null) {
+                                paths += paging.pageSize.asPropertyPath()
+                            }
+                            FlattenedMethod(paths)
+                        } ?: listOf()
 
                     // collect samples
                     val samples = mutableListOf<SampleMethod>()
@@ -276,14 +376,6 @@ internal class LegacyConfigurationFactory(
                         .map { SampleParameterAndValue(it[0], it[1]) }
                     if (sample.isNotEmpty()) {
                         samples.add(SampleMethod(sample))
-                    }
-
-                    // parse paging setup
-                    val paging = method.page_streaming?.let {
-                        PagedResponse(
-                            it.request.page_size_field, it.request.token_field,
-                            it.response.token_field, it.response.resources_field
-                        )
                     }
 
                     MethodOptions(

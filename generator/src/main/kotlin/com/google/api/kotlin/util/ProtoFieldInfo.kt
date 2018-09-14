@@ -121,6 +121,25 @@ internal fun DescriptorProtos.FieldDescriptorProto.isMap(typeMap: ProtobufTypeMa
 internal fun DescriptorProtos.FieldDescriptorProto.isRepeated() =
     this.label == DescriptorProtos.FieldDescriptorProto.Label.LABEL_REPEATED
 
+/** Checks if this proto field is a primitive string type */
+internal fun DescriptorProtos.FieldDescriptorProto.isString() =
+    this.type == DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING
+
+/** Checks if this proto field is a primitive integer/long type */
+internal fun DescriptorProtos.FieldDescriptorProto.isIntOrLong() = when (this.type) {
+    DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32 -> true
+    DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT32 -> true
+    DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED32 -> true
+    DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED32 -> true
+    DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT32 -> true
+    DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64 -> true
+    DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT64 -> true
+    DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED64 -> true
+    DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED64 -> true
+    DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT64 -> true
+    else -> false
+}
+
 /** Extracts the key and value Kotlin type names of a protobuf map field using the [typeMap]. */
 internal fun DescriptorProtos.FieldDescriptorProto.describeMap(typeMap: ProtobufTypeMapper): Pair<DescriptorProtos.FieldDescriptorProto, DescriptorProtos.FieldDescriptorProto> {
     val mapType = typeMap.getProtoTypeDescriptor(this.typeName)

@@ -63,11 +63,7 @@ internal class KotlinClientGenerator(
      * Generate the client from the protobuf code generation [request] and return
      * the response to forward to the protobuf code generator.
      */
-    fun generate(request: CodeGeneratorRequest): Artifacts {
-        // create type map
-        val typeMap = ProtobufTypeMapper.fromProtos(request.protoFileList)
-        log.debug { "Discovered type: $typeMap" }
-
+    fun generate(request: CodeGeneratorRequest, typeMap: ProtobufTypeMapper): Artifacts {
         // generate code for the services
         val files = request.protoFileList
             .filter { it.serviceCount > 0 }

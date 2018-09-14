@@ -25,7 +25,7 @@ internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `can use default for file level proto annotations`() {
-        val factory = AnnotationConfigurationFactory()
+        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
         val config = factory.fromProto(testProto)
 
         assertThat(config.branding.name).isEqualTo("")
@@ -35,11 +35,44 @@ internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `can parse file level proto annotations`() {
-        val factory = AnnotationConfigurationFactory()
+        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
         val config = factory.fromProto(testAnnotationsProto)
 
         assertThat(config.branding.name).isEqualTo("The Test Product")
         assertThat(config.branding.url).isEqualTo("https://github.com/googleapis/gapic-generator-kotlin")
         assertThat(config.packageName).isEqualTo("a.name.space")
+    }
+
+    @Test
+    fun `can detect a paged method`() {
+        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val config = factory.fromProto(testProto)
+
+        val method = config["google.example.TestService"].methods.find { it.name == "PagedTest" }
+        val page = method?.pagedResponse ?: throw RuntimeException("page is null")
+
+        assertThat(page.pageSize).isEqualTo("page_size")
+        assertThat(page.responseList).isEqualTo("responses")
+        assertThat(page.requestPageToken).isEqualTo("page_token")
+        assertThat(page.responsePageToken).isEqualTo("next_page_token")
+    }
+
+    @Test
+    fun `skips the badly paged NotPagedTest method`() = skipsBadlyPagedMethod("NotPagedTest")
+
+    @Test
+    fun `skips the badly paged StillNotPagedTest method`() =
+        skipsBadlyPagedMethod("StillNotPagedTest")
+
+    @Test
+    fun `skips the badly paged NotPagedTest2 method`() = skipsBadlyPagedMethod("NotPagedTest2")
+
+    private fun skipsBadlyPagedMethod(methodName: String) {
+        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val config = factory.fromProto(testProto)
+
+        val method = config["google.example.TestService"].methods.find { it.name == methodName }!!
+
+        assertThat(method.pagedResponse).isNull()
     }
 }

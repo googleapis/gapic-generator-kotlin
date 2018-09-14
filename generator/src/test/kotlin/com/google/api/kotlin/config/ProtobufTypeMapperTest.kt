@@ -34,7 +34,12 @@ internal class ProtobufTypeMapperTest : BaseGeneratorTest(GRPCGenerator()) {
             "google.example.TestResponse",
             "google.example.Result",
             "google.example.Detail",
-            "google.example.MoreDetail"
+            "google.example.MoreDetail",
+            "google.example.PagedRequest",
+            "google.example.NotPagedRequest",
+            "google.example.PagedResponse",
+            "google.example.NotPagedResponse",
+            "google.example.StillNotPagedResponse"
         )
     }
 

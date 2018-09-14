@@ -20,7 +20,9 @@ import com.google.api.kotlin.BaseGeneratorTest
 import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.MethodOptions
+import com.google.api.kotlin.config.PagedResponse
 import com.google.api.kotlin.config.ServiceOptions
+import com.google.api.kotlin.config.asPropertyPath
 import com.google.api.kotlin.firstSourceType
 import com.google.api.kotlin.props
 import com.google.api.kotlin.sources
@@ -684,7 +686,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
             |* ```
             |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val result = client.nestedFlatPrimitive(
-            |*     main_detail.useful
+            |*     mainDetail.useful
             |* )
             |* ```
             |*/
@@ -697,6 +699,171 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
             |        }
             |    })
             |}
+            |""".asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `Generates the PagedTest methods`() {
+        val opts = ServiceOptions(
+            methods = listOf(
+                MethodOptions(
+                    name = "PagedTest",
+                    pagedResponse = PagedResponse(
+                        pageSize = "page_size",
+                        responseList = "responses",
+                        requestPageToken = "page_token",
+                        responsePageToken = "next_page_token"
+                    )
+                )
+            )
+        )
+
+        val methods =
+            generate(opts).firstSourceType().funSpecs.filter { it.name == "pagedTest" }
+        assertThat(methods).hasSize(1)
+
+        val method = methods.first()
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            | *
+            | *
+            | * For example:
+            | * ```
+            | * val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            | * val resultList = client.pagedTest(
+            | *     PagedRequest {
+            | *     }
+            | *)
+            | *
+            | * val page = result.next()
+            | * ```
+            | *
+            | * @param request the request object for the API call
+            | */
+            |fun pagedTest(
+            |   request: google.example.PagedRequest
+            |): com.google.kgax.Pager<google.example.PagedRequest, com.google.kgax.grpc.CallResult<google.example.PagedResponse>, kotlin.Int> =
+            |    pager {
+            |        method = {
+            |            request -> stubs.api.executeFuture {
+            |                it.pagedTest(request)
+            |            }.get()
+            |        }
+            |        initialRequest = { request }
+            |        nextRequest = { request, token -> request.toBuilder().setPageToken(token).build() }
+            |        nextPage = { response ->
+            |            com.google.kgax.grpc.PageResult<kotlin.Int>(response.body.responsesList, response.body.nextPageToken, response.metadata)
+            |        }
+            |    }
+            |""".asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `Generates the PagedTest methods with flattened page parameter`() {
+        val opts = ServiceOptions(
+            methods = listOf(
+                MethodOptions(
+                    name = "PagedTest",
+                    pagedResponse = PagedResponse(
+                        pageSize = "page_size",
+                        responseList = "responses",
+                        requestPageToken = "page_token",
+                        responsePageToken = "next_page_token"
+                    ),
+                    keepOriginalMethod = false,
+                    flattenedMethods = listOf(
+                        FlattenedMethod(listOf(
+                            "flag".asPropertyPath(),
+                            "page_size".asPropertyPath()
+                        ))
+                    )
+                )
+            )
+        )
+
+        val methods =
+            generate(opts).firstSourceType().funSpecs.filter { it.name == "pagedTest" }
+        assertThat(methods).hasSize(1)
+
+        val method = methods.first()
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            | *
+            | *
+            | * For example:
+            | * ```
+            | * val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            | * val resultList = client.pagedTest(
+            | *     flag,
+            | *     pageSize
+            | *)
+            | *
+            | * val page = result.next()
+            | * ```
+            | *
+            | * @param flag
+            | *
+            | * @param pageSize
+            | */
+            | fun pagedTest(
+            |     flag: kotlin.Boolean,
+            |     pageSize: kotlin.Int
+            | ): com.google.kgax.Pager<google.example.PagedRequest, com.google.kgax.grpc.CallResult<google.example.PagedResponse>, kotlin.Int> = pager {
+            |     method = { request ->
+            |         stubs.api.executeFuture { it.pagedTest(request) }.get()
+            |     }
+            |     initialRequest = {
+            |         google.example.PagedRequest {
+            |             this.flag = flag
+            |             this.pageSize = pageSize
+            |         }
+            |     }
+            |     nextRequest = { request, token -> request.toBuilder().setPageToken(token).build() }
+            |     nextPage = { response ->
+            |         com.google.kgax.grpc.PageResult<kotlin.Int>(response.body.responsesList, response.body.nextPageToken, response.metadata)
+            |     }
+            | }
+            |""".trimIndent().asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `Generates the PagedTest methods without paging`() {
+        val opts = ServiceOptions(
+            methods = listOf(
+                MethodOptions(
+                    name = "PagedTest"
+                )
+            )
+        )
+
+        val methods =
+            generate(opts).firstSourceType().funSpecs.filter { it.name == "pagedTest" }
+        assertThat(methods).hasSize(1)
+
+        val method = methods.first()
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            | *
+            | *
+            | * For example:
+            | * ```
+            | * val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            | * val result = client.pagedTest(
+            | *     PagedRequest {
+            | *     }
+            | *)
+            | * ```
+            | *
+            | * @param request the request object for the API call
+            | */
+            | fun pagedTest(request: google.example.PagedRequest): com.google.kgax.grpc.FutureCall<google.example.PagedResponse> =
+            |     stubs.api.executeFuture { it.pagedTest(request) }
             |""".asNormalizedString()
         )
     }

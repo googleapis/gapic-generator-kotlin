@@ -80,24 +80,21 @@ internal class ProtobufTypeMapper private constructor() {
 
                 fun addMsg(p: DescriptorProtos.DescriptorProto, parent: String) {
                     val key = "$protoPackage$parent.${p.name}"
-                    map.typeMap[key] = listOf("$javaPackage$parent", enclosingClassName, p.name)
-                        .filterNotNull()
+                    map.typeMap[key] = listOfNotNull("$javaPackage$parent", enclosingClassName, p.name)
                         .joinToString(".")
                     map.knownProtoTypes[key] = p
                 }
 
                 fun addEnum(p: DescriptorProtos.EnumDescriptorProto, parent: String) {
                     val key = "$protoPackage$parent.${p.name}"
-                    map.typeMap[key] = listOf("$javaPackage$parent", enclosingClassName, p.name)
-                        .filterNotNull()
+                    map.typeMap[key] = listOfNotNull("$javaPackage$parent", enclosingClassName, p.name)
                         .joinToString(".")
                     map.knownProtoEnums[key] = p
                 }
 
                 fun addService(p: DescriptorProtos.ServiceDescriptorProto, parent: String) {
                     map.serviceMap["$protoPackage$parent.${p.name}"] =
-                        listOf("$javaPackage$parent", enclosingClassName, p.name)
-                            .filterNotNull()
+                        listOfNotNull("$javaPackage$parent", enclosingClassName, p.name)
                             .joinToString(".")
                 }
 
@@ -127,9 +124,9 @@ internal class ProtobufTypeMapper private constructor() {
             }
 
             fileName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, fileName)
-            if (proto.enumTypeList.any { it.name.equals(fileName) } ||
-                proto.messageTypeList.any { it.name.equals(fileName) } ||
-                proto.serviceList.any { it.name.equals(fileName) }) {
+            if (proto.enumTypeList.any { it.name == fileName } ||
+                proto.messageTypeList.any { it.name == fileName } ||
+                proto.serviceList.any { it.name == fileName }) {
                 fileName += "OuterClass"
             }
 

@@ -253,14 +253,6 @@ internal class FunctionsImpl(
                 val nextPageTokenGetter = getAccessorName(paging.responsePageToken)
                 val responseListGetter = getAccessorRepeatedName(paging.responseList)
 
-                // extra doc for the pageSize param not in the proto
-                extraParamDocs.add(CodeBlock.of("@param pageSize number of results to fetch in each page"))
-                m.addParameter(
-                    ParameterSpec.builder("pageSize", Int::class)
-                        .defaultValue("20")
-                        .build()
-                )
-
                 // build method body using a pager
                 m.returns(
                     GrpcTypes.Support.Pager(
@@ -273,7 +265,7 @@ internal class FunctionsImpl(
                     |return pager {
                     |    method = { request ->
                     |        %N.%N.executeFuture {
-                    |            it.%L(request.toBuilder().%L(pageSize).build())
+                    |            it.%L(request)
                     |        }.get()
                     |    }
                     |    initialRequest = {
@@ -292,7 +284,7 @@ internal class FunctionsImpl(
                     |}
                     |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
-                    methodName, pageSizeSetter,
+                    methodName,
                     requestObject.indent(2),
                     pageTokenSetter,
                     GrpcTypes.Support.PageResult(responseListItemType),
