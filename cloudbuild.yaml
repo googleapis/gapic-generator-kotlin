@@ -1,13 +1,13 @@
 steps:
 
 # checkout submodules (not sure how, so clone instead)
-- name: gcr.io/cloud-builders/git
-  args: ['clone', 'git@github.com:googleapis/api-common-protos.git', '.']
+- name: gcr.io/cloud-builders/wget
+  args: ['-O', 'api-common-protos.tar.gz', 'https://github.com/googleapis/api-common-protos/archive/c77d050e310b5f94f3f4abcb7f28ab5a008361d5.tar.gz']
   dir: 'generator/api-common-protos'
-- name: gcr.io/cloud-builders/git
-  args: ['checkout', 'input-contract']
+- name: ubuntu
+  args: ['tar', 'xvf', 'api-common-protos.tar.gz', '--strip-components=1']
   dir: 'generator/api-common-protos'
-
+ 
 # build generator  
 - id: build_generator
   name: 'gcr.io/cloud-builders/gradle'
@@ -15,7 +15,7 @@ steps:
   dir: 'generator'
 - id: dockerize_generator
   name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/kotlin-gapic/kgen', '.']
+  args: ['build', '-t', 'gcr.io/kotlin-gapic/kgen:$COMMIT_SHA', '-t', 'gcr.io/kotlin-gapic/kgen:latest', '.']
   dir: 'generator'
 
 # build examples
@@ -57,6 +57,8 @@ steps:
     - start_showcase
     - build_generator
 
-images: ['gcr.io/kotlin-gapic/kgen']
+images: 
+- 'gcr.io/kotlin-gapic/kgen:$COMMIT_SHA'
+- 'gcr.io/kotlin-gapic/kgen:latest'
 
 timeout: 1200s
