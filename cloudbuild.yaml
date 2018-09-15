@@ -2,6 +2,8 @@ steps:
 
 # checkout submodules
 - name: gcr.io/cloud-builders/git
+  args: ['fetch', '--unshallow']
+- name: gcr.io/cloud-builders/git
   args: ['submodule', 'init']
 - name: gcr.io/cloud-builders/git
   args: ['submodule', 'update', '--remote']
