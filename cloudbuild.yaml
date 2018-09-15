@@ -1,12 +1,12 @@
 steps:
 
-# checkout submodules
+# checkout submodules (not sure how, so clone instead)
 - name: gcr.io/cloud-builders/git
-  args: ['fetch', '--unshallow']
+  args: ['clone', 'git@github.com:googleapis/api-common-protos.git', '.']
+  dir: 'generator/api-common-protos'
 - name: gcr.io/cloud-builders/git
-  args: ['submodule', 'init']
-- name: gcr.io/cloud-builders/git
-  args: ['submodule', 'update', '--remote']
+  args: ['checkout', 'input-contract']
+  dir: 'generator/api-common-protos'
 
 # build generator  
 - id: build_generator
