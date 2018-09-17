@@ -209,6 +209,24 @@ class ShowcaseTest {
 
         assertThat(pageCount).isEqualTo(4)
         assertThat(numbers).containsExactlyElementsIn((0 until 39).map { it })
+        assertThat(pager.hasNext()).isFalse()
+    }
+
+    @Test
+    fun `pages chucks of responses without pre-fetching`() {
+        val pager = client.pagination(PaginationRequest {
+            pageSize = 20
+            pageToken = "0"
+            maxResponse = 100
+        })
+
+        assertThat(pager.hasNext()).isTrue()
+
+        val page = pager.next()
+
+        assertThat(page.elements).containsExactlyElementsIn((0 until 20).map { it })
+        assertThat(page.token).isNotEmpty()
+        assertThat(pager.hasNext()).isTrue()
     }
 
     // standard 5 second timeout handler for streaming tests
