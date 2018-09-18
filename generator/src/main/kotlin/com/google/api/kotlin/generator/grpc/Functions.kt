@@ -248,7 +248,6 @@ internal class FunctionsImpl(
                 val responseListItemType = getResponseListElementType(ctx, method, paging)
 
                 // getters and setters for setting the page sizes, etc.
-                val pageSizeSetter = getSetterName(paging.pageSize)
                 val pageTokenSetter = getSetterName(paging.requestPageToken)
                 val nextPageTokenGetter = getAccessorName(paging.responsePageToken)
                 val responseListGetter = getAccessorRepeatedName(paging.responseList)

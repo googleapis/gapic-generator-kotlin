@@ -732,12 +732,11 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
             | * For example:
             | * ```
             | * val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
-            | * val resultList = client.pagedTest(
+            | * val pager = client.pagedTest(
             | *     PagedRequest {
             | *     }
             | *)
-            | *
-            | * val page = result.next()
+            | * val page = pager.next()
             | * ```
             | *
             | * @param request the request object for the API call
@@ -797,12 +796,11 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
             | * For example:
             | * ```
             | * val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
-            | * val resultList = client.pagedTest(
+            | * val pager = client.pagedTest(
             | *     flag,
             | *     pageSize
             | *)
-            | *
-            | * val page = result.next()
+            | * val page = pager.next()
             | * ```
             | *
             | * @param flag

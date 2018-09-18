@@ -166,16 +166,16 @@ internal class DocumentationImpl : Documentation {
 
         // invoke method
         if (paging != null) {
-            call.addStatement(
+            call.add(
                 """
-                |val resultList = client.%N(
+                |val pager = client.%N(
                 |    ${invokeClientParams.joinToString(",\n    ") { "%L" }}
                 |)
+                |val page = pager.next()
                 |""".trimMargin(),
                 methodName,
                 *indentedParams.toTypedArray()
             )
-            call.addStatement("val page = result.next()")
         } else {
             call.add(
                 """
