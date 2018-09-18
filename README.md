@@ -1,21 +1,19 @@
 # Kgen
 
-Kgen creates Kotlin API client code from a [protocol buffer](https://developers.google.com/protocol-buffers/docs/proto3) description of the API. 
+Kgen creates Kotlin clients from a [protocol buffer](https://developers.google.com/protocol-buffers/docs/proto3) description of an API. 
 
 [![CircleCI](https://circleci.com/gh/googleapis/gapic-generator-kotlin/tree/master.svg?style=svg)](https://circleci.com/gh/googleapis/gapic-generator-kotlin/tree/master)
 [![codecov](https://codecov.io/gh/googleapis/gapic-generator-kotlin/branch/master/graph/badge.svg)](https://codecov.io/gh/googleapis/gapic-generator-kotlin)
 
-The clients are currently compatible with gRPC APIs, but we plan to support alternative transports as well.
-
 *Note* This project is a preview. Please try it out and let us know what you think, but there 
-are currently no guarantees for any form of stability or support.
+are currently no guarantees of any form of stability or support.
 
 ## Quick Start
 
 Kgen can be used with [docker](https://www.docker.com/), [gradle](https://gradle.org/), 
 or as a [protoc plugin](https://developers.google.com/protocol-buffers/). 
 
-To get started with docker, run the following to generate a client for the [example service](generator/example-server).
+To get started with docker, clone the project and run the following to generate a client for the [example service](generator/example-server).
 
 ```bash
 $ mkdir my-output 
@@ -25,26 +23,25 @@ $ docker run --rm \
          gcr.io/kotlin-gapic/kgen
 ```
 
-Read the next section to learn more about the output, or replace the input directory with 
-your own protos to see what happens.
-
 See the [RUNNING.md](RUNNING.md) for more details, configuration, and command line options.
 
-## Examples
+## Example
 
 A simple "hello world" style example is in the [generator/example-server](generator/example-server)
-and Kgen's output, using the command in the quick start, is checked into [generator/example-client](generator/example-client). The most relevant files are:
+and [generator/example-client](generator/example-client) directories. The most relevant files are:
 
   + The [proto describing the API](generator/example-server/src/main/proto/google/example/hello.proto)
   + The [API implementation](generator/example-server/src/main/kotlin/example/ExampleServer.kt) 
-  + The generated [client code](generator/example-client), which includes:
-    + `client`: A client for each of the API services and various `KotlinBuilders.kt` that may be used as an alternative to the Java builders.
-    + `clientTest`: Test code for the clients.
-    + `grpc`: gRPC stubs (used internally by the clients).
-    + `javalite`: Java message types defined in the API.
+  + The [code calling the API](generator/example-client/src/main/kotlin/example/Client.kt) using the generated client
 
-Kotlin projects come in all shapes and sizes so Kgen does not organize the artifacts into a new 
-Kotin project for you. Copy the artifacts that you need into your projects or use the gradle runner.
+You can run the client and server locally by running:
+
+```bash
+$ cd generator/example-server
+$ ./gradlew run
+$ cd generator/example-client
+$ ./gradlew run
+```
 
 More complex examples, using Google Cloud APIs on Android, can be found in the 
 [examples directory](examples/README.md).
