@@ -10,13 +10,21 @@ while (( "$#" )); do
     #   FARG=$2
     #   shift 2
     #   ;;
-    --no-format)
-      SKIP_FORMAT=1
+    --no-format-java)
+      SKIP_FORMAT_JAVA=1
+      shift
+      ;;
+    --no-lint)
+      SKIP_LINT=1
       shift
       ;;
     --no-compile)
       SKIP_COMPILE=1
       shift
+      ;;
+    --format-custom)
+      FORMAT_CUSTOM_ARGS=$2
+      shift 2
       ;;
     --overwrite)
       DO_OVERWRITE=1
@@ -66,16 +74,24 @@ cp -R build/generated/source/proto/main/* /generated
 cp -R build/generated/source/protoTest/* /generated
 
 # format
-if [ -z ${SKIP_FORMAT+x} ]; then
+if [ -z ${SKIP_FORMAT_JAVA+x} ]; then
   echo
   echo "Formatting Java code..."
   java -jar /usr/google-java-format/formatter.jar --dry-run $(find /generated -type f -name "*.java")
   java -jar /usr/google-java-format/formatter.jar --replace $(find /generated -type f -name "*.java")
-  
-  echo
-  echo "Formatting Kotlin code..."
-  /usr/ide/intellij/bin/format.sh -s /usr/ide/format.xml -r /generated -m *.kt
+fi
 
+# custom formatting
+if [ -z ${FORMAT_CUSTOM_ARGS+x} ]; then
+  :
+else
+  echo
+  echo "Formatting with custom format.xml rule set..."
+  /usr/ide/intellij/bin/format.sh -s /usr/ide/format.xml -r /generated -m $FORMAT_CUSTOM_ARGS
+fi
+
+# lint
+if [ -z ${SKIP_LINT+x} ]; then
   echo
   echo "Linting Kotlin code..."
   echo "  Why? Imports are generated conservatively, and include default imports, to avoid potential name collisions."

@@ -187,7 +187,7 @@ class CLIOptions : OptionsBase() {
     @JvmField
     @Option(
         name = "fallback",
-        help = "Use gRPC fallback",
+        help = "Use gRPC fallback. This option is not yet implemented",
         defaultValue = "false"
     )
     var fallback: Boolean = false

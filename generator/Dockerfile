@@ -37,8 +37,8 @@ FROM openjdk:8-alpine as ktlint
 
 # install ktlint
 RUN apk add --no-cache curl gnupg
-RUN curl -sSLO https://github.com/shyiko/ktlint/releases/download/0.25.1/ktlint && \
-    curl -sSLO https://github.com/shyiko/ktlint/releases/download/0.25.1/ktlint.asc && \
+RUN curl -sSLO https://github.com/shyiko/ktlint/releases/download/0.28.0/ktlint && \
+    curl -sSLO https://github.com/shyiko/ktlint/releases/download/0.28.0/ktlint.asc && \
     curl -sS https://keybase.io/shyiko/pgp_keys.asc | gpg --import && gpg --verify ktlint.asc && \
     chmod a+x ktlint && \
     rm ktlint.asc && \
