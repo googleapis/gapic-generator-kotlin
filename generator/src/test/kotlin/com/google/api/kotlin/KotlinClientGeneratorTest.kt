@@ -16,14 +16,17 @@
 
 package com.google.api.kotlin
 
+import com.google.api.kotlin.config.Configuration
 import com.google.api.kotlin.config.LegacyConfigurationFactory
 import com.google.api.kotlin.config.ServiceOptions
 import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.common.truth.Truth.assertThat
+import com.google.protobuf.DescriptorProtos
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.check
 import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.verify
 import com.squareup.kotlinpoet.ClassName
@@ -107,5 +110,27 @@ internal class KotlinClientGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
         result.sourceCode.fileList.forEach {
             assertThat(it.content).contains("Copyright")
         }
+    }
+
+    @Test
+    fun `can wrap text`() {
+        assertThat("abcde ".repeat(1000).wrap(50)?.split("\n".toRegex())?.all { it.length <= 50 }).isTrue()
+        assertThat("abcde ".wrap(50)?.trim()).isEqualTo("abcde")
+        val nullString: String? = null
+        assertThat(nullString.wrap()).isNull()
+    }
+
+    @Test
+    fun `context uses given service options`() {
+        val options: ServiceOptions = mock()
+        val metadata: Configuration = mock {
+            on { get(any<DescriptorProtos.ServiceDescriptorProto>()) } doReturn options
+        }
+        val service: DescriptorProtos.ServiceDescriptorProto = mock()
+
+        val context = GeneratorContext(mock(), service, metadata, mock(), mock())
+
+        assertThat(context.serviceOptions).isEqualTo(options)
+        verify(metadata).get(eq(service))
     }
 }

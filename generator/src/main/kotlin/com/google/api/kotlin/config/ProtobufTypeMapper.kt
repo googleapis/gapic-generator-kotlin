@@ -16,7 +16,6 @@
 
 package com.google.api.kotlin.config
 
-import com.google.common.base.CaseFormat
 import com.google.protobuf.DescriptorProtos
 import com.squareup.kotlinpoet.ClassName
 
@@ -73,28 +72,28 @@ internal class ProtobufTypeMapper private constructor() {
                 else
                     proto.`package`
 
-                val enclosingClassName = if (proto.options?.javaMultipleFiles != false)
-                    null
-                else
-                    getOuterClassname(proto)
+                // TODO: support this?
+                if (proto.options?.javaMultipleFiles != true) {
+                    throw IllegalArgumentException("proto does not have required 'option java_multiple_files = true;'")
+                }
 
                 fun addMsg(p: DescriptorProtos.DescriptorProto, parent: String) {
                     val key = "$protoPackage$parent.${p.name}"
-                    map.typeMap[key] = listOfNotNull("$javaPackage$parent", enclosingClassName, p.name)
+                    map.typeMap[key] = listOfNotNull("$javaPackage$parent", p.name)
                         .joinToString(".")
                     map.knownProtoTypes[key] = p
                 }
 
                 fun addEnum(p: DescriptorProtos.EnumDescriptorProto, parent: String) {
                     val key = "$protoPackage$parent.${p.name}"
-                    map.typeMap[key] = listOfNotNull("$javaPackage$parent", enclosingClassName, p.name)
+                    map.typeMap[key] = listOfNotNull("$javaPackage$parent", p.name)
                         .joinToString(".")
                     map.knownProtoEnums[key] = p
                 }
 
                 fun addService(p: DescriptorProtos.ServiceDescriptorProto, parent: String) {
                     map.serviceMap["$protoPackage$parent.${p.name}"] =
-                        listOfNotNull("$javaPackage$parent", enclosingClassName, p.name)
+                        listOfNotNull("$javaPackage$parent", p.name)
                             .joinToString(".")
                 }
 
@@ -111,26 +110,6 @@ internal class ProtobufTypeMapper private constructor() {
             }
 
             return map
-        }
-
-        private fun getOuterClassname(proto: DescriptorProtos.FileDescriptorProto): String {
-            if (proto.options.hasJavaOuterClassname()) {
-                return proto.options.javaOuterClassname
-            }
-
-            var fileName = proto.name.substring(0, proto.name.length - ".proto".length)
-            if (fileName.contains("/")) {
-                fileName = fileName.substring(fileName.lastIndexOf('/') + 1)
-            }
-
-            fileName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, fileName)
-            if (proto.enumTypeList.any { it.name == fileName } ||
-                proto.messageTypeList.any { it.name == fileName } ||
-                proto.serviceList.any { it.name == fileName }) {
-                fileName += "OuterClass"
-            }
-
-            return fileName
         }
     }
 }
