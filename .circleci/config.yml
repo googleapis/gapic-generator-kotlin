@@ -89,7 +89,7 @@ jobs:
       - restore_cache:
           key: showcase-v0-{{ checksum "build.gradle" }}
       - run: 
-          name: Download Dependencies
+          name: Download dependencies
           command: ./gradlew dependencies
       - save_cache:
           paths:
@@ -120,11 +120,11 @@ jobs:
       - restore_cache:
           key: example-server-v0-{{ checksum "example-server/build.gradle" }}-{{ checksum "example-client/build.gradle" }}
       - run: 
-          name: Download Dependencies
+          name: Download dependencies
           command: ./gradlew dependencies
           working_directory: ~/gapic-generator-kotlin/example-server
-          - run: 
-          name: Download Dependencies
+      - run: 
+          name: Download dependencies
           command: ./gradlew dependencies
           working_directory: ~/gapic-generator-kotlin/example-client
       - save_cache:
