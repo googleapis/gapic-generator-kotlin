@@ -136,6 +136,7 @@ jobs:
           name: Run server
           command: ./gradlew run
           working_directory: ~/gapic-generator-kotlin/example-server
+          background: true
       - run:
           name: Wait for the server to spin up
           shell: /bin/sh
