@@ -54,7 +54,6 @@ configurations {
 sourceSets {
     test.kotlin.srcDirs += [
             'build/generated/source/proto/test/client',
-            'build/generated/source/proto/test/grpc',
             'build/generated/source/proto/test/javalite'
     ]
 }

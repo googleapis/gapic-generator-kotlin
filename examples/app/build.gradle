@@ -130,5 +130,5 @@ task ktlintFormat(type: JavaExec, group: "formatting") {
     description = "Fix Kotlin code style deviations."
     main = "com.github.shyiko.ktlint.Main"
     classpath = configurations.ktlint
-    args "-F", "src/**/*.kt", "test/**/*.kt"
+    args "-F", "src/**/*.kt", "test/**/*.kt",
 }

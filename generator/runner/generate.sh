@@ -10,8 +10,8 @@ while (( "$#" )); do
     #   FARG=$2
     #   shift 2
     #   ;;
-    --no-format-java)
-      SKIP_FORMAT_JAVA=1
+    --no-format)
+      SKIP_FORMAT=1
       shift
       ;;
     --no-lint)
@@ -74,14 +74,18 @@ cp -R build/generated/source/proto/main/* /generated
 cp -R build/generated/source/protoTest/* /generated
 
 # format
-if [ -z ${SKIP_FORMAT_JAVA+x} ]; then
+if [ -z ${SKIP_FORMAT+x} ]; then
   echo
   echo "Formatting Java code..."
   java -jar /usr/google-java-format/formatter.jar --dry-run $(find /generated -type f -name "*.java")
   java -jar /usr/google-java-format/formatter.jar --replace $(find /generated -type f -name "*.java")
+
+  echo
+  echo "Formatting Kotlin code..."
+  /usr/ide/intellij/bin/format.sh -s /usr/ide/format.xml -r /generated -m *.kt
 fi
 
-# custom formatting
+# custom format
 if [ -z ${FORMAT_CUSTOM_ARGS+x} ]; then
   :
 else

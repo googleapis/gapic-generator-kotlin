@@ -66,9 +66,11 @@ internal class KotlinClientGenerator(
     fun generate(request: CodeGeneratorRequest, typeMap: ProtobufTypeMapper): Artifacts {
         // generate code for the services
         val files = request.protoFileList
+            .asSequence()
             .filter { it.serviceCount > 0 }
             .filter { request.fileToGenerateList.contains(it.name) }
             .filter { !SKIP_PROTOS_WITH_NAME.contains(it.name) }
+            .toList()
             .flatMap {
                 it.serviceList.mapNotNull { service ->
                     try {
@@ -84,9 +86,11 @@ internal class KotlinClientGenerator(
 
         // extract source files
         val sourceFiles = files
+            .asSequence()
             .filterIsInstance(GeneratedSource::class.java)
             .filter { it.kind == GeneratedSource.Kind.SOURCE }
             .map { toSourceFile(it) }
+            .toList()
 
         // generate builders
         val builderFiles = builderGenerator?.let { g ->
@@ -101,9 +105,11 @@ internal class KotlinClientGenerator(
 
         // extract test files
         val testFiles = files
+            .asSequence()
             .filterIsInstance(GeneratedSource::class.java)
             .filter { it.kind == GeneratedSource.Kind.UNIT_TEST }
             .map { toSourceFile(it) }
+            .toList()
 
         // put all test sources together
         val testCode = CodeGeneratorResponse.newBuilder()
@@ -139,7 +145,6 @@ internal class KotlinClientGenerator(
 
     private fun toSourceFile(
         source: GeneratedSource,
-        format: Boolean = true,
         addLicense: Boolean = true
     ): PluginProtos.CodeGeneratorResponse.File {
         val name = source.name
@@ -172,34 +177,11 @@ internal class KotlinClientGenerator(
             .joinToString("/")
         val fileName = "$fileDir/${file.name}.kt"
 
-        // optionally, format the file
-        val fileContents = file.toString().let { if (format) formatKotlin(it) else it }
-
         // put it together and create file
         return PluginProtos.CodeGeneratorResponse.File.newBuilder()
             .setName(fileName)
-            .setContent(fileContents)
+            .setContent(file.toString())
             .build()
-    }
-
-    // format the code or return the input if formatting fails
-    private fun formatKotlin(code: String): String {
-        val args = arrayOf("--stdin", "--format")
-        val classpath = System.getProperty("java.class.path")
-        val builder = ProcessBuilder("java", "-cp", classpath, "com.github.shyiko.ktlint.Main", *args)
-
-        // run formatter
-        try {
-            val process = builder.start()
-            process.outputStream.bufferedWriter().use { it.write(code) }
-            val output = process.inputStream.bufferedReader().use { it.readText() }
-            process.waitFor()
-            return output
-        } catch (ex: Exception) {
-            log.error(ex) { "Unable to format Kotlin code" }
-        }
-
-        return code
     }
 }
 
