@@ -101,6 +101,7 @@ protobuf {
             }
             task.plugins {
                 javalite {}
+                // generate clients
                 client {
                     option "source=${projectDir}/src/main/proto"
                     option "test_output=${project.buildDir}/generated/source/protoTest/debugUnitTest/client"
@@ -108,6 +109,8 @@ protobuf {
                     //option "fallback"
                 }
             }
+            // add something like this to have the generated clients formatted with your project settings
+            ktlintFormatGenerated.shouldRunAfter task
         }
     }
 }
@@ -130,5 +133,12 @@ task ktlintFormat(type: JavaExec, group: "formatting") {
     description = "Fix Kotlin code style deviations."
     main = "com.github.shyiko.ktlint.Main"
     classpath = configurations.ktlint
-    args "-F", "src/**/*.kt", "test/**/*.kt",
+    args "-F", "src/**/*.kt", "test/**/*.kt"
+}
+
+task ktlintFormatGenerated(type: JavaExec, group: "formatting") {
+    description = "Fix Kotlin code style deviations."
+    main = "com.github.shyiko.ktlint.Main"
+    classpath = configurations.ktlint
+    args "-F", "${project.buildDir}/generated/source/proto/**/*.kt"
 }
