@@ -13,12 +13,12 @@ are currently no guarantees of any form of stability or support.
 Kgen can be used with [docker](https://www.docker.com/), [gradle](https://gradle.org/), 
 or as a [protoc plugin](https://developers.google.com/protocol-buffers/). 
 
-To get started with docker, clone the project and run the following to generate a client for the [example service](generator/example-server).
+To get started with docker, clone the project and run the following to generate a client for the [example service](example-server).
 
 ```bash
 $ mkdir my-output 
 $ docker run --rm \
-             --mount type=bind,source="$(pwd)"/generator/example-server/src/main/proto,target=/proto \
+             --mount type=bind,source="$(pwd)"/example-server/src/main/proto,target=/proto \
              --mount type=bind,source="$(pwd)"/my-output,target=/generated \
          gcr.io/kotlin-gapic/kgen
 ```
@@ -27,19 +27,19 @@ See the [RUNNING.md](RUNNING.md) for more details, configuration, and command li
 
 ## Example
 
-A simple "hello world" style example is in the [generator/example-server](generator/example-server)
-and [generator/example-client](generator/example-client) directories. The most relevant files are:
+A simple "hello world" style example is in the [example-server](example-server)
+and [example-client](example-client) directories. The most relevant files are:
 
-  + The [proto describing the API](generator/example-server/src/main/proto/google/example/hello.proto)
-  + The [API implementation](generator/example-server/src/main/kotlin/example/ExampleServer.kt) 
-  + The [code calling the API](generator/example-client/src/main/kotlin/example/Client.kt) using the generated client
+  + The [proto describing the API](example-server/src/main/proto/google/example/hello.proto)
+  + The [API implementation](example-server/src/main/kotlin/example/ExampleServer.kt) 
+  + The [code calling the API](example-client/src/main/kotlin/example/Client.kt) using the generated client
 
 You can run the client and server locally by running:
 
 ```bash
-$ cd generator/example-server
+$ cd example-server
 $ ./gradlew run
-$ cd generator/example-client
+$ cd example-client
 $ ./gradlew run
 ```
 

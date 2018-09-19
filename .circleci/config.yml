@@ -107,7 +107,46 @@ jobs:
       - run:
           name: Test showcase
           command: ./gradlew test
-      
+
+  test_example:
+    docker:
+      - image: circleci/openjdk:8-jdk
+    working_directory: ~/gapic-generator-kotlin
+    steps:
+      - checkout:
+          path: ~/gapic-generator-kotlin
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          key: example-server-v0-{{ checksum "example-server/build.gradle" }}-{{ checksum "example-client/build.gradle" }}
+      - run: 
+          name: Download Dependencies
+          command: ./gradlew dependencies
+          working_directory: ~/gapic-generator-kotlin/example-server
+          - run: 
+          name: Download Dependencies
+          command: ./gradlew dependencies
+          working_directory: ~/gapic-generator-kotlin/example-client
+      - save_cache:
+          paths:
+            - ~/example-server/.gradle
+            - ~/example-client/.gradle
+          key: example-server-v0-{{ checksum "example-server/build.gradle" }}-{{ checksum "example-client/build.gradle" }}
+      - run:
+          name: Run server
+          command: ./gradlew run
+          working_directory: ~/gapic-generator-kotlin/example-server
+      - run:
+          name: Wait for the server to spin up
+          shell: /bin/sh
+           command: |
+               wget --retry-connrefused --waitretry=1 --timeout=15 --tries=30 http://localhost:8080
+               :
+      - run:
+          name: Run client
+          command: ./gradlew run
+          working_directory: ~/gapic-generator-kotlin/example-client
+
 workflows:
   version: 2
   build_and_test:
@@ -117,5 +156,8 @@ workflows:
           requires:
             - build
       - test_showcase:
+          requires:
+            - build
+      - test_example:
           requires:
             - build

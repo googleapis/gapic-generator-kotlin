@@ -81,7 +81,5 @@ class ExampleServer(private val port: Int = 8080) {
             responseObserver.onNext(reply)
             responseObserver.onCompleted()
         }
-
     }
-
 }

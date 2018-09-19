@@ -75,9 +75,11 @@ protobuf {
             artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0'
         }
         client {
-            // get the KGen code generator via jitpack
-            // (this library is in preview and not yet published to maven)
-            artifact = 'com.github.googleapis:gapic-generator-kotlin:master-SNAPSHOT:core@jar'
+            // get the KGen code generator
+            // this is normally done through the package manager, i.e.:
+            //   artifact = 'com.github.googleapis:gapic-generator-kotlin:master-SNAPSHOT:core@jar'
+            // but these examples are used for testing so we'll use a local copy instead
+            path = "${projectDir}/../runLocalGenerator.sh"
         }
     }
     generateProtoTasks {

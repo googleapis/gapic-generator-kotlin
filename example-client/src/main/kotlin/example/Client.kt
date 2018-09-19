@@ -39,7 +39,6 @@ class Client {
             query = "Hello!"
         }).get()
 
-
         // print the result
         println("The response was: ${result.body.result}")
 
