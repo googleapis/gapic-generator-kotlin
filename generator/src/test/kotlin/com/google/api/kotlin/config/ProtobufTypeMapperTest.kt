@@ -19,6 +19,7 @@ package com.google.api.kotlin.config
 import com.google.api.kotlin.BaseGeneratorTest
 import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.common.truth.Truth.assertThat
+import com.google.protobuf.DescriptorProtos
 import com.squareup.kotlinpoet.ClassName
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
@@ -103,5 +104,91 @@ internal class ProtobufTypeMapperTest : BaseGeneratorTest(GRPCGenerator()) {
         assertFailsWith(IllegalArgumentException::class) {
             mapper.getKotlinType(".google.foo.Bar")
         }
+    }
+
+    @Test
+    fun `maps a test type`() {
+        val message = DescriptorProtos.DescriptorProto.newBuilder()
+            .setName("TheThing")
+            .build()
+        val proto = DescriptorProtos.FileDescriptorProto.newBuilder()
+            .setPackage("my.package")
+            .setName("great_proto.proto")
+            .setOptions(DescriptorProtos.FileOptions.newBuilder()
+                .setJavaMultipleFiles(true)
+                .build())
+            .addMessageType(message)
+            .build()
+
+        val mapper = ProtobufTypeMapper.fromProtos(listOf(proto))
+        assertThat(mapper.getAllKotlinTypes()).containsExactly("my.package.TheThing")
+        assertThat(mapper.getProtoTypeDescriptor(".my.package.TheThing")).isEqualTo(message)
+        assertThat(mapper.getKotlinType(".my.package.TheThing"))
+            .isEqualTo(ClassName("my.package", "TheThing"))
+    }
+
+    @Test
+    fun `maps a test type with an outer class name`() {
+        val message = DescriptorProtos.DescriptorProto.newBuilder()
+            .setName("TheThing")
+            .build()
+        val proto = DescriptorProtos.FileDescriptorProto.newBuilder()
+            .setPackage("my.package")
+            .setName("great_proto.proto")
+            .setOptions(DescriptorProtos.FileOptions.newBuilder()
+                .setJavaMultipleFiles(false)
+                .setJavaOuterClassname("OutAndAbout")
+                .build())
+            .addMessageType(message)
+            .build()
+
+        val mapper = ProtobufTypeMapper.fromProtos(listOf(proto))
+        assertThat(mapper.getAllKotlinTypes()).containsExactly("my.package.OutAndAbout.TheThing")
+        assertThat(mapper.getProtoTypeDescriptor(".my.package.TheThing")).isEqualTo(message)
+        assertThat(mapper.getKotlinType(".my.package.TheThing"))
+            .isEqualTo(ClassName("my.package", "OutAndAbout.TheThing"))
+    }
+
+    @Test
+    fun `maps a test type with an outer class nested name`() {
+        val message = DescriptorProtos.DescriptorProto.newBuilder()
+            .setName("TheThing")
+            .build()
+        val proto = DescriptorProtos.FileDescriptorProto.newBuilder()
+            .setPackage("my.package")
+            .setName("/one/two/great_proto.proto")
+            .setOptions(DescriptorProtos.FileOptions.newBuilder()
+                .setJavaMultipleFiles(false)
+                .setJavaOuterClassname("OutAndAbout")
+                .build())
+            .addMessageType(message)
+            .build()
+
+        val mapper = ProtobufTypeMapper.fromProtos(listOf(proto))
+        assertThat(mapper.getAllKotlinTypes()).containsExactly("my.package.OutAndAbout.TheThing")
+        assertThat(mapper.getProtoTypeDescriptor(".my.package.TheThing")).isEqualTo(message)
+        assertThat(mapper.getKotlinType(".my.package.TheThing"))
+            .isEqualTo(ClassName("my.package", "OutAndAbout.TheThing"))
+    }
+
+    @Test
+    fun `maps a test type with an outer class nested name collision`() {
+        val message = DescriptorProtos.DescriptorProto.newBuilder()
+            .setName("GreatProto")
+            .build()
+        val proto = DescriptorProtos.FileDescriptorProto.newBuilder()
+            .setPackage("my.package")
+            .setName("/one/two/great_proto.proto")
+            .setOptions(DescriptorProtos.FileOptions.newBuilder()
+                .setJavaMultipleFiles(false)
+                .build())
+            .addMessageType(message)
+            .build()
+
+        val mapper = ProtobufTypeMapper.fromProtos(listOf(proto))
+        assertThat(mapper.getAllKotlinTypes()).containsExactly("my.package.GreatProtoOuterClass.GreatProto")
+        assertThat(mapper.getProtoTypeDescriptor(".my.package.GreatProto")).isEqualTo(message)
+        assertThat(mapper.getKotlinType(".my.package.GreatProto"))
+            .isEqualTo(ClassName("my.package", "GreatProtoOuterClass.GreatProto"))
     }
 }
