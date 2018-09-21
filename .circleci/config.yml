@@ -196,9 +196,6 @@ workflows:
   build_and_test:
     jobs:
       - build
-      - dockerize:
-          requires:
-            - build
       - build_examples:
           requires:
             - build
@@ -211,7 +208,6 @@ workflows:
       - release_gcr_snapshot:
           requires:
             - build
-            - dockerize
             - build_examples
             - test_showcase
             - test_example
