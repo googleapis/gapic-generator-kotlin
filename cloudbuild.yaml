@@ -22,7 +22,7 @@ steps:
 - id: example_key
   name: 'ubuntu'
   args: ['bash', '-c', 'touch app/src/main/res/raw/sa.json']
-  dir: 'examples'
+  dir: 'example-api-clients'
   waitFor: ['-']
 - id: build_examples
   name: 'gcr.io/kotlin-gapic/example-builder'
