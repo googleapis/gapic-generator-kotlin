@@ -19,14 +19,14 @@ jobs:
             git submodule init
             git submodule update --remote
       - restore_cache:
-          key: gapic-generator-kotlin-v0-{{ checksum "build.gradle" }}
+          key: generator-v0-{{ checksum "build.gradle" }}
       - run: 
           name: Download dependencies
           command: ./gradlew dependencies
       - save_cache:
           paths:
             - ~/.gradle
-          key: gapic-generator-kotlin-v0-{{ checksum "build.gradle" }}
+          key: generator-v0-{{ checksum "build.gradle" }}
       - run: 
            name: Build and run checks
            command: ./gradlew build
@@ -71,9 +71,6 @@ jobs:
           key: v0-{{ .Branch }}-{{ epoch }}
           paths:
             - /caches/kgen.tar
-      - persist_to_workspace:
-          paths:
-            - cache-docker
 
   # -------------------------------------------------------------------------------
   # Examples
