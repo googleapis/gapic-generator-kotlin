@@ -1,7 +1,6 @@
 # Kotlin Client Examples
 
-Examples of using the `kotlin-client-generator` code generator to generate Google Cloud
-client libraries in Kotlin.
+Examples of using the Kgen code generator to generate Google Cloud client libraries in Kotlin.
 
 ## Running
 

@@ -46,7 +46,7 @@ jobs:
             - generator/build/libs
 
   build_examples:
-    working_directory: ~/gapic-generator-kotlin/examples
+    working_directory: ~/gapic-generator-kotlin/example-api-clients
     docker:
       - image: circleci/android:api-27-alpha
     environment:

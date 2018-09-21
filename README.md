@@ -44,7 +44,7 @@ $ ./gradlew run
 ```
 
 More complex examples, using Google Cloud APIs on Android, can be found in the 
-[examples directory](examples/README.md).
+[examples directory](example-api-clients/README.md).
 
 ## Configuration
 
