@@ -165,6 +165,7 @@ jobs:
           working_directory: ~/gapic-generator-kotlin/example-client
 
   # -------------------------------------------------------------------------------
+  # Deploy
   # -------------------------------------------------------------------------------
       
   release_gcr_snapshot:
@@ -207,7 +208,7 @@ workflows:
       - test_example:
           requires:
             - build
-      release_gcr_snapshot:
+      - release_gcr_snapshot:
           requires:
             - build
             - build_examples
