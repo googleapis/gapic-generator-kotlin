@@ -170,11 +170,11 @@ jobs:
       
   release_gcr_snapshot:
     docker:
-      - image: circleci/openjdk:8-jdk
+      - image: google/cloud-sdk
     steps:
       - setup_remote_docker
       - run:
-          name: Setup project
+          name: Setup gcloud
           command: |
             echo ${GCLOUD_SERVICE_KEY} > ${HOME}/gcp-key.json
             gcloud auth activate-service-account --key-file ${HOME}/gcp-key.json
