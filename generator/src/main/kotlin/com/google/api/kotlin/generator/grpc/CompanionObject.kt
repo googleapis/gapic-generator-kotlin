@@ -261,7 +261,7 @@ internal class CompanionObjectImpl : CompanionObject {
             .returns(GrpcTypes.ManagedChannel)
             .addStatement(
                 "val builder = %T.forAddress(host, port)",
-                GrpcTypes.OkHttpChannelBuilder
+                GrpcTypes.ManagedChannelBuilder
             )
             .beginControlFlow("if (enableRetry)")
             .addStatement("builder.enableRetry()")

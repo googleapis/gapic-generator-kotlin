@@ -103,8 +103,8 @@ internal interface GrpcTypes {
     companion object {
         val Channel = ClassName("io.grpc", "Channel")
         val ManagedChannel = ClassName("io.grpc", "ManagedChannel")
+        val ManagedChannelBuilder = ClassName("io.grpc", "ManagedChannelBuilder")
         val CallOptions = ClassName("io.grpc", "CallOptions")
-        val OkHttpChannelBuilder = ClassName("io.grpc.okhttp", "OkHttpChannelBuilder")
         val OperationsGrpc = ClassName("com.google.longrunning", "OperationsGrpc")
         val OperationsFutureStub =
             ClassName("com.google.longrunning.OperationsGrpc", "OperationsFutureStub")

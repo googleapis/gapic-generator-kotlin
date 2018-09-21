@@ -24,7 +24,7 @@ import com.google.showcase.v1alpha2.EchoRequest
 import com.google.showcase.v1alpha2.ExpandRequest
 import com.google.showcase.v1alpha2.PaginationRequest
 import io.grpc.StatusRuntimeException
-import io.grpc.okhttp.OkHttpChannelBuilder
+import io.grpc.ManagedChannelBuilder
 import kotlinx.coroutines.experimental.CoroutineScope
 import kotlinx.coroutines.experimental.channels.Channel
 import kotlinx.coroutines.experimental.launch
@@ -50,7 +50,7 @@ class ShowcaseTest {
 
         // use insecure client
         val client = EchoClient.fromCredentials(
-                channel = OkHttpChannelBuilder.forAddress(host, port.toInt())
+                channel = ManagedChannelBuilder.forAddress(host, port.toInt())
                         .usePlaintext()
                         .build()
         )

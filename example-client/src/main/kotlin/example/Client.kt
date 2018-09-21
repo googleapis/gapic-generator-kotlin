@@ -18,7 +18,7 @@ package example
 
 import google.example.HelloServiceClient
 import google.example.HiRequest
-import io.grpc.okhttp.OkHttpChannelBuilder
+import io.grpc.ManagedChannelBuilder
 
 class Client {
 
@@ -30,7 +30,7 @@ class Client {
 
     fun runExample() {
         // create a client with an insecure channel
-        val client = HelloServiceClient.fromCredentials(channel = OkHttpChannelBuilder.forAddress("localhost", 8080)
+        val client = HelloServiceClient.fromCredentials(channel = ManagedChannelBuilder.forAddress("localhost", 8080)
                 .usePlaintext()
                 .build())
 

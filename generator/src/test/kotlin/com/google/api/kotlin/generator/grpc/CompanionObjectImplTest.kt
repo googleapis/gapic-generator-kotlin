@@ -215,7 +215,7 @@ internal class CompanionObjectImplTest {
             |    port: kotlin.Int = 443,
             |    enableRetry: kotlin.Boolean = true
             |): io.grpc.ManagedChannel {
-            |    val builder = io.grpc.okhttp.OkHttpChannelBuilder.forAddress(host, port)
+            |    val builder = io.grpc.ManagedChannelBuilder.forAddress(host, port)
             |    if (enableRetry) { builder.enableRetry() }
             |    return builder.build()
             |}
