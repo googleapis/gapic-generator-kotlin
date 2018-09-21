@@ -2,6 +2,10 @@ version: 2
 
 jobs:
 
+  # -------------------------------------------------------------------------------
+  # Generator
+  # -------------------------------------------------------------------------------
+
   build:
     docker:
       - image: circleci/openjdk:8-jdk
@@ -44,6 +48,14 @@ jobs:
           root: ./..
           paths:
             - generator/build/libs
+      - setup_remote_docker
+      - run:
+          name: Dockerize
+          command: docker build -t kgen .
+
+  # -------------------------------------------------------------------------------
+  # Examples
+  # -------------------------------------------------------------------------------  
 
   build_examples:
     working_directory: ~/gapic-generator-kotlin/example-api-clients
@@ -76,6 +88,10 @@ jobs:
           destination: reports
       - store_test_results:
           path: app/build/test-results
+
+  # -------------------------------------------------------------------------------
+  # Tests
+  # -------------------------------------------------------------------------------
 
   test_showcase:
     docker:
@@ -148,11 +164,40 @@ jobs:
           command: ./gradlew run
           working_directory: ~/gapic-generator-kotlin/example-client
 
+  # -------------------------------------------------------------------------------
+  # -------------------------------------------------------------------------------
+      
+  release_gcr_snapshot:
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - setup_remote_docker
+      - run:
+          name: Setup project
+          command: |
+            echo ${GCLOUD_SERVICE_KEY} > ${HOME}/gcp-key.json
+            gcloud auth activate-service-account --key-file ${HOME}/gcp-key.json
+            gcloud config set project ${GCLOUD_PROJECT_ID}
+            gcloud auth configure-docker 
+      - run:
+          name: Tag snapshot
+          command: docker tag kgen gcr.io/kotlin-gapic/kgen:${CIRCLE_BRANCH}-${COMMIT_SHA1}
+      - run:
+          name: Push snapshot
+          command: docker push gcr.io/kotlin-gapic/kgen:${CIRCLE_BRANCH}-${COMMIT_SHA1}
+
+# -------------------------------------------------------------------------------
+# CI Workflow
+# -------------------------------------------------------------------------------
+
 workflows:
   version: 2
   build_and_test:
     jobs:
       - build
+      - dockerize:
+          requires:
+            - build
       - build_examples:
           requires:
             - build
@@ -162,3 +207,12 @@ workflows:
       - test_example:
           requires:
             - build
+      release_gcr_snapshot:
+          requires:
+            - build
+            - build_examples
+            - test_showcase
+            - test_example
+        #   filters:
+        #     branches:
+        #       only: master
