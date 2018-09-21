@@ -211,6 +211,7 @@ workflows:
       - release_gcr_snapshot:
           requires:
             - build
+            - dockerize
             - build_examples
             - test_showcase
             - test_example
