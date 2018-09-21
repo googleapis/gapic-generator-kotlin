@@ -207,7 +207,7 @@ jobs:
             - .docker-caches/kgen.tar
       - run:
           name: Load docker image
-          command: docker load -i .docker-caches/kgen.tar
+          command: docker load -i ~/.docker-caches/kgen.tar
       - run:
           name: Tag snapshot
           command: docker tag kgen gcr.io/kotlin-gapic/kgen:${CIRCLE_BRANCH}-${COMMIT_SHA1}
