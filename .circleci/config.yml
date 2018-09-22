@@ -48,6 +48,17 @@ jobs:
           root: ./..
           paths:
             - generator/build/libs
+            - generator/build/distributions
+
+  dockerize:
+    docker:
+      - image: circleci/openjdk:8-jdk
+    working_directory: ~/gapic-generator-kotlin/generator
+    steps:
+      - checkout:
+          path: ~/gapic-generator-kotlin
+      - attach_workspace:
+          at: ./..   
       - setup_remote_docker
       - restore_cache:
           keys:
@@ -224,6 +235,9 @@ workflows:
   build_and_test:
     jobs:
       - build
+      - dockerize:
+          requires:
+            - build
       - build_examples:
           requires:
             - build
@@ -236,6 +250,7 @@ workflows:
       - release_gcr_snapshot:
           requires:
             - build
+            - dockerize
             - build_examples
             - test_showcase
             - test_example
