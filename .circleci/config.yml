@@ -64,24 +64,24 @@ jobs:
           keys:
             - v0-{{ .Branch }}
           paths:
-            - .docker-caches/kgen.tar
+            - /docker-caches/kgen.tar
       - run:
           name: Load docker image layer cache
           command: |
             set +o pipefail
-            docker load -i .docker-caches/kgen.tar | true
+            docker load -i /docker-caches/kgen.tar | true
       - run:
           name: Dockerize
           command: docker build --cache-from=kgen -t kgen .
       - run:
           name: Save docker image layer cache
           command: |
-            mkdir -p .docker-caches
-            docker save -o .docker-caches/kgen.tar kgen
+            mkdir -p /docker-caches
+            docker save -o /docker-caches/kgen.tar kgen
       - save_cache:
           key: v0-{{ .Branch }}-{{ epoch }}
           paths:
-            - .docker-caches/kgen.tar
+            - /docker-caches/kgen.tar
 
   # -------------------------------------------------------------------------------
   # Examples
@@ -215,10 +215,10 @@ jobs:
           keys:
             - v0-{{ .Branch }}
           paths:
-            - .docker-caches/kgen.tar
+            - /docker-caches/kgen.tar
       - run:
           name: Load docker image
-          command: ls && docker load -i ./.docker-caches/kgen.tar
+          command: docker load -i /docker-caches/kgen.tar
       - run:
           name: Tag snapshot
           command: docker tag kgen gcr.io/kotlin-gapic/kgen:${CIRCLE_BRANCH}-${COMMIT_SHA1}
