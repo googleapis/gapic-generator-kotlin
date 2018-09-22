@@ -39,7 +39,7 @@ jobs:
       - store_test_results:
           path: ~/junit
       - store_artifacts:
-          path: ~/junit        
+          path: ~/junit
       - run: 
           name: Codecov
           command: bash <(curl -s https://codecov.io/bash)
@@ -141,6 +141,16 @@ jobs:
       - run:
           name: Test showcase
           command: ./gradlew test
+      - run: 
+          name: Save test results
+          command: |
+            mkdir -p ~/junit/
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} ~/junit/ \;
+          when: always
+      - store_test_results:
+          path: ~/junit
+      - store_artifacts:
+          path: ~/junit
 
   test_example:
     docker:
@@ -201,6 +211,8 @@ jobs:
             gcloud auth configure-docker
       - attach_workspace:
           at: ./..
+      - run:
+          command: ls -lah ..
       - run:
           name: Load docker image
           command: docker load -i kgen.tar
