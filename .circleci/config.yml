@@ -45,10 +45,10 @@ jobs:
           command: bash <(curl -s https://codecov.io/bash)
           when: always
       - persist_to_workspace:
-          root: .
+          root: ./..
           paths:
-            - build/libs
-            - build/distributions
+            - generator/build/libs
+            - generator/build/distributions
 
   dockerize:
     docker:
@@ -58,7 +58,7 @@ jobs:
       - checkout:
           path: ~/gapic-generator-kotlin
       - attach_workspace:
-          at: .
+          at: ./..
       - setup_remote_docker
       - run:
           name: Dockerize
@@ -67,9 +67,9 @@ jobs:
           name: Save docker image
           command: docker save -o kgen.tar kgen
       - persist_to_workspace:
-          root: .
+          root: ./..
           paths:
-            - kgen.tar
+            - generator/kgen.tar
 
   # -------------------------------------------------------------------------------
   # Examples
@@ -210,7 +210,7 @@ jobs:
             gcloud config set project ${GCLOUD_PROJECT_ID}
             gcloud auth configure-docker
       - attach_workspace:
-          at: .
+          at: ./..
       - run:
           command: ls -lah .. && echo hi && ls -lah .
       - run:
