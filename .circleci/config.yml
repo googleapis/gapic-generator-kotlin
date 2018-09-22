@@ -58,30 +58,18 @@ jobs:
       - checkout:
           path: ~/gapic-generator-kotlin
       - attach_workspace:
-          at: ./..   
+          at: ./..
       - setup_remote_docker
-      - restore_cache:
-          keys:
-            - v0-{{ .Branch }}
-          paths:
-            - /docker-caches/kgen.tar
-      - run:
-          name: Load docker image layer cache
-          command: |
-            set +o pipefail
-            docker load -i /docker-caches/kgen.tar | true
       - run:
           name: Dockerize
-          command: docker build --cache-from=kgen -t kgen .
+          command: docker build -t kgen .
       - run:
-          name: Save docker image layer cache
-          command: |
-            mkdir -p /docker-caches
-            docker save -o /docker-caches/kgen.tar kgen
-      - save_cache:
-          key: v0-{{ .Branch }}-{{ epoch }}
+          name: Save docker image
+          command: docker save -o kgen.tar kgen
+      - persist_to_workspace:
+          root: .
           paths:
-            - /docker-caches/kgen.tar
+            - kgen.tar
 
   # -------------------------------------------------------------------------------
   # Examples
@@ -211,14 +199,11 @@ jobs:
             gcloud auth activate-service-account --key-file ${HOME}/gcp-key.json
             gcloud config set project ${GCLOUD_PROJECT_ID}
             gcloud auth configure-docker
-      - restore_cache:
-          keys:
-            - v0-{{ .Branch }}
-          paths:
-            - /docker-caches/kgen.tar
+      - attach_workspace:
+          at: ./..
       - run:
           name: Load docker image
-          command: docker load -i /docker-caches/kgen.tar
+          command: docker load -i kgen.tar
       - run:
           name: Tag snapshot
           command: docker tag kgen gcr.io/kotlin-gapic/kgen:${CIRCLE_BRANCH}-${COMMIT_SHA1}
