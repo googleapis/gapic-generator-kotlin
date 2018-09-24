@@ -212,16 +212,44 @@ jobs:
       - attach_workspace:
           at: ./..
       - run:
-          command: ls -lah .. && echo hi && ls -lah .
-      - run:
           name: Load docker image
           command: docker load -i kgen.tar
       - run:
           name: Tag snapshot
-          command: docker tag kgen gcr.io/kotlin-gapic/kgen:${CIRCLE_BRANCH}-${COMMIT_SHA1}
+          command: docker tag kgen gcr.io/kotlin-gapic/kgen:${CIRCLE_BRANCH}-${CIRCLE_SHA1}
       - run:
           name: Push snapshot
-          command: docker push gcr.io/kotlin-gapic/kgen:${CIRCLE_BRANCH}-${COMMIT_SHA1}
+          command: docker push gcr.io/kotlin-gapic/kgen:${CIRCLE_BRANCH}-${CIRCLE_SHA1}
+
+  # TODO: move to docker hub
+  release:
+    docker:
+      - image: google/cloud-sdk
+    working_directory: ~/gapic-generator-kotlin/generator
+    steps:
+      - setup_remote_docker
+      - run:
+          name: Setup gcloud
+          command: |
+            echo ${GCLOUD_SERVICE_KEY} > ${HOME}/gcp-key.json
+            gcloud auth activate-service-account --key-file ${HOME}/gcp-key.json
+            gcloud config set project ${GCLOUD_PROJECT_ID}
+            gcloud auth configure-docker
+      - attach_workspace:
+          at: ./..
+      - run:
+          name: Load docker image
+          command: docker load -i kgen.tar
+      - run:
+          name: Tag release
+          command: |
+            docker tag kgen gcr.io/kotlin-gapic/kgen:latest
+            docker tag kgen gcr.io/kotlin-gapic/kgen:${CIRCLE_TAG:1}
+      - run:
+          name: Push release
+          command: |
+            docker push gcr.io/kotlin-gapic/kgen:latest
+            docker push gcr.io/kotlin-gapic/kgen:${CIRCLE_TAG:1}
 
 # -------------------------------------------------------------------------------
 # CI Workflow
@@ -251,6 +279,16 @@ workflows:
             - build_examples
             - test_showcase
             - test_example
-        #   filters:
-        #     branches:
-        #       only: master
+          filters:
+            branches:
+              only: master
+            tags:
+              only: /.*/
+      - release:
+          requires:
+            - release_gcr_snapshot
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: '/^v\d+(\.\d+)*$/'
