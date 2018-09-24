@@ -54,7 +54,8 @@ the API, like this ([complete example](example-client/src/main/kotlin/example/Cl
 val client = HelloServiceClient.fromCredentials(
     channel = ManagedChannelBuilder.forAddress("localhost", 8080)
         .usePlaintext()
-        .build())
+        .build()
+)
 
 // call the API
 val response = client.hiThere(HiRequest {
@@ -72,7 +73,7 @@ The generator creates three things from the proto files:
 
 Finally, you can add annotations to the proto to customize the way Kgen generates code. For example:
 
-```
+```proto
 rpc HiThere (HiRequest) returns (HiResponse) {
   option (google.api.method_signature) = {
     fields: ["result"]
