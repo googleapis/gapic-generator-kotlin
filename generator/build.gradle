@@ -142,8 +142,7 @@ jacocoTestReport {
     afterEvaluate {
         classDirectories = files(classDirectories.files.collect {
             fileTree(dir: it,
-                    exclude: ['com/google/protobuf/**',
-                              'com/google/api/kotlin/generator/Retrofit*'])
+                    exclude: ['com/google/protobuf/**'])
         })
     }
 }

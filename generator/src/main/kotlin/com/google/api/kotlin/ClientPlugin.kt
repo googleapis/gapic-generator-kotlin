@@ -21,7 +21,6 @@ import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.SwappableConfigurationFactory
 import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.api.kotlin.generator.GRPCGenerator
-import com.google.api.kotlin.generator.RetrofitGenerator
 import com.google.devtools.common.options.Option
 import com.google.devtools.common.options.OptionsBase
 import com.google.devtools.common.options.OptionsParser
@@ -87,7 +86,7 @@ fun main(args: Array<String>) {
     // create & run generator
     val generator = KotlinClientGenerator(
         when {
-            options.fallback -> RetrofitGenerator()
+            options.fallback -> throw RuntimeException("gRPC fallback support is not implemented")
             else -> GRPCGenerator()
         }, SwappableConfigurationFactory(sourceDirectory, typeMap), BuilderGenerator()
     )
