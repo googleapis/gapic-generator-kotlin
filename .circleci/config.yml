@@ -2,6 +2,10 @@ version: 2
 
 jobs:
 
+  # -------------------------------------------------------------------------------
+  # Generator
+  # -------------------------------------------------------------------------------
+
   build:
     docker:
       - image: circleci/openjdk:8-jdk
@@ -15,14 +19,14 @@ jobs:
             git submodule init
             git submodule update --remote
       - restore_cache:
-          key: gapic-generator-kotlin-v0-{{ checksum "build.gradle" }}
+          key: generator-v0-{{ checksum "build.gradle" }}
       - run: 
           name: Download dependencies
           command: ./gradlew dependencies
       - save_cache:
           paths:
             - ~/.gradle
-          key: gapic-generator-kotlin-v0-{{ checksum "build.gradle" }}
+          key: generator-v0-{{ checksum "build.gradle" }}
       - run: 
            name: Build and run checks
            command: ./gradlew build
@@ -35,7 +39,7 @@ jobs:
       - store_test_results:
           path: ~/junit
       - store_artifacts:
-          path: ~/junit        
+          path: ~/junit
       - run: 
           name: Codecov
           command: bash <(curl -s https://codecov.io/bash)
@@ -44,6 +48,32 @@ jobs:
           root: ./..
           paths:
             - generator/build/libs
+            - generator/build/distributions
+
+  dockerize:
+    docker:
+      - image: circleci/openjdk:8-jdk
+    working_directory: ~/gapic-generator-kotlin/generator
+    steps:
+      - checkout:
+          path: ~/gapic-generator-kotlin
+      - attach_workspace:
+          at: ./..
+      - setup_remote_docker
+      - run:
+          name: Dockerize
+          command: docker build -t kgen .
+      - run:
+          name: Save docker image
+          command: docker save -o kgen.tar kgen
+      - persist_to_workspace:
+          root: ./..
+          paths:
+            - generator/kgen.tar
+
+  # -------------------------------------------------------------------------------
+  # Examples
+  # -------------------------------------------------------------------------------  
 
   build_examples:
     working_directory: ~/gapic-generator-kotlin/example-api-clients
@@ -77,6 +107,10 @@ jobs:
       - store_test_results:
           path: app/build/test-results
 
+  # -------------------------------------------------------------------------------
+  # Tests
+  # -------------------------------------------------------------------------------
+
   test_showcase:
     docker:
       - image: circleci/openjdk:8-jdk
@@ -107,6 +141,16 @@ jobs:
       - run:
           name: Test showcase
           command: ./gradlew test
+      - run: 
+          name: Save test results
+          command: |
+            mkdir -p ~/junit/
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} ~/junit/ \;
+          when: always
+      - store_test_results:
+          path: ~/junit
+      - store_artifacts:
+          path: ~/junit
 
   test_example:
     docker:
@@ -148,11 +192,77 @@ jobs:
           command: ./gradlew run
           working_directory: ~/gapic-generator-kotlin/example-client
 
+  # -------------------------------------------------------------------------------
+  # Deploy
+  # -------------------------------------------------------------------------------
+      
+  release_gcr_snapshot:
+    docker:
+      - image: google/cloud-sdk
+    working_directory: ~/gapic-generator-kotlin/generator
+    steps:
+      - setup_remote_docker
+      - run:
+          name: Setup gcloud
+          command: |
+            echo ${GCLOUD_SERVICE_KEY} > ${HOME}/gcp-key.json
+            gcloud auth activate-service-account --key-file ${HOME}/gcp-key.json
+            gcloud config set project ${GCLOUD_PROJECT_ID}
+            gcloud auth configure-docker
+      - attach_workspace:
+          at: ./..
+      - run:
+          name: Load docker image
+          command: docker load -i kgen.tar
+      - run:
+          name: Tag snapshot
+          command: docker tag kgen gcr.io/kotlin-gapic/kgen:${CIRCLE_BRANCH}-${CIRCLE_SHA1}
+      - run:
+          name: Push snapshot
+          command: docker push gcr.io/kotlin-gapic/kgen:${CIRCLE_BRANCH}-${CIRCLE_SHA1}
+
+  # TODO: move to docker hub
+  release:
+    docker:
+      - image: google/cloud-sdk
+    working_directory: ~/gapic-generator-kotlin/generator
+    steps:
+      - setup_remote_docker
+      - run:
+          name: Setup gcloud
+          command: |
+            echo ${GCLOUD_SERVICE_KEY} > ${HOME}/gcp-key.json
+            gcloud auth activate-service-account --key-file ${HOME}/gcp-key.json
+            gcloud config set project ${GCLOUD_PROJECT_ID}
+            gcloud auth configure-docker
+      - attach_workspace:
+          at: ./..
+      - run:
+          name: Load docker image
+          command: docker load -i kgen.tar
+      - run:
+          name: Tag release
+          command: |
+            docker tag kgen gcr.io/kotlin-gapic/kgen:latest
+            docker tag kgen gcr.io/kotlin-gapic/kgen:${CIRCLE_TAG:1}
+      - run:
+          name: Push release
+          command: |
+            docker push gcr.io/kotlin-gapic/kgen:latest
+            docker push gcr.io/kotlin-gapic/kgen:${CIRCLE_TAG:1}
+
+# -------------------------------------------------------------------------------
+# CI Workflow
+# -------------------------------------------------------------------------------
+
 workflows:
   version: 2
   build_and_test:
     jobs:
       - build
+      - dockerize:
+          requires:
+            - build
       - build_examples:
           requires:
             - build
@@ -162,3 +272,23 @@ workflows:
       - test_example:
           requires:
             - build
+      - release_gcr_snapshot:
+          requires:
+            - build
+            - dockerize
+            - build_examples
+            - test_showcase
+            - test_example
+          filters:
+            branches:
+              only: master
+            tags:
+              only: /.*/
+      - release:
+          requires:
+            - release_gcr_snapshot
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: '/^v\d+(\.\d+)*$/'
