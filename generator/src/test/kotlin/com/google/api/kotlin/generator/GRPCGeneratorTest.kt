@@ -292,8 +292,47 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
     }
 
     @Test
+    fun `Generates the streamClientTest method with flattening`() {
+        val opts = ServiceOptions(methods = listOf(MethodOptions(name = "StreamClientTest")))
+
+        val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "streamClientTest" }
+        assertThat(methods).hasSize(1)
+
+        val method = methods.first()
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            |*
+            |*
+            |* For example:
+            |* ```
+            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* val result = client.streamClientTest(
+            |*     TestRequest {
+            |*     }
+            |* )
+            |* ```
+            |*/
+            |fun streamClientTest(): com.google.kgax.grpc.ClientStreamingCall<google.example.TestRequest, google.example.TestResponse> = stubs.api.executeClientStreaming {
+            |    it::streamClientTest
+            |}
+            |""".asNormalizedString()
+        )
+    }
+
+    @Test
     fun `Generates the streamServerTest method`() {
-        val opts = ServiceOptions(methods = listOf(MethodOptions(name = "StreamServerTest")))
+        val opts = ServiceOptions(
+            methods = listOf(
+                MethodOptions(
+                    name = "StreamServerTest",
+                    flattenedMethods = listOf(
+                        FlattenedMethod(props("main_detail.even_more"))
+                    ),
+                    keepOriginalMethod = false
+                )
+            )
+        )
 
         val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "streamServerTest" }
         assertThat(methods).hasSize(1)
@@ -308,16 +347,25 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
             |* ```
             |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val result = client.streamServerTest(
-            |*     TestRequest {
+            |*     MoreDetail {
+            |*         this.evenMore = evenMore
             |*     }
-            |* )
+            |*)
             |* ```
             |*/
             |fun streamServerTest(
-            |    request: google.example.TestRequest
-            |): com.google.kgax.grpc.ServerStreamingCall<google.example.TestResponse> = stubs.api.executeServerStreaming { stub, observer ->
-            |    stub.streamServerTest(request, observer)
-            |}
+            |    evenMore: google.example.MoreDetail
+            |): com.google.kgax.grpc.ServerStreamingCall<google.example.TestResponse> =
+            |    stubs.api.executeServerStreaming { stub, observer ->
+            |        stub.streamServerTest(
+            |            google.example.TestRequest {
+            |                mainDetail = google.example.Detail {
+            |                    this.evenMore = evenMore
+            |                }
+            |            },
+            |            observer
+            |        )
+            |    }
             |""".asNormalizedString()
         )
     }
@@ -774,10 +822,12 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
                     ),
                     keepOriginalMethod = false,
                     flattenedMethods = listOf(
-                        FlattenedMethod(listOf(
-                            "flag".asPropertyPath(),
-                            "page_size".asPropertyPath()
-                        ))
+                        FlattenedMethod(
+                            listOf(
+                                "flag".asPropertyPath(),
+                                "page_size".asPropertyPath()
+                            )
+                        )
                     )
                 )
             )
