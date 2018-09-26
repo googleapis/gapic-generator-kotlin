@@ -100,7 +100,7 @@ jobs:
           command: touch app/src/main/res/raw/sa.json
       - run:
           name: Build
-          command: ./gradlew build
+          command: ./gradlew check
       - store_artifacts:
           path: app/build/reports
           destination: reports
