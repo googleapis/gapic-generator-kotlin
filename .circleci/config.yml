@@ -68,10 +68,7 @@ jobs:
           command: |
             docker create -v /proto --name protos alpine:3.4 /bin/true
             docker cp ../example-server/src/main/proto protos:/proto
-            docker run --rm \
-                --mount type=volume,source=protos,target=/proto \
-                --mount type=bind,source="$(pwd)",target=/generated \
-              kgen
+            docker run --name app --mount type=volume,source=protos,target=/proto kgen
       - run:
           name: Save docker image
           command: docker save -o kgen.tar kgen
