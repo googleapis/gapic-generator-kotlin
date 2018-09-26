@@ -81,7 +81,10 @@ internal interface UnitTest {
     }
 }
 
-internal class UnitTestImpl(private val stubs: Stubs) : UnitTest {
+internal class UnitTestImpl(
+    private val stubs: Stubs,
+    private val mockMaker: MockMaker = DefaultMockMaker
+) : UnitTest {
 
     override fun generate(
         ctx: GeneratorContext,
@@ -417,7 +420,7 @@ internal class UnitTestImpl(private val stubs: Stubs) : UnitTest {
             val init = CodeBlock.of(
                 "val $valName: %T = %L",
                 it.spec.type,
-                getMockValue(ctx.typeMap, it.flattenedFieldInfo)
+                mockMaker.getMockValue(ctx.typeMap, it.flattenedFieldInfo)
             )
             Pair(it.spec.name, UnitTestVariable(valName, init))
         }.toTypedArray())
@@ -537,55 +540,63 @@ internal class UnitTestImpl(private val stubs: Stubs) : UnitTest {
             thenBlock.code.build()
         )
 
-    // get a mock or primitive value for the given type
-    private fun getMockValue(typeMap: ProtobufTypeMapper, type: ProtoFieldInfo?): String {
-        // repeated fields or unknown use a mock
-        if (type == null) {
-            return "mock()"
-        }
+    /** Simple deterministic mock maker */
+    internal object DefaultMockMaker : MockMaker {
 
-        // enums must use a real value
-        if (typeMap.hasProtoEnumDescriptor(type.field.typeName)) {
-            val descriptor = typeMap.getProtoEnumDescriptor(type.field.typeName)
-            val kotlinType = typeMap.getKotlinType(type.field.typeName)
-            val enum = descriptor.valueList.firstOrNull()?.name
-                ?: throw IllegalStateException("unable to find default enum value for: ${type.field.typeName}")
-
-            return "${kotlinType.simpleName}.$enum"
-        }
-
-        // primitives must use a real value
-        // TODO: better / random values?
-        fun getValue(t: DescriptorProtos.FieldDescriptorProto.Type) = when (t) {
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING -> "\"hi there!\""
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_BOOL -> "true"
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_DOUBLE -> "2.0"
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_FLOAT -> "4.0"
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32 -> "2"
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT32 -> "2"
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED32 -> "2"
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED32 -> "2"
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT32 -> "2"
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64 -> "400L"
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT64 -> "400L"
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED64 -> "400L"
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED64 -> "400L"
-            DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT64 -> "400L"
-            else -> "mock()"
-        }
-
-        // use real lists and maps
-        return when {
-            type.field.isMap(typeMap) -> {
-                val (keyType, valueType) = type.field.describeMap(typeMap)
-                val k = getValue(keyType.type)
-                val v = getValue(valueType.type)
-                "mapOf($k to $v)"
+        override fun getMockValue(typeMap: ProtobufTypeMapper, type: ProtoFieldInfo?): String {
+            // repeated fields or unknown use a mock
+            if (type == null) {
+                return "mock()"
             }
-            type.field.isRepeated() -> "listOf(${getValue(type.field.type)})"
-            else -> getValue(type.field.type)
+
+            // enums must use a real value
+            if (typeMap.hasProtoEnumDescriptor(type.field.typeName)) {
+                val descriptor = typeMap.getProtoEnumDescriptor(type.field.typeName)
+                val kotlinType = typeMap.getKotlinType(type.field.typeName)
+                val enum = descriptor.valueList.firstOrNull()?.name
+                    ?: throw IllegalStateException("unable to find default enum value for: ${type.field.typeName}")
+
+                return "${kotlinType.simpleName}.$enum"
+            }
+
+            // primitives must use a real value
+            // TODO: better / random values?
+            fun getValue(t: DescriptorProtos.FieldDescriptorProto.Type) = when (t) {
+                DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING -> "\"hi there!\""
+                DescriptorProtos.FieldDescriptorProto.Type.TYPE_BOOL -> "true"
+                DescriptorProtos.FieldDescriptorProto.Type.TYPE_DOUBLE -> "2.0"
+                DescriptorProtos.FieldDescriptorProto.Type.TYPE_FLOAT -> "4.0"
+                DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32 -> "2"
+                DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT32 -> "2"
+                DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED32 -> "2"
+                DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED32 -> "2"
+                DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT32 -> "2"
+                DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64 -> "400L"
+                DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT64 -> "400L"
+                DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED64 -> "400L"
+                DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED64 -> "400L"
+                DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT64 -> "400L"
+                else -> "mock()"
+            }
+
+            // use real lists and maps
+            return when {
+                type.field.isMap(typeMap) -> {
+                    val (keyType, valueType) = type.field.describeMap(typeMap)
+                    val k = getValue(keyType.type)
+                    val v = getValue(valueType.type)
+                    "mapOf($k to $v)"
+                }
+                type.field.isRepeated() -> "listOf(${getValue(type.field.type)})"
+                else -> getValue(type.field.type)
+            }
         }
     }
+}
+
+/** Gets a value when required (primitives) or a mock */
+internal interface MockMaker {
+    fun getMockValue(typeMap: ProtobufTypeMapper, type: ProtoFieldInfo?): String
 }
 
 private class GivenCodeBlock(

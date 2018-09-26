@@ -26,7 +26,9 @@ import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.Configuration
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.ServiceOptions
+import com.google.api.kotlin.util.ProtoFieldInfo
 import com.google.common.truth.Truth
+import com.google.common.truth.Truth.assertThat
 import com.google.protobuf.DescriptorProtos
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.anyOrNull
@@ -89,8 +91,8 @@ internal class UnitTestImplTest {
         ).doReturn(CodeBlock.of("some docs"))
 
         val opts: ServiceOptions = mock()
-        whenever(meta.get(any<String>())).doReturn(opts)
-        whenever(meta.get(any<DescriptorProtos.ServiceDescriptorProto>())).doReturn(opts)
+        whenever(meta[any<String>()]).doReturn(opts)
+        whenever(meta[any<DescriptorProtos.ServiceDescriptorProto>()]).doReturn(opts)
 
         whenever(ctx.className).doReturn(ClassName("foo.bar", "ZaTest"))
         whenever(ctx.proto).doReturn(
@@ -112,7 +114,7 @@ internal class UnitTestImplTest {
         val prepareFun = result.first { it.function.name == "prepare" }
         Truth.assertThat(prepareFun.unitTestCode).isNull()
 
-        Truth.assertThat(prepareFun.function.toString().asNormalizedString()).isEqualTo(
+        assertThat(prepareFun.function.toString().asNormalizedString()).isEqualTo(
             """
             |/**
             | * Prepare for an API call by setting any desired options. For example:
@@ -135,5 +137,116 @@ internal class UnitTestImplTest {
             |}
             |""".asNormalizedString()
         )
+    }
+
+    @Test
+    fun `can generate sensible message mocks`() {
+        whenever(types.hasProtoEnumDescriptor(any())).doReturn(false)
+        whenever(types.getProtoTypeDescriptor(eq(".my.test.type"))).doReturn(
+            DescriptorProto {
+                options = DescriptorProtos.MessageOptions.newBuilder().setMapEntry(false).build()
+            }
+        )
+
+        val mockMaker = UnitTestImpl.DefaultMockMaker
+
+        assertThat(mockMaker.getMockValue(types, null)).isEqualTo("mock()")
+
+        val fieldInfo: ProtoFieldInfo = mock {
+            on { field } doReturn FieldDescriptorProto {
+                type = DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE
+                typeName = ".my.test.type"
+            }
+        }
+        assertThat(mockMaker.getMockValue(types, fieldInfo)).isEqualTo("mock()")
+    }
+
+    @Test
+    fun `can generate sensible enum values`() {
+        val enumDescriptor: DescriptorProtos.EnumDescriptorProto = mock {
+            on { valueList } doReturn listOf(
+                DescriptorProtos.EnumValueDescriptorProto.newBuilder()
+                    .setName("THE_ONE")
+                    .build(),
+                DescriptorProtos.EnumValueDescriptorProto.newBuilder()
+                    .setName("TWO")
+                    .build()
+            )
+        }
+        whenever(types.hasProtoEnumDescriptor(eq(".my.test.type"))).doReturn(true)
+        whenever(types.getProtoEnumDescriptor(eq(".my.test.type"))).doReturn(enumDescriptor)
+        whenever(types.getKotlinType(eq(".my.test.type"))).doReturn(ClassName("my.test", "Type"))
+
+        val mockMaker = UnitTestImpl.DefaultMockMaker
+
+        val fieldInfo: ProtoFieldInfo = mock {
+            on { field } doReturn FieldDescriptorProto { typeName = ".my.test.type" }
+        }
+        assertThat(mockMaker.getMockValue(types, fieldInfo)).isEqualTo("Type.THE_ONE")
+    }
+
+    @Test
+    fun `can generate sensible primitive values`() {
+        whenever(types.hasProtoEnumDescriptor(any())).doReturn(false)
+
+        val mockMaker = UnitTestImpl.DefaultMockMaker
+
+        assertMockValueForPrimitive(
+            mockMaker,
+            "\"hi there!\"",
+            { type = DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING }
+        )
+
+        assertMockValueForPrimitive(
+            mockMaker,
+            "true",
+            { type = DescriptorProtos.FieldDescriptorProto.Type.TYPE_BOOL }
+        )
+
+        assertMockValueForPrimitive(
+            mockMaker,
+            "2.0",
+            { type = DescriptorProtos.FieldDescriptorProto.Type.TYPE_DOUBLE }
+        )
+
+        assertMockValueForPrimitive(
+            mockMaker,
+            "4.0",
+            { type = DescriptorProtos.FieldDescriptorProto.Type.TYPE_FLOAT }
+        )
+
+        assertMockValueForPrimitive(
+            mockMaker,
+            "2",
+            { type = DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32 },
+            { type = DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT32 },
+            { type = DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED32 },
+            { type = DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED32 },
+            { type = DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT32 }
+        )
+
+        assertMockValueForPrimitive(
+            mockMaker,
+            "400L",
+            { type = DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64 },
+            { type = DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT64 },
+            { type = DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED64 },
+            { type = DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED64 },
+            { type = DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT64 }
+        )
+    }
+
+    private fun assertMockValueForPrimitive(
+        mockMaker: MockMaker,
+        expectedValue: String,
+        vararg builders: DescriptorProtos.FieldDescriptorProto.Builder.() -> Unit
+    ) {
+        for (builder in builders) {
+            val descriptor = DescriptorProtos.FieldDescriptorProto.newBuilder()
+            descriptor.apply(builder)
+            assertThat(mockMaker.getMockValue(types, mock {
+                on { field } doReturn descriptor.build()
+            })).isEqualTo(expectedValue)
+        }
     }
 }

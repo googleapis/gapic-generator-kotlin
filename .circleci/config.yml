@@ -64,6 +64,12 @@ jobs:
           name: Dockerize
           command: docker build -t kgen .
       - run:
+          name: Generate example-client with image
+          command: |
+            docker create -v /proto --name protos alpine:3.4 /bin/true
+            docker cp ./../example-server/src/main/proto/. protos:/proto
+            docker run --volumes-from protos kgen
+      - run:
           name: Save docker image
           command: docker save -o kgen.tar kgen
       - persist_to_workspace:
