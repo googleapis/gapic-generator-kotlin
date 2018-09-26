@@ -68,7 +68,7 @@ jobs:
           command: |
             docker create -v /proto --name protos alpine:3.4 /bin/true
             docker create -v /generated --name generated alpine:3.4 /bin/true
-            docker cp ../example-server/src/main/proto protos:/proto
+            docker cp ../example-server/src/main/proto/. protos:/proto
             docker run --rm \
                 --mount type=volume,source=protos,target=/proto \
                 --mount type=volume,source=generated,target=/generated \
