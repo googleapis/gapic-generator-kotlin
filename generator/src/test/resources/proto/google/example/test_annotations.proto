@@ -41,10 +41,17 @@ service AnnotationService {
         };
     }
 
+    rpc AnnotationSignatureTest (FooRequest) returns (BarResponse) {
+        option (google.api.method_signature) = {
+            fields: ["foo", "other.foo"]
+        };
+    }
+
 }
 
 message FooRequest {
     string foo = 1;
+    FooRequest other = 2;
 }
 
 message BarResponse {

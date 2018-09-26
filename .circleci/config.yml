@@ -99,8 +99,8 @@ jobs:
           name: Create placeholder key
           command: touch app/src/main/res/raw/sa.json
       - run:
-          name: Run checks
-          command: ./gradlew check
+          name: Build
+          command: ./gradlew build
       - store_artifacts:
           path: app/build/reports
           destination: reports

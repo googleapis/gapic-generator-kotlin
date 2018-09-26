@@ -20,6 +20,7 @@ import com.google.api.kotlin.BaseGeneratorTest
 import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.common.truth.Truth.assertThat
 import kotlin.test.Test
+import kotlin.test.fail
 
 internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
 
@@ -49,7 +50,7 @@ internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
         val config = factory.fromProto(testProto)
 
         val method = config["google.example.TestService"].methods.find { it.name == "PagedTest" }
-        val page = method?.pagedResponse ?: throw RuntimeException("page is null")
+        val page = method?.pagedResponse ?: fail("page is null")
 
         assertThat(page.pageSize).isEqualTo("page_size")
         assertThat(page.responseList).isEqualTo("responses")
@@ -71,8 +72,36 @@ internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
         val factory = AnnotationConfigurationFactory(getMockedTypeMap())
         val config = factory.fromProto(testProto)
 
-        val method = config["google.example.TestService"].methods.find { it.name == methodName }!!
+        val method = config["google.example.TestService"].methods.find { it.name == methodName }
+        ?: fail("method not found: $methodName")
 
         assertThat(method.pagedResponse).isNull()
+    }
+
+    @Test
+    fun `can detect method signatures`() {
+        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val config = factory.fromProto(testAnnotationsProto)
+
+        val method = config["google.example.AnnotationService"].methods.find { it.name == "AnnotationSignatureTest" }
+        val signatures = method?.flattenedMethods ?: fail("method signatures not found")
+
+        assertThat(signatures).hasSize(1)
+
+        assertThat(signatures[0].parameters).containsExactly(
+            "foo".asPropertyPath(),
+            "other.foo".asPropertyPath()
+        )
+    }
+
+    @Test
+    fun `does not make up method signatures`() {
+        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val config = factory.fromProto(testAnnotationsProto)
+
+        val method = config["google.example.AnnotationService"].methods.find { it.name == "AnnotationTest" }
+        val signatures = method?.flattenedMethods ?: fail("method signatures not found")
+
+        assertThat(signatures).isEmpty()
     }
 }
