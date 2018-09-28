@@ -39,18 +39,20 @@ internal class BuilderGenerator {
 
         // generate all the builder functions
         types.getAllKotlinTypes()
+            .asSequence()
             .map { ClassName.bestGuess(it) }
             .filter {
                 !(it.packageName == "com.google.protobuf" &&
                     (it.canonicalName.contains("DescriptorProtos") || SKIP.contains(it.simpleName)))
             }
+            .toList()
             .forEach { type ->
                 val builderType = ClassName.bestGuess("$type.Builder")
                     .annotated(AnnotationSpec.builder(GrpcTypes.Support.ProtoBuilder).build())
 
                 // construct function name
                 var parentType = type.enclosingClassName()
-                var parentTypes = mutableListOf<String>()
+                val parentTypes = mutableListOf<String>()
                 while (parentType != null) {
                     parentTypes.add(parentType.simpleName)
                     parentType = parentType.enclosingClassName()

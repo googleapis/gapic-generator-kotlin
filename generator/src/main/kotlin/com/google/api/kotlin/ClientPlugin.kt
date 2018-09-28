@@ -44,7 +44,7 @@ fun main(args: Array<String>) {
 
     // usage
     if (options.help) {
-        println("Usage: TODO")
+        println("Usage:")
         println(
             optionParser.describeOptions(
                 mapOf(), OptionsParser.HelpVerbosity.LONG
