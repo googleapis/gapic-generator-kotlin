@@ -76,8 +76,12 @@ internal fun List<PropertyPath>.merge(sample: SampleMethod?): List<PropertyPath>
 
     // remove parents if child nodes exists
     val paths = this.map { it.toString() }
-    val usePathsFromSamples = pathsFromSamples.filter { p ->
-        paths.any { p.toString().startsWith("$it.") }
+    val usePathsFromSamples = if (paths.isNotEmpty()) {
+        pathsFromSamples.filter { p ->
+            paths.any { p.toString().startsWith("$it.") }
+        }
+    } else {
+        pathsFromSamples
     }
 
     return PropertyPath.merge(this, usePathsFromSamples)

@@ -21,6 +21,7 @@ package google.example;
 option java_multiple_files = true;
 
 service SimpleService {
+    // so simple!
     rpc Simple (SimpleRequest) returns (SimpleResponse);
 }
 
