@@ -48,9 +48,9 @@ internal interface Documentation {
 
 internal class DocumentationImpl : Documentation {
 
-    override fun generateClassKDoc(ctx: GeneratorContext): CodeBlock {
+    override fun generateClassKDoc(context: GeneratorContext): CodeBlock {
         val doc = CodeBlock.builder()
-        val m = ctx.metadata
+        val m = context.metadata
 
         // add primary (summary) section
         doc.add(
@@ -71,7 +71,7 @@ internal class DocumentationImpl : Documentation {
 
     // create method comments from proto comments
     override fun generateMethodKDoc(
-        ctx: GeneratorContext,
+        context: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
         methodName: String,
         samples: List<SampleMethod>,
@@ -88,30 +88,30 @@ internal class DocumentationImpl : Documentation {
             ?.trim()
 
         // add proto comments
-        val text = ctx.proto.getMethodComments(ctx.service, method)
+        val text = context.proto.getMethodComments(context.service, method)
         doc.add("%L\n\n", cleanupComment(text) ?: "")
 
         // add any samples
         if (samples.isEmpty()) {
-            doc.add(generateMethodSample(ctx, method, methodName, null, flatteningConfig, paging))
+            doc.add(generateMethodSample(context, method, methodName, null, flatteningConfig, paging))
         } else {
             for (sample in samples) {
                 doc.add(
                     generateMethodSample(
-                        ctx, method, methodName, sample, flatteningConfig, paging
+                        context, method, methodName, sample, flatteningConfig, paging
                     )
                 )
             }
         }
 
         // add parameter comments
-        val paramComments = flatteningConfig?.parameters?.mapIndexed { idx, path ->
+        val paramComments = flatteningConfig?.parameters?.asSequence()?.mapIndexed { idx, path ->
             val fieldInfo = getProtoFieldInfoForPath(
-                ctx, path, ctx.typeMap.getProtoTypeDescriptor(method.inputType)
+                context, path, context.typeMap.getProtoTypeDescriptor(method.inputType)
             )
             val comment = fieldInfo.file.getParameterComments(fieldInfo)
             Pair(parameters[idx].spec.name, cleanupComment(comment))
-        }?.filter { it.second != null } ?: listOf()
+        }?.filter { it.second != null }?.toList() ?: listOf()
         paramComments.forEach { doc.add("\n@param %L %L\n", it.first, it.second) }
 
         // add any extra comments at the bottom (only used for the pageSize currently)

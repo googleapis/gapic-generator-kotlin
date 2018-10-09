@@ -14,14 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-protoc --plugin=protoc-gen-testdata=plugin-simple.sh \
-       --testdata_out=. \
-       --proto_path=proto \
-   proto/google/example/simple.proto
+#
+# Fake protoc plugin to generate the Code generator request used by the tests.
+#
+# Run create-test-data.sh if you update the protos and need to recreate generate.data
+#
 
-
-protoc --plugin=protoc-gen-testdata=plugin.sh \
-       --testdata_out=. \
-       --proto_path=proto \
-       --proto_path=../../../api-common-protos \
-   proto/google/example/test.proto
+# save the code generator request
+cat > ./generate-simple.data

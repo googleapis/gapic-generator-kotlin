@@ -80,8 +80,8 @@ class MainActivityPaging : AppCompatActivity() {
                             listOf(project), "logName=$log", "timestamp desc", 10)
 
                     // go through all the logs, one page at a time
-                    pager.forEach(MainThread) {
-                        for (entry in it.elements) {
+                    pager.forEach(MainThread) { page ->
+                        for (entry in page.elements) {
                             resultText.text = "${resultText.text}\nlog : ${entry.textPayload}"
                         }
                     }
@@ -93,7 +93,7 @@ class MainActivityPaging : AppCompatActivity() {
                     //        // ...
                     //    }
                     // }
-                }, 2 * 1000)
+                }, 5 * 1_000)
             }
             error = { resultText.text = "Error: $it" }
         }
