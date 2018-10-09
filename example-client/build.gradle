@@ -51,6 +51,7 @@ dependencies {
 
     testCompile 'junit:junit:4.11'
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
+    testCompile 'com.nhaarman:mockito-kotlin:1.6.0'
 }
 
 sourceSets {
