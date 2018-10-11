@@ -36,14 +36,21 @@ service AnnotationService {
 
     rpc AnnotationTest (FooRequest) returns (BarResponse) {
         option (google.api.http) = {
-          post: "/foo/annotation:annotation"
-          body: "*"
+            post: "/foo/annotation:annotation"
+            body: "*"
         };
     }
 
     rpc AnnotationSignatureTest (FooRequest) returns (BarResponse) {
         option (google.api.method_signature) = {
             fields: ["foo", "other.foo"]
+        };
+    }
+
+    rpc AnnotationLongRunningTest (FooRequest) returns (google.longrunning.Operation) {
+        option (google.api.operation) = {
+            response_type: "TheLongRunningResponse"
+            metadata_type: "google.example.TheLongRunningMetadata"
         };
     }
 
@@ -56,4 +63,13 @@ message FooRequest {
 
 message BarResponse {
     int32 bar = 1;
+}
+
+message TheLongRunningResponse {
+    string thing = 1;
+}
+
+message TheLongRunningMetadata {
+    string meta = 1;
+    string data = 2;
 }

@@ -72,10 +72,21 @@ internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
         val factory = AnnotationConfigurationFactory(getMockedTypeMap())
         val config = factory.fromProto(testProto)
 
-        val method = config["google.example.TestService"].methods.find { it.name == methodName }
-        ?: fail("method not found: $methodName")
+        val method = config["google.example.TestService"].methods.first { it.name == methodName }
 
         assertThat(method.pagedResponse).isNull()
+    }
+
+    @Test
+    fun `can detected a long running method`() {
+        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val config = factory.fromProto(testAnnotationsProto)
+
+        val method = config["google.example.AnnotationService"].methods.first { it.name == "AnnotationLongRunningTest" }
+        val operation = method.longRunningResponse ?: fail("long running response is null")
+
+        assertThat(operation.responseType).isEqualTo(".google.example.TheLongRunningResponse")
+        assertThat(operation.metadataType).isEqualTo(".google.example.TheLongRunningMetadata")
     }
 
     @Test

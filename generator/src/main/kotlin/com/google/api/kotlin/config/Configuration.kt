@@ -89,7 +89,7 @@ internal class AnnotationConfigurationFactory(
 
         // parse API method config for each service
         val apiConfig = proto.serviceList.associate {
-            "${proto.`package`}.${it.name}" to getOptionsForService(it)
+            "${proto.`package`}.${it.name}" to getOptionsForService(proto, it)
         }
 
         // put it all together
@@ -98,11 +98,12 @@ internal class AnnotationConfigurationFactory(
 
     // parse service level metadata
     private fun getOptionsForService(
+        proto: DescriptorProtos.FileDescriptorProto,
         service: DescriptorProtos.ServiceDescriptorProto
     ): ServiceOptions {
         val host = service.options.getExtensionOrNull(AnnotationsProto.defaultHost)
         val scopes = service.options.getExtensionOrNull(AnnotationsProto.oauth)
-        val methods = service.methodList.map { getOptionsForServiceMethod(it) }
+        val methods = service.methodList.map { getOptionsForServiceMethod(proto, service, it) }
 
         val options = ServiceOptions(
             host = host ?: "localhost",
@@ -117,6 +118,8 @@ internal class AnnotationConfigurationFactory(
 
     // parse method level metadata
     private fun getOptionsForServiceMethod(
+        proto: DescriptorProtos.FileDescriptorProto,
+        service: DescriptorProtos.ServiceDescriptorProto,
         method: DescriptorProtos.MethodDescriptorProto
     ): MethodOptions {
         val signature = method.options.getExtensionOrNull(AnnotationsProto.methodSignature)
@@ -132,12 +135,14 @@ internal class AnnotationConfigurationFactory(
         }
 
         // TODO: samples?
+
         val pagedResponse = getMethodPagedResponse(method)
         return MethodOptions(
             name = method.name,
             flattenedMethods = getMethodsFrom(signature, pagedResponse),
             keepOriginalMethod = true,
-            pagedResponse = pagedResponse
+            pagedResponse = pagedResponse,
+            longRunningResponse = getLongRunningResponse(proto, service, method)
         )
     }
 
@@ -186,6 +191,39 @@ internal class AnnotationConfigurationFactory(
             responsePageToken = nextPageTokenField.name,
             responseList = responsesField.name
         )
+    }
+
+    // determine if a method uses a long running response type
+    private fun getLongRunningResponse(
+        proto: DescriptorProtos.FileDescriptorProto,
+        service: DescriptorProtos.ServiceDescriptorProto,
+        method: DescriptorProtos.MethodDescriptorProto
+    ): LongRunningResponse? {
+        val longRunning = method.options.getExtensionOrNull(AnnotationsProto.operation)
+
+        if (longRunning != null) {
+            // extract response and metadata type
+            var responseType = longRunning.responseType
+            if (!responseType.contains(".")) {
+                responseType = ".${proto.`package`}.$responseType"
+            }
+            var metadataType = longRunning.metadataType
+            if (!metadataType.contains(".")) {
+                metadataType = ".${proto.`package`}.$metadataType"
+            }
+
+            // ensure classes are fully qualified
+            if (!responseType.startsWith(".")) {
+                responseType = ".$responseType"
+            }
+            if (!metadataType.startsWith(".")) {
+                metadataType = ".$metadataType"
+            }
+
+            return LongRunningResponse(responseType, metadataType)
+        }
+
+        return null
     }
 }
 
@@ -379,11 +417,12 @@ internal class LegacyConfigurationFactory(
                     }
 
                     MethodOptions(
-                        method.name,
-                        flattening,
-                        method.request_object_method,
-                        paging,
-                        samples
+                        name = method.name,
+                        flattenedMethods = flattening,
+                        keepOriginalMethod = method.request_object_method,
+                        pagedResponse = paging,
+                        longRunningResponse = null,
+                        samples = samples
                     )
                 }
                 services[service.name] = ServiceOptions(host, scopes.toList(), methods)
@@ -413,6 +452,7 @@ internal data class MethodOptions(
     val flattenedMethods: List<FlattenedMethod> = listOf(),
     val keepOriginalMethod: Boolean = true,
     val pagedResponse: PagedResponse? = null,
+    val longRunningResponse: LongRunningResponse? = null,
     val samples: List<SampleMethod> = listOf()
 )
 
@@ -426,6 +466,9 @@ internal data class PagedResponse(
     val responsePageToken: String,
     val responseList: String
 )
+
+/** Long running responses */
+internal data class LongRunningResponse(val responseType: String, val metadataType: String)
 
 /** Sample code (for method docs) */
 internal data class SampleMethod(val parameters: List<SampleParameterAndValue>)

@@ -85,7 +85,7 @@ internal class FunctionsImplTest {
         })
         whenever(
             documentationGenerator.generateMethodKDoc(
-                eq(ctx), any(), any(), any(), anyOrNull(), any(), anyOrNull(), any()
+                eq(ctx), any(), any(), any(), anyOrNull(), any()
             )
         ).doReturn(CodeBlock.of("some docs"))
 

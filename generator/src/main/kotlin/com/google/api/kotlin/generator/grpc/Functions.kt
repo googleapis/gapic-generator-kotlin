@@ -21,8 +21,6 @@ import com.google.api.kotlin.TestableFunSpec
 import com.google.api.kotlin.asTestable
 import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.MethodOptions
-import com.google.api.kotlin.config.PagedResponse
-import com.google.api.kotlin.config.SampleMethod
 import com.google.api.kotlin.indent
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.api.kotlin.util.FieldNamer.getAccessorName
@@ -128,13 +126,12 @@ internal class FunctionsImpl(
         val apiMethods = ctx.service.methodList.flatMap { method ->
             log.debug { "processing proto method: ${method.name}" }
 
-            val name = method.name.decapitalize()
             val options = ctx.metadata[ctx.service].methods
                 .firstOrNull { it.name == method.name } ?: MethodOptions(method.name)
             when {
                 method.hasClientStreaming() || method.hasServerStreaming() ->
-                    createStreamingMethods(ctx, method, name, options)
-                else -> createUnaryMethods(ctx, method, name, options)
+                    createStreamingMethods(ctx, method, options)
+                else -> createUnaryMethods(ctx, method, options)
             }
         }
 
@@ -142,9 +139,8 @@ internal class FunctionsImpl(
     }
 
     private fun createUnaryMethods(
-        ctx: GeneratorContext,
+        context: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
-        methodName: String,
         options: MethodOptions
     ): List<TestableFunSpec> {
         val methods = mutableListOf<TestableFunSpec>()
@@ -152,17 +148,17 @@ internal class FunctionsImpl(
         // add flattened methods
         methods.addAll(options.flattenedMethods.map { flattenedMethod ->
             val (parameters, request) = Flattening.getFlattenedParameters(
-                ctx,
+                context,
                 method,
                 flattenedMethod
             )
             createUnaryMethod(
-                ctx, method, methodName,
+                context = context,
+                method = method,
+                methodOptions = options,
                 parameters = parameters,
                 requestObject = request,
-                flatteningConfig = flattenedMethod,
-                paging = options.pagedResponse,
-                samples = options.samples
+                flattenedMethod = flattenedMethod
             )
         })
 
@@ -172,17 +168,17 @@ internal class FunctionsImpl(
                 ParameterInfo(
                     ParameterSpec.builder(
                         Functions.PARAM_REQUEST,
-                        ctx.typeMap.getKotlinType(method.inputType)
+                        context.typeMap.getKotlinType(method.inputType)
                     ).build()
                 )
             )
             methods.add(
                 createUnaryMethod(
-                    ctx, method, methodName,
+                    context = context,
+                    method = method,
+                    methodOptions = options,
                     parameters = parameters,
-                    requestObject = CodeBlock.of(Functions.PARAM_REQUEST),
-                    paging = options.pagedResponse,
-                    samples = options.samples
+                    requestObject = CodeBlock.of(Functions.PARAM_REQUEST)
                 )
             )
         }
@@ -191,22 +187,22 @@ internal class FunctionsImpl(
     }
 
     private fun createUnaryMethod(
-        ctx: GeneratorContext,
+        context: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
-        methodName: String,
+        methodOptions: MethodOptions,
         parameters: List<ParameterInfo>,
         requestObject: CodeBlock,
-        flatteningConfig: FlattenedMethod? = null,
-        paging: PagedResponse? = null,
-        samples: List<SampleMethod> = listOf()
+        flattenedMethod: FlattenedMethod? = null
     ): TestableFunSpec {
-        val m = FunSpec.builder(methodName)
+        val name = methodOptions.name.decapitalize()
+
+        val m = FunSpec.builder(name)
             .addParameters(parameters.map { it.spec })
 
         val extraParamDocs = mutableListOf<CodeBlock>()
 
         // add request object to documentation
-        if (flatteningConfig == null) {
+        if (flattenedMethod == null) {
             extraParamDocs.add(
                 CodeBlock.of(
                     "@param %L the request object for the API call",
@@ -218,9 +214,8 @@ internal class FunctionsImpl(
         // build method body
         when {
             method.isLongRunningOperation() -> {
-                val returnType =
-                    GrpcTypes.Support.LongRunningCall(getLongRunningResponseType(ctx, method))
-                val realResponseType = getLongRunningResponseType(ctx, method)
+                val realResponseType = getLongRunningResponseType(context, method, methodOptions.longRunningResponse)
+                val returnType = GrpcTypes.Support.LongRunningCall(realResponseType)
 
                 m.returns(returnType)
                 m.addCode(
@@ -238,19 +233,19 @@ internal class FunctionsImpl(
                     returnType,
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_OPERATION,
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
-                    methodName, requestObject.indent(3),
+                    name, requestObject.indent(3),
                     realResponseType
                 )
             }
-            paging != null -> {
-                val inputType = ctx.typeMap.getKotlinType(method.inputType)
-                val outputType = ctx.typeMap.getKotlinType(method.outputType)
-                val responseListItemType = getResponseListElementType(ctx, method, paging)
+            methodOptions.pagedResponse != null -> {
+                val inputType = context.typeMap.getKotlinType(method.inputType)
+                val outputType = context.typeMap.getKotlinType(method.outputType)
+                val responseListItemType = getResponseListElementType(context, method, methodOptions.pagedResponse)
 
                 // getters and setters for setting the page sizes, etc.
-                val pageTokenSetter = getSetterName(paging.requestPageToken)
-                val nextPageTokenGetter = getAccessorName(paging.responsePageToken)
-                val responseListGetter = getAccessorRepeatedName(paging.responseList)
+                val pageTokenSetter = getSetterName(methodOptions.pagedResponse.requestPageToken)
+                val nextPageTokenGetter = getAccessorName(methodOptions.pagedResponse.responsePageToken)
+                val responseListGetter = getAccessorRepeatedName(methodOptions.pagedResponse.responseList)
 
                 // build method body using a pager
                 m.returns(
@@ -283,7 +278,7 @@ internal class FunctionsImpl(
                     |}
                     |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
-                    methodName,
+                    name,
                     requestObject.indent(2),
                     pageTokenSetter,
                     GrpcTypes.Support.PageResult(responseListItemType),
@@ -291,10 +286,10 @@ internal class FunctionsImpl(
                 )
             }
             else -> {
-                val originalReturnType = ctx.typeMap.getKotlinType(method.outputType)
+                val originalReturnType = context.typeMap.getKotlinType(method.outputType)
 
                 m.returns(GrpcTypes.Support.FutureCall(originalReturnType))
-                if (flatteningConfig?.parameters?.size ?: 0 > 1) {
+                if (flattenedMethod?.parameters?.size ?: 0 > 1) {
                     m.addCode(
                         """
                         |return %N.%N.executeFuture {
@@ -304,7 +299,7 @@ internal class FunctionsImpl(
                         |}
                         |""".trimMargin(),
                         Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
-                        methodName, requestObject.indent(2)
+                        name, requestObject.indent(2)
                     )
                 } else {
                     m.addCode(
@@ -314,7 +309,7 @@ internal class FunctionsImpl(
                         |}
                         |""".trimMargin(),
                         Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
-                        methodName, requestObject.indent(1)
+                        name, requestObject.indent(1)
                     )
                 }
             }
@@ -323,52 +318,48 @@ internal class FunctionsImpl(
         // add documentation
         m.addKdoc(
             documentation.generateMethodKDoc(
-                ctx,
-                method,
-                methodName,
-                samples = samples,
-                flatteningConfig = flatteningConfig,
+                context = context,
+                method = method,
+                methodOptions = methodOptions,
                 parameters = parameters,
-                paging = paging,
+                flatteningConfig = flattenedMethod,
                 extras = extraParamDocs
             )
         )
 
         // add unit test
         val test = unitTest.createUnaryMethodUnitTest(
-            ctx, method, methodName, parameters, flatteningConfig, paging
+            context, method, methodOptions, parameters, flattenedMethod
         )
 
         return TestableFunSpec(m.build(), test)
     }
 
     private fun createStreamingMethods(
-        ctx: GeneratorContext,
+        context: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
-        methodName: String,
-        options: MethodOptions
+        methodOptions: MethodOptions
     ): List<TestableFunSpec> {
+        val name = methodOptions.name.decapitalize()
         val methods = mutableListOf<TestableFunSpec>()
 
         // input / output types
-        val normalInputType = ctx.typeMap.getKotlinType(method.inputType)
-        val normalOutputType = ctx.typeMap.getKotlinType(method.outputType)
+        val normalInputType = context.typeMap.getKotlinType(method.inputType)
+        val normalOutputType = context.typeMap.getKotlinType(method.outputType)
 
         // add flattened methods
-        methods.addAll(options.flattenedMethods.map { flattenedMethod ->
-            val (parameters, request) = getFlattenedParameters(ctx, method, flattenedMethod)
+        methods.addAll(methodOptions.flattenedMethods.map { flattenedMethod ->
+            val (parameters, request) = getFlattenedParameters(context, method, flattenedMethod)
 
-            val flattened = FunSpec.builder(methodName)
+            val flattened = FunSpec.builder(name)
             if (method.hasClientStreaming() && method.hasServerStreaming()) {
                 flattened.addKdoc(
                     documentation.generateMethodKDoc(
-                        ctx,
-                        method,
-                        methodName,
-                        samples = options.samples,
+                        context = context,
+                        method = method,
+                        methodOptions = methodOptions,
                         flatteningConfig = flattenedMethod,
-                        parameters = parameters,
-                        paging = options.pagedResponse
+                        parameters = parameters
                     )
                 )
                 flattened.addParameters(parameters.map { it.spec })
@@ -387,18 +378,16 @@ internal class FunctionsImpl(
                     |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
                     request.indent(2),
-                    methodName
+                    name
                 )
             } else if (method.hasClientStreaming()) { // client only
                 flattened.addKdoc(
                     documentation.generateMethodKDoc(
-                        ctx,
-                        method,
-                        methodName,
-                        samples = options.samples,
+                        context = context,
+                        method = method,
+                        methodOptions = methodOptions,
                         flatteningConfig = flattenedMethod,
-                        parameters = parameters,
-                        paging = options.pagedResponse
+                        parameters = parameters
                     )
                 )
                 flattened.returns(
@@ -408,18 +397,16 @@ internal class FunctionsImpl(
                 )
                 flattened.addCode(
                     "return %N.%N.executeClientStreaming { it::%N }",
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, methodName
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name
                 )
             } else if (method.hasServerStreaming()) { // server only
                 flattened.addKdoc(
                     documentation.generateMethodKDoc(
-                        ctx,
-                        method,
-                        methodName,
-                        samples = options.samples,
+                        context = context,
+                        method = method,
+                        methodOptions = methodOptions,
                         flatteningConfig = flattenedMethod,
-                        parameters = parameters,
-                        paging = options.pagedResponse
+                        parameters = parameters
                     )
                 )
                 flattened.addParameters(parameters.map { it.spec })
@@ -434,7 +421,7 @@ internal class FunctionsImpl(
                     |}
                     |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
-                    methodName, request.indent(2)
+                    name, request.indent(2)
                 )
             } else {
                 throw IllegalArgumentException("Unknown streaming type (not client or server)!")
@@ -442,16 +429,16 @@ internal class FunctionsImpl(
 
             // generate test
             val test = unitTest.createStreamingMethodTest(
-                ctx, method, methodName, parameters, flattenedMethod
+                context, method, methodOptions, parameters, flattenedMethod
             )
 
             TestableFunSpec(flattened.build(), test)
         })
 
         // unchanged method
-        if (options.keepOriginalMethod) {
-            val normal = FunSpec.builder(methodName)
-                .addKdoc(documentation.generateMethodKDoc(ctx, method, methodName, options.samples))
+        if (methodOptions.keepOriginalMethod) {
+            val normal = FunSpec.builder(name)
+                .addKdoc(documentation.generateMethodKDoc(context, method, methodOptions))
             val parameters = mutableListOf<ParameterInfo>()
 
             if (method.hasClientStreaming() && method.hasServerStreaming()) {
@@ -462,7 +449,7 @@ internal class FunctionsImpl(
                 )
                 normal.addCode(
                     "return %N.%N.executeStreaming { it::%N }",
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, methodName
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name
                 )
             } else if (method.hasClientStreaming()) { // client only
                 normal.returns(
@@ -472,7 +459,7 @@ internal class FunctionsImpl(
                 )
                 normal.addCode(
                     "return %N.%N.executeClientStreaming { it::%N }",
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, methodName
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name
                 )
             } else if (method.hasServerStreaming()) { // server only
                 val param = ParameterSpec.builder(Functions.PARAM_REQUEST, normalInputType).build()
@@ -486,7 +473,7 @@ internal class FunctionsImpl(
                     |}
                     |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
-                    methodName, Functions.PARAM_REQUEST
+                    name, Functions.PARAM_REQUEST
                 )
             } else {
                 throw IllegalArgumentException("Unknown streaming type (not client or server)!")
@@ -495,7 +482,7 @@ internal class FunctionsImpl(
             // generate test
             val test =
                 unitTest.createStreamingMethodTest(
-                    ctx, method, methodName, parameters.toList(), null
+                    context, method, methodOptions, parameters.toList(), null
                 )
 
             methods.add(TestableFunSpec(normal.build(), test))
