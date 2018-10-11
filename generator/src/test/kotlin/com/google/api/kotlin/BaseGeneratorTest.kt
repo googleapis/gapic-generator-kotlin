@@ -73,7 +73,8 @@ internal abstract class BaseGeneratorTest(private val generator: ClientGenerator
     private val testMessageTypes = listOf(
         "TestRequest", "TestResponse",
         "PagedRequest", "PagedResponse", "NotPagedRequest", "NotPagedResponse",
-        "StillNotPagedResponse"
+        "StillNotPagedResponse",
+        "SomeMetadata"
     )
     private val testMessageMoreTypes = listOf("Result", "Detail", "MoreDetail")
     private val annotationMessageTypes = listOf("FooRequest", "BarResponse")
@@ -168,15 +169,19 @@ fun String?.asNormalizedString(marginPrefix: String = "|"): String {
 internal fun props(vararg paths: String) = paths.map { it.asPropertyPath() }.toList()
 
 internal fun List<GeneratedArtifact>.sources() = this
+    .asSequence()
     .mapNotNull { it as? GeneratedSource }
     .filter { it.kind == GeneratedSource.Kind.SOURCE }
+    .toList()
 
 internal fun List<GeneratedArtifact>.unitTests() = this
+    .asSequence()
     .mapNotNull { it as? GeneratedSource }
     .filter { it.kind == GeneratedSource.Kind.UNIT_TEST }
+    .toList()
 
-internal fun List<GeneratedArtifact>.firstSourceType() = this.sources().first().types.first()
-internal fun List<GeneratedArtifact>.firstUnitTestType() = this.unitTests().first().types.first()
+internal fun List<GeneratedArtifact>.testServiceClient() =
+    this.sources().first { it.name == "TheTest" }.types.first()
 
 // misc. proto helpers
 

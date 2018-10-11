@@ -21,6 +21,7 @@ package google.example;
 import "google/example/test_types.proto";
 import "google/example/test_annotations.proto";
 import "google/longrunning/operations.proto";
+import "google/api/annotations.proto";
 
 option java_multiple_files = true;
 
@@ -44,6 +45,13 @@ service TestService {
     rpc NotPagedTest (NotPagedRequest) returns (PagedResponse);
     rpc StillNotPagedTest (PagedRequest) returns (StillNotPagedResponse);
     rpc NotPagedTest2 (PagedRequest) returns (NotPagedResponse);
+
+    rpc OperationTestWithAnnotation (TestRequest) returns (google.longrunning.Operation) {
+        option (google.api.operation) = {
+            response_type: "TestResponse"
+            metadata_type: "google.example.SomeMetadata"
+        };
+    }
 }
 
 message TestRequest {
@@ -81,4 +89,8 @@ message NotPagedResponse {
 message StillNotPagedResponse {
     repeated string responses = 1;
     int32 next_page_token = 2;
+}
+
+message SomeMetadata {
+    string meta = 1;
 }

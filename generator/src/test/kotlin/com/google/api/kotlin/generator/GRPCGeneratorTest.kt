@@ -23,9 +23,9 @@ import com.google.api.kotlin.config.MethodOptions
 import com.google.api.kotlin.config.PagedResponse
 import com.google.api.kotlin.config.ServiceOptions
 import com.google.api.kotlin.config.asPropertyPath
-import com.google.api.kotlin.firstSourceType
 import com.google.api.kotlin.props
 import com.google.api.kotlin.sources
+import com.google.api.kotlin.testServiceClient
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.common.truth.Truth.assertThat
 import com.squareup.kotlinpoet.ClassName
@@ -37,14 +37,14 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
     fun `Generates with class documentation`() {
         val opts = ServiceOptions(methods = listOf())
 
-        assertThat(generate(opts).firstSourceType().kdoc.toString()).isNotEmpty()
+        assertThat(generate(opts).testServiceClient().kdoc.toString()).isNotEmpty()
     }
 
     @Test
     fun `Generates with prepare`() {
         val opts = ServiceOptions(methods = listOf())
 
-        val methods = generate(opts).firstSourceType().funSpecs
+        val methods = generate(opts).testServiceClient().funSpecs
 
         val method = methods.first { it.name == "prepare" }
         assertThat(method.toString().asNormalizedString()).isEqualTo(
@@ -88,7 +88,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
     fun `Generates the test method`() {
         val opts = ServiceOptions(methods = listOf(MethodOptions(name = "Test")))
 
-        val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "test" }
+        val methods = generate(opts).testServiceClient().funSpecs.filter { it.name == "test" }
         assertThat(methods).hasSize(1)
 
         assertThat(methods.first().toString().asNormalizedString()).isEqualTo(
@@ -117,10 +117,10 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
     }
 
     @Test
-    fun `Generates the LRO test method`() {
+    fun `Generates the LRO method`() {
         val opts = ServiceOptions(methods = listOf(MethodOptions(name = "OperationTest")))
 
-        val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "operationTest" }
+        val methods = generate(opts).testServiceClient().funSpecs.filter { it.name == "operationTest" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
@@ -152,10 +152,46 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
     }
 
     @Test
+    fun `Generates the annotated LRO method`() {
+        val opts = ServiceOptions(methods = listOf(MethodOptions(name = "OperationTest")))
+
+        val methods = generate(opts).testServiceClient()
+            .funSpecs.filter { it.name == "operationTestWithAnnotation" }
+        assertThat(methods).hasSize(1)
+
+        val method = methods.first()
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            |*
+            |*
+            |* For example:
+            |* ```
+            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* val result = client.operationTestWithAnnotation(
+            |*     TestRequest {
+            |*     }
+            |*)
+            |* ```
+            |*
+            |* @param request the request object for the API call
+            |*/
+            |fun operationTestWithAnnotation(request: google.example.TestRequest): com.google.kgax.grpc.LongRunningCall<google.example.TestResponse> =
+            |    com.google.kgax.grpc.LongRunningCall<google.example.TestResponse>(
+            |        stubs.operation, stubs.api.executeFuture {
+            |            it.operationTestWithAnnotation(request)
+            |        },
+            |        google.example.TestResponse::class.java
+            |    )
+            """.asNormalizedString()
+        )
+    }
+
+    @Test
     fun `Generates the streamTest method`() {
         val opts = ServiceOptions(methods = listOf(MethodOptions(name = "StreamTest")))
 
-        val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "streamTest" }
+        val methods = generate(opts).testServiceClient().funSpecs.filter { it.name == "streamTest" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
@@ -193,7 +229,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
             )
         )
 
-        val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "streamTest" }
+        val methods = generate(opts).testServiceClient().funSpecs.filter { it.name == "streamTest" }
         assertThat(methods).hasSize(2)
 
         val oneParamMethod = methods.first { it.parameters.size == 1 }
@@ -266,7 +302,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
     fun `Generates the streamClientTest method`() {
         val opts = ServiceOptions(methods = listOf(MethodOptions(name = "StreamClientTest")))
 
-        val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "streamClientTest" }
+        val methods = generate(opts).testServiceClient().funSpecs.filter { it.name == "streamClientTest" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
@@ -295,7 +331,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
     fun `Generates the streamClientTest method with flattening`() {
         val opts = ServiceOptions(methods = listOf(MethodOptions(name = "StreamClientTest")))
 
-        val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "streamClientTest" }
+        val methods = generate(opts).testServiceClient().funSpecs.filter { it.name == "streamClientTest" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
@@ -334,7 +370,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
             )
         )
 
-        val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "streamServerTest" }
+        val methods = generate(opts).testServiceClient().funSpecs.filter { it.name == "streamServerTest" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
@@ -384,7 +420,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
             )
         )
 
-        val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "streamServerTest" }
+        val methods = generate(opts).testServiceClient().funSpecs.filter { it.name == "streamServerTest" }
         assertThat(methods).hasSize(1)
 
         assertThat(methods.first().toString().asNormalizedString()).isEqualTo(
@@ -431,7 +467,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
             )
         )
 
-        val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "testFlat" }
+        val methods = generate(opts).testServiceClient().funSpecs.filter { it.name == "testFlat" }
         assertThat(methods).hasSize(3)
 
         val original =
@@ -534,7 +570,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
         )
 
         val methods =
-            generate(opts).firstSourceType().funSpecs.filter { it.name == "testFlatWithoutOriginal" }
+            generate(opts).testServiceClient().funSpecs.filter { it.name == "testFlatWithoutOriginal" }
         assertThat(methods).hasSize(1)
 
         val oneArg = methods.first { it.parameters.size == 1 }
@@ -582,7 +618,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
             )
         )
 
-        val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "nestedFlat" }
+        val methods = generate(opts).testServiceClient().funSpecs.filter { it.name == "nestedFlat" }
         assertThat(methods).hasSize(1)
 
         assertThat(methods.first().toString().asNormalizedString()).isEqualTo(
@@ -627,7 +663,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
             )
         )
 
-        val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "nestedFlat" }
+        val methods = generate(opts).testServiceClient().funSpecs.filter { it.name == "nestedFlat" }
         assertThat(methods).hasSize(1)
 
         assertThat(methods.first().toString().asNormalizedString()).isEqualTo(
@@ -674,7 +710,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
             )
         )
 
-        val methods = generate(opts).firstSourceType().funSpecs.filter { it.name == "nestedFlat" }
+        val methods = generate(opts).testServiceClient().funSpecs.filter { it.name == "nestedFlat" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first { it.parameters.size == 1 }
@@ -721,7 +757,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
         )
 
         val methods =
-            generate(opts).firstSourceType().funSpecs.filter { it.name == "nestedFlatPrimitive" }
+            generate(opts).testServiceClient().funSpecs.filter { it.name == "nestedFlatPrimitive" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first { it.parameters.size == 1 }
@@ -768,7 +804,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
         )
 
         val methods =
-            generate(opts).firstSourceType().funSpecs.filter { it.name == "pagedTest" }
+            generate(opts).testServiceClient().funSpecs.filter { it.name == "pagedTest" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
@@ -834,7 +870,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
         )
 
         val methods =
-            generate(opts).firstSourceType().funSpecs.filter { it.name == "pagedTest" }
+            generate(opts).testServiceClient().funSpecs.filter { it.name == "pagedTest" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()
@@ -890,7 +926,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
         )
 
         val methods =
-            generate(opts).firstSourceType().funSpecs.filter { it.name == "pagedTest" }
+            generate(opts).testServiceClient().funSpecs.filter { it.name == "pagedTest" }
         assertThat(methods).hasSize(1)
 
         val method = methods.first()

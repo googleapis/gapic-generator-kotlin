@@ -57,10 +57,9 @@ internal class KotlinClientGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
         val result = generator.generate(generatorRequest, getMockedTypeMap())
 
         assertThat(result.sourceCode.fileCount).isEqualTo(1)
-        val file = result.sourceCode.fileList.first()
-        assertThat(file.name).isEqualTo("google/example/TestServiceClient.kt")
-        assertThat(file.content).contains("Copyright")
-        assertThat(file.content).contains("class TestServiceClient")
+        val testClient = result.sourceCode.fileList.first { it.name == "google/example/TestServiceClient.kt" }
+        assertThat(testClient.content).contains("Copyright")
+        assertThat(testClient.content).contains("class TestServiceClient")
 
         verify(clientGenerator).generateServiceClient(check {
             assertThat(it.className).isEqualTo(ClassName("google.example", "TestServiceClient"))
