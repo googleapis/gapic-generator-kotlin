@@ -19,6 +19,7 @@ package com.google.api.kotlin.generator
 import com.google.api.kotlin.BaseGeneratorTest
 import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.FlattenedMethod
+import com.google.api.kotlin.config.LongRunningResponse
 import com.google.api.kotlin.config.MethodOptions
 import com.google.api.kotlin.config.PagedResponse
 import com.google.api.kotlin.config.ServiceOptions
@@ -118,7 +119,15 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `Generates the LRO method`() {
-        val opts = ServiceOptions(methods = listOf(MethodOptions(name = "OperationTest")))
+        val opts = ServiceOptions(methods = listOf(
+            MethodOptions(
+                name = "OperationTest",
+                longRunningResponse = LongRunningResponse(
+                    responseType = ".google.example.SomeResponse",
+                    metadataType = ".google.example.SomeMetadata"
+                )
+            )
+        ))
 
         val methods = generate(opts).testServiceClient().funSpecs.filter { it.name == "operationTest" }
         assertThat(methods).hasSize(1)
@@ -142,47 +151,11 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
             |*/
             |fun operationTest(
             |    request: google.example.TestRequest
-            |): com.google.kgax.grpc.LongRunningCall<google.example.TestResponse> = com.google.kgax.grpc.LongRunningCall<google.example.TestResponse>(
+            |): com.google.kgax.grpc.LongRunningCall<google.example.SomeResponse> = com.google.kgax.grpc.LongRunningCall<google.example.SomeResponse>(
             |    stubs.operation,
             |    stubs.api.executeFuture { it.operationTest(request) },
-            |    google.example.TestResponse::class.java
+            |    google.example.SomeResponse::class.java
             |)
-            """.asNormalizedString()
-        )
-    }
-
-    @Test
-    fun `Generates the annotated LRO method`() {
-        val opts = ServiceOptions(methods = listOf(MethodOptions(name = "OperationTest")))
-
-        val methods = generate(opts).testServiceClient()
-            .funSpecs.filter { it.name == "operationTestWithAnnotation" }
-        assertThat(methods).hasSize(1)
-
-        val method = methods.first()
-        assertThat(method.toString().asNormalizedString()).isEqualTo(
-            """
-            |/**
-            |*
-            |*
-            |* For example:
-            |* ```
-            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
-            |* val result = client.operationTestWithAnnotation(
-            |*     TestRequest {
-            |*     }
-            |*)
-            |* ```
-            |*
-            |* @param request the request object for the API call
-            |*/
-            |fun operationTestWithAnnotation(request: google.example.TestRequest): com.google.kgax.grpc.LongRunningCall<google.example.TestResponse> =
-            |    com.google.kgax.grpc.LongRunningCall<google.example.TestResponse>(
-            |        stubs.operation, stubs.api.executeFuture {
-            |            it.operationTestWithAnnotation(request)
-            |        },
-            |        google.example.TestResponse::class.java
-            |    )
             """.asNormalizedString()
         )
     }

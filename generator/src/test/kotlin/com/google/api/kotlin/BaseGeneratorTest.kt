@@ -74,7 +74,7 @@ internal abstract class BaseGeneratorTest(private val generator: ClientGenerator
         "TestRequest", "TestResponse",
         "PagedRequest", "PagedResponse", "NotPagedRequest", "NotPagedResponse",
         "StillNotPagedResponse",
-        "SomeMetadata"
+        "SomeResponse", "SomeMetadata"
     )
     private val testMessageMoreTypes = listOf("Result", "Detail", "MoreDetail")
     private val annotationMessageTypes = listOf("FooRequest", "BarResponse")
