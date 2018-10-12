@@ -25,14 +25,24 @@ class Client {
     companion object {
 
         @JvmStatic
-        fun main(args: Array<String>) = Client().runExample()
+        fun main(args: Array<String>) {
+            try {
+                Client().runExample()
+                System.exit(0)
+            } catch (t: Throwable) {
+                System.err.println("Failed: $t")
+            }
+            System.exit(1)
+        }
     }
 
     fun runExample() {
         // create a client with an insecure channel
-        val client = HelloServiceClient.fromCredentials(channel = ManagedChannelBuilder.forAddress("localhost", 8080)
+        val client = HelloServiceClient.fromCredentials(
+            channel = ManagedChannelBuilder.forAddress("localhost", 8080)
                 .usePlaintext()
-                .build())
+                .build()
+        )
 
         // call the API
         val result = client.hiThere(HiRequest {

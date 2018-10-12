@@ -82,3 +82,10 @@ message StillNotPagedResponse {
     repeated string responses = 1;
     int32 next_page_token = 2;
 }
+
+message SomeResponse {
+    string response = 1;
+}
+message SomeMetadata {
+    string meta = 1;
+}

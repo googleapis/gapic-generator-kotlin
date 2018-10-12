@@ -20,7 +20,7 @@ import com.google.api.kotlin.GeneratedSource
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.TestableFunSpec
 import com.google.api.kotlin.config.FlattenedMethod
-import com.google.api.kotlin.config.PagedResponse
+import com.google.api.kotlin.config.MethodOptions
 import com.google.api.kotlin.config.PropertyPath
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.types.GrpcTypes
@@ -44,19 +44,18 @@ import com.squareup.kotlinpoet.TypeSpec
 /** Generates the unit tests for the client methods. */
 internal interface UnitTest {
 
-    fun generate(ctx: GeneratorContext, apiMethods: List<TestableFunSpec>): GeneratedSource?
+    fun generate(context: GeneratorContext, apiMethods: List<TestableFunSpec>): GeneratedSource?
 
     /**
      * Create a unit test for a unary method with variations for paging, flattening,
      * and long running operations.
      */
     fun createUnaryMethodUnitTest(
-        ctx: GeneratorContext,
+        context: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
-        methodName: String,
+        methodOptions: MethodOptions,
         parameters: List<ParameterInfo>,
-        flatteningConfig: FlattenedMethod?,
-        paging: PagedResponse?
+        flatteningConfig: FlattenedMethod?
     ): CodeBlock
 
     /**
@@ -64,9 +63,9 @@ internal interface UnitTest {
      * with variations for paging, flattening, and long running operations.
      */
     fun createStreamingMethodTest(
-        ctx: GeneratorContext,
+        context: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
-        methodName: String,
+        methodOptions: MethodOptions,
         parameters: List<ParameterInfo>,
         flatteningConfig: FlattenedMethod?
     ): CodeBlock
@@ -87,16 +86,16 @@ internal class UnitTestImpl(
 ) : UnitTest {
 
     override fun generate(
-        ctx: GeneratorContext,
+        context: GeneratorContext,
         apiMethods: List<TestableFunSpec>
     ): GeneratedSource? {
-        val name = "${ctx.className.simpleName}Test"
+        val name = "${context.className.simpleName}Test"
         val unitTestType = TypeSpec.classBuilder(name)
 
         // add props (mocks) that will be used by all test methods
         val mocks = mapOf(
-            UnitTest.MOCK_API_STUB to stubs.getApiStubType(ctx),
-            UnitTest.MOCK_OPS_STUB to stubs.getOperationsStubType(ctx),
+            UnitTest.MOCK_API_STUB to stubs.getApiStubType(context),
+            UnitTest.MOCK_OPS_STUB to stubs.getOperationsStubType(context),
             UnitTest.MOCK_CHANNEL to GrpcTypes.ManagedChannel,
             UnitTest.MOCK_CALL_OPTS to GrpcTypes.Support.ClientCallOptions
         )
@@ -121,7 +120,7 @@ internal class UnitTestImpl(
         // add a function to create a client for each test
         unitTestType.addFunction(
             FunSpec.builder(UnitTest.FUN_GET_CLIENT)
-                .returns(ctx.className)
+                .returns(context.className)
                 .addStatement(
                     """
                     |return %T.fromStubs(object: %T.%L.Factory {
@@ -129,9 +128,9 @@ internal class UnitTestImpl(
                     |        %T.%L(%N, %N)
                     |}, %N, %N)
                     |""".trimMargin(),
-                    ctx.className, ctx.className, Stubs.CLASS_STUBS,
+                    context.className, context.className, Stubs.CLASS_STUBS,
                     GrpcTypes.ManagedChannel, GrpcTypes.Support.ClientCallOptions,
-                    ctx.className, Stubs.CLASS_STUBS,
+                    context.className, Stubs.CLASS_STUBS,
                     UnitTest.MOCK_API_STUB, UnitTest.MOCK_OPS_STUB,
                     UnitTest.MOCK_CHANNEL, UnitTest.MOCK_CALL_OPTS
                 )
@@ -144,7 +143,7 @@ internal class UnitTestImpl(
         // put it all together and add static imports
         return if (unitTestType.funSpecs.isNotEmpty()) {
             GeneratedSource(
-                ctx.className.packageName,
+                context.className.packageName,
                 name,
                 types = listOf(unitTestType.build()),
                 imports = listOf(
@@ -171,6 +170,7 @@ internal class UnitTestImpl(
         val nameCounter = mutableMapOf<String, Int>()
 
         return functions
+            .asSequence()
             .filter { it.unitTestCode != null }
             .map {
                 // add a numbered suffix to the name if there are overloads
@@ -187,36 +187,37 @@ internal class UnitTestImpl(
                     .addCode(it.unitTestCode!!)
                     .build()
             }
+            .toList()
     }
 
     override fun createUnaryMethodUnitTest(
-        ctx: GeneratorContext,
+        context: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
-        methodName: String,
+        methodOptions: MethodOptions,
         parameters: List<ParameterInfo>,
-        flatteningConfig: FlattenedMethod?,
-        paging: PagedResponse?
+        flatteningConfig: FlattenedMethod?
     ): CodeBlock {
-        val originalReturnType = ctx.typeMap.getKotlinType(method.outputType)
-        val originalInputType = ctx.typeMap.getKotlinType(method.inputType)
+        val name = methodOptions.name.decapitalize()
+        val originalReturnType = context.typeMap.getKotlinType(method.outputType)
+        val originalInputType = context.typeMap.getKotlinType(method.inputType)
 
         // create mocks for input params and the future returned by the stub
-        val givenBlock = createGivenCodeBlock(ctx, parameters)
+        val givenBlock = createGivenCodeBlock(context, parameters)
         givenBlock.code.add(
             """
            |val future: %T = mock()
-           |whenever(%N.executeFuture<%T>(any())).thenReturn(future)
+           |whenever(%N.executeFuture<%T>(any(), any())).thenReturn(future)
            |""".trimMargin(),
             GrpcTypes.Support.FutureCall(originalReturnType),
             UnitTest.MOCK_API_STUB, originalReturnType
         )
 
         // if paging add extra mocks for the page handling
-        if (paging != null) {
-            val pageSizeSetter = getSetterName(paging.pageSize)
-            val nextPageTokenGetter = getAccessorName(paging.responsePageToken)
-            val responseListGetter = getAccessorRepeatedName(paging.responseList)
-            val responseListItemType = getResponseListElementType(ctx, method, paging)
+        if (methodOptions.pagedResponse != null) {
+            val pageSizeSetter = getSetterName(methodOptions.pagedResponse.pageSize)
+            val nextPageTokenGetter = getAccessorName(methodOptions.pagedResponse.responsePageToken)
+            val responseListGetter = getAccessorRepeatedName(methodOptions.pagedResponse.responseList)
+            val responseListItemType = getResponseListElementType(context, method, methodOptions.pagedResponse)
 
             givenBlock.code.add(
                 """
@@ -253,32 +254,32 @@ internal class UnitTestImpl(
         }
 
         // invoke client
-        val responseParameterName = if (paging != null) "page" else "result"
+        val responseParameterName = if (methodOptions.pagedResponse != null) "page" else "result"
         val whenBlock = createWhenCodeBlock(
             given = givenBlock,
-            methodName = methodName,
+            methodName = name,
             parameters = parameters,
             responseParameterName = responseParameterName,
-            isPager = paging != null
+            isPager = methodOptions.pagedResponse != null
         )
 
         // verify the returned values
         val thenBlock = ThenCodeBlock()
         val check =
-            createStubCheckCode(givenBlock, ctx, method, flatteningConfig)
+            createStubCheckCode(givenBlock, context, method, flatteningConfig)
 
         // verify the executeFuture occurred (and use input block to verify)
         thenBlock.code.add(
             """
-            |verify(%N).executeFuture<%T>(check {
+            |verify(%N).executeFuture<%T>(any(), check {
             |    val mock: %T = mock()
             |    it(mock)
             |    verify(mock).%N(%L)
             |})
             |""".trimMargin(),
             UnitTest.MOCK_API_STUB, originalReturnType,
-            stubs.getApiStubType(ctx).typeArguments.first(),
-            methodName, check
+            stubs.getApiStubType(context).typeArguments.first(),
+            name, check
         )
 
         // put it all together
@@ -286,17 +287,18 @@ internal class UnitTestImpl(
     }
 
     override fun createStreamingMethodTest(
-        ctx: GeneratorContext,
+        context: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
-        methodName: String,
+        methodOptions: MethodOptions,
         parameters: List<ParameterInfo>,
         flatteningConfig: FlattenedMethod?
     ): CodeBlock {
-        val originalReturnType = ctx.typeMap.getKotlinType(method.outputType)
-        val originalInputType = ctx.typeMap.getKotlinType(method.inputType)
+        val name = methodOptions.name.decapitalize()
+        val originalReturnType = context.typeMap.getKotlinType(method.outputType)
+        val originalInputType = context.typeMap.getKotlinType(method.inputType)
 
         // create mocks for input params and the future returned by the stub
-        val givenBlock = createGivenCodeBlock(ctx, parameters)
+        val givenBlock = createGivenCodeBlock(context, parameters)
 
         // determine method that will be used and it's return type
         val streamMethod = when {
@@ -335,7 +337,7 @@ internal class UnitTestImpl(
             )
         }
         givenBlock.code.addStatement(
-            "whenever(%N.%L(any())).thenReturn(streaming)",
+            "whenever(%N.%L(any(), any())).thenReturn(streaming)",
             UnitTest.MOCK_API_STUB,
             streamMethod
         )
@@ -343,7 +345,7 @@ internal class UnitTestImpl(
         // invoke client
         val whenBlock = createWhenCodeBlock(
             given = givenBlock,
-            methodName = methodName,
+            methodName = name,
             parameters = parameters,
             responseParameterName = "result",
             isPager = false
@@ -354,10 +356,10 @@ internal class UnitTestImpl(
 
         // verify the executeFuture occurred (and use input block to verify)
         if (method.hasServerStreaming() && !method.hasClientStreaming()) {
-            val check = createStubCheckCode(givenBlock, ctx, method, flatteningConfig)
+            val check = createStubCheckCode(givenBlock, context, method, flatteningConfig)
             thenBlock.code.add(
                 """
-                |verify(%N).%L(check {
+                |verify(%N).%L(any(), check {
                 |    val mock: %T = mock()
                 |    val mockObserver: %T = mock()
                 |    it(mock, mockObserver)
@@ -365,28 +367,28 @@ internal class UnitTestImpl(
                 |})
                 |""".trimMargin(),
                 UnitTest.MOCK_API_STUB, streamMethod,
-                stubs.getApiStubType(ctx).typeArguments.first(),
+                stubs.getApiStubType(context).typeArguments.first(),
                 GrpcTypes.StreamObserver(originalReturnType),
-                methodName, check
+                name, check
             )
         } else {
             thenBlock.code.add(
                 """
-                |verify(%N).%L(check {
+                |verify(%N).%L(any(), check {
                 |    val mock: %T = mock()
                 |    assertEquals(mock::%L, it(mock))
                 |})
                 |""".trimMargin(),
                 UnitTest.MOCK_API_STUB, streamMethod,
-                stubs.getApiStubType(ctx).typeArguments.first(),
-                methodName
+                stubs.getApiStubType(context).typeArguments.first(),
+                name
             )
         }
 
         // if flattening was used also verify that the args were sent
         if (flatteningConfig != null && method.hasClientStreaming()) {
             val checks =
-                createNestedAssertCodeForStubCheck(givenBlock, ctx, method, flatteningConfig)
+                createNestedAssertCodeForStubCheck(givenBlock, context, method, flatteningConfig)
             thenBlock.code.add(
                 """
                 |verify(%N).prepare(check<%T.() -> Unit> {

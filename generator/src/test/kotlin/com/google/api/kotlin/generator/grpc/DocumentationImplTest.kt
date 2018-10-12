@@ -106,8 +106,7 @@ internal class DocumentationImplTest {
         val doc = DocumentationImpl().generateMethodKDoc(
             context = ctx,
             method = simpleMethod,
-            methodName = "myMethod",
-            samples = listOf()
+            methodOptions = MethodOptions("myMethod")
         )
 
         assertThat(doc.asNormalizedString()).isEqualTo(
@@ -131,8 +130,7 @@ internal class DocumentationImplTest {
         val doc = DocumentationImpl().generateMethodKDoc(
             context = ctx,
             method = simpleMethod,
-            methodName = "myMethod",
-            samples = listOf(),
+            methodOptions = MethodOptions("myMethod"),
             flatteningConfig = FlattenedMethod(listOf("query".asPropertyPath())),
             parameters = listOf(ParameterInfo(
                 ParameterSpec.builder("query", String::class.asTypeName()).build(),
@@ -163,8 +161,7 @@ internal class DocumentationImplTest {
         val doc = DocumentationImpl().generateMethodKDoc(
             context = ctx,
             method = simpleMethod,
-            methodName = "myMethod",
-            samples = listOf(SampleMethod(listOf(SampleParameterAndValue("query", "4"))))
+            methodOptions = MethodOptions("myMethod", samples = listOf(SampleMethod(listOf(SampleParameterAndValue("query", "4")))))
         )
 
         assertThat(doc.asNormalizedString()).isEqualTo(

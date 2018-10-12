@@ -17,6 +17,7 @@
 package com.google.api.kotlin.util
 
 import com.google.api.kotlin.GeneratorContext
+import com.google.api.kotlin.config.LongRunningResponse
 import com.google.api.kotlin.config.PagedResponse
 import com.google.api.kotlin.config.asPropertyPath
 import com.google.protobuf.DescriptorProtos
@@ -24,13 +25,18 @@ import com.squareup.kotlinpoet.ClassName
 
 internal object ResponseTypes {
 
-    /** Get the real response type for an LRO operation */
+    /** Get the real response type for an long running operation */
     fun getLongRunningResponseType(
         ctx: GeneratorContext,
-        method: DescriptorProtos.MethodDescriptorProto
+        method: DescriptorProtos.MethodDescriptorProto,
+        longRunningResponse: LongRunningResponse? = null
     ): ClassName {
-        // TODO: there is no guarantee that this will always hold,
-        //       but there isn't any more info in the proto (yet)
+        // use explicit settings if they are provided
+        if (longRunningResponse != null) {
+            return ctx.typeMap.getKotlinType(longRunningResponse.responseType)
+        }
+
+        // TODO: continue to use this fallback method
         val name = method.inputType.replace("Request\\z".toRegex(), "Response")
         if (name == method.inputType) throw IllegalStateException("Unable to determine Operation response type")
         return ctx.typeMap.getKotlinType(name)

@@ -17,14 +17,18 @@
 package com.google.api.kotlin
 
 import com.google.common.truth.Truth.assertThat
+import com.google.kgax.Retry
+import com.google.kgax.RetryContext
+import com.google.protobuf.Duration
 import com.google.rpc.Code
 import com.google.rpc.Status
 import com.google.showcase.v1alpha2.EchoClient
 import com.google.showcase.v1alpha2.EchoRequest
 import com.google.showcase.v1alpha2.ExpandRequest
 import com.google.showcase.v1alpha2.PaginationRequest
-import io.grpc.StatusRuntimeException
+import com.google.showcase.v1alpha2.WaitRequest
 import io.grpc.ManagedChannelBuilder
+import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.experimental.CoroutineScope
 import kotlinx.coroutines.experimental.channels.Channel
 import kotlinx.coroutines.experimental.launch
@@ -36,6 +40,7 @@ import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import kotlin.streams.asSequence
 import kotlin.test.Test
+import kotlin.test.fail
 
 /**
  * Integration tests via Showcase:
@@ -50,9 +55,9 @@ class ShowcaseTest {
 
         // use insecure client
         val client = EchoClient.fromCredentials(
-                channel = ManagedChannelBuilder.forAddress(host, port.toInt())
-                        .usePlaintext()
-                        .build()
+            channel = ManagedChannelBuilder.forAddress(host, port.toInt())
+                .usePlaintext()
+                .build()
         )
 
         @AfterClass
@@ -65,8 +70,9 @@ class ShowcaseTest {
     @Test
     fun `echos a request`() {
         val result = client.echo(
-                EchoRequest { content = "Hi there!" }
+            EchoRequest { content = "Hi there!" }
         ).get()
+
         assertThat(result.body.content).isEqualTo("Hi there!")
     }
 
@@ -75,13 +81,13 @@ class ShowcaseTest {
     fun `throws an error`() {
         try {
             client.echo(
-                    EchoRequest {
-                        content = "junk"
-                        error = Status {
-                            code = Code.DATA_LOSS_VALUE
-                            message = "oh no!"
-                        }
+                EchoRequest {
+                    content = "junk"
+                    error = Status {
+                        code = Code.DATA_LOSS_VALUE
+                        message = "oh no!"
                     }
+                }
             ).get()
         } catch (e: Exception) {
             val error = e.cause as StatusRuntimeException
@@ -164,9 +170,9 @@ class ShowcaseTest {
 
         val inputs = Array(5) { _ ->
             Random().ints(20)
-                    .asSequence()
-                    .map { it.toString() }
-                    .joinToString("->")
+                .asSequence()
+                .map { it.toString() }
+                .joinToString("->")
         }
 
         val responses = mutableListOf<String>()
@@ -227,6 +233,35 @@ class ShowcaseTest {
         assertThat(page.elements).containsExactlyElementsIn((0 until 20).map { it })
         assertThat(page.token).isNotEmpty()
         assertThat(pager.hasNext()).isTrue()
+    }
+
+    @Test
+    fun `can wait and retry`() {
+        val retry = object : Retry {
+            var count = 0
+            override fun retryAfter(error: Throwable, context: RetryContext): Long? {
+                count++
+                return if (context.numberOfAttempts < 5) 50 else null
+            }
+        }
+
+        try {
+            client.prepare {
+                withRetry(retry)
+            }.wait(WaitRequest {
+                responseDelay = Duration { seconds = 1 }
+                error = Status {
+                    code = Code.UNAVAILABLE_VALUE
+                    message = "go away"
+                }
+            }).get()
+
+            fail("expected to throw")
+        } catch (t: Throwable) {
+            assertThat(t.cause).isInstanceOf(StatusRuntimeException::class.java)
+        }
+
+        assertThat(retry.count).isEqualTo(6)
     }
 
     // standard 5 second timeout handler for streaming tests

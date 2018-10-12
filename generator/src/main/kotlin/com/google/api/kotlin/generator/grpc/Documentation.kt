@@ -18,7 +18,7 @@ package com.google.api.kotlin.generator.grpc
 
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.config.FlattenedMethod
-import com.google.api.kotlin.config.PagedResponse
+import com.google.api.kotlin.config.MethodOptions
 import com.google.api.kotlin.config.SampleMethod
 import com.google.api.kotlin.util.FieldNamer
 import com.google.api.kotlin.util.ParameterInfo
@@ -33,15 +33,13 @@ import com.squareup.kotlinpoet.CodeBlock
 
 /** Generates the KDoc documentation. */
 internal interface Documentation {
-    fun generateClassKDoc(ctx: GeneratorContext): CodeBlock
+    fun generateClassKDoc(context: GeneratorContext): CodeBlock
     fun generateMethodKDoc(
-        ctx: GeneratorContext,
+        context: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
-        methodName: String,
-        samples: List<SampleMethod>,
-        flatteningConfig: FlattenedMethod? = null,
+        methodOptions: MethodOptions,
         parameters: List<ParameterInfo> = listOf(),
-        paging: PagedResponse? = null,
+        flatteningConfig: FlattenedMethod? = null,
         extras: List<CodeBlock> = listOf()
     ): CodeBlock
 }
@@ -73,11 +71,9 @@ internal class DocumentationImpl : Documentation {
     override fun generateMethodKDoc(
         context: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
-        methodName: String,
-        samples: List<SampleMethod>,
-        flatteningConfig: FlattenedMethod?,
+        methodOptions: MethodOptions,
         parameters: List<ParameterInfo>,
-        paging: PagedResponse?,
+        flatteningConfig: FlattenedMethod?,
         extras: List<CodeBlock>
     ): CodeBlock {
         val doc = CodeBlock.builder()
@@ -92,13 +88,13 @@ internal class DocumentationImpl : Documentation {
         doc.add("%L\n\n", cleanupComment(text) ?: "")
 
         // add any samples
-        if (samples.isEmpty()) {
-            doc.add(generateMethodSample(context, method, methodName, null, flatteningConfig, paging))
+        if (methodOptions.samples.isEmpty()) {
+            doc.add(generateMethodSample(context, method, methodOptions, flatteningConfig))
         } else {
-            for (sample in samples) {
+            for (sample in methodOptions.samples) {
                 doc.add(
                     generateMethodSample(
-                        context, method, methodName, sample, flatteningConfig, paging
+                        context, method, methodOptions, flatteningConfig, sample
                     )
                 )
             }
@@ -124,11 +120,11 @@ internal class DocumentationImpl : Documentation {
     private fun generateMethodSample(
         context: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
-        methodName: String,
-        sample: SampleMethod?,
+        methodOptions: MethodOptions,
         flatteningConfig: FlattenedMethod?,
-        paging: PagedResponse? = null
+        sample: SampleMethod? = null
     ): CodeBlock {
+        val name = methodOptions.name.decapitalize()
         val call = CodeBlock.builder()
 
         // create client
@@ -165,7 +161,7 @@ internal class DocumentationImpl : Documentation {
         val indentedParams = invokeClientParams.map { indentBuilder(context, it, 1) }
 
         // invoke method
-        if (paging != null) {
+        if (methodOptions.pagedResponse != null) {
             call.add(
                 """
                 |val pager = client.%N(
@@ -173,7 +169,7 @@ internal class DocumentationImpl : Documentation {
                 |)
                 |val page = pager.next()
                 |""".trimMargin(),
-                methodName,
+                name,
                 *indentedParams.toTypedArray()
             )
         } else {
@@ -183,7 +179,7 @@ internal class DocumentationImpl : Documentation {
                 |    ${invokeClientParams.joinToString(",\n    ") { "%L" }}
                 |)
                 |""".trimMargin(),
-                methodName,
+                name,
                 *indentedParams.toTypedArray()
             )
         }
