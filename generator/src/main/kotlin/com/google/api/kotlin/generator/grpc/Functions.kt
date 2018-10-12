@@ -222,7 +222,7 @@ internal class FunctionsImpl(
                     """
                     |return %T(
                     |    %N.%N,
-                    |    %N.%N.executeFuture {
+                    |    %N.%N.executeFuture(%S) {
                     |        it.%L(
                     |            %L
                     |        )
@@ -232,7 +232,7 @@ internal class FunctionsImpl(
                     |""".trimMargin(),
                     returnType,
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_OPERATION,
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name,
                     name, requestObject.indent(3),
                     realResponseType
                 )
@@ -258,7 +258,7 @@ internal class FunctionsImpl(
                     """
                     |return pager {
                     |    method = { request ->
-                    |        %N.%N.executeFuture {
+                    |        %N.%N.executeFuture(%S) {
                     |            it.%L(request)
                     |        }.get()
                     |    }
@@ -277,7 +277,7 @@ internal class FunctionsImpl(
                     |    }
                     |}
                     |""".trimMargin(),
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name,
                     name,
                     requestObject.indent(2),
                     pageTokenSetter,
@@ -292,23 +292,23 @@ internal class FunctionsImpl(
                 if (flattenedMethod?.parameters?.size ?: 0 > 1) {
                     m.addCode(
                         """
-                        |return %N.%N.executeFuture {
+                        |return %N.%N.executeFuture(%S) {
                         |    it.%L(
                         |        %L
                         |    )
                         |}
                         |""".trimMargin(),
-                        Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
+                        Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name,
                         name, requestObject.indent(2)
                     )
                 } else {
                     m.addCode(
                         """
-                        |return %N.%N.executeFuture {
+                        |return %N.%N.executeFuture(%S) {
                         |    it.%L(%L)
                         |}
                         |""".trimMargin(),
-                        Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
+                        Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name,
                         name, requestObject.indent(1)
                     )
                 }
@@ -374,11 +374,11 @@ internal class FunctionsImpl(
                     |    withInitialRequest(
                     |        %L
                     |    )
-                    |}.executeStreaming { it::%N }
+                    |}.executeStreaming(%S) { it::%N }
                     |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
                     request.indent(2),
-                    name
+                    name, name
                 )
             } else if (method.hasClientStreaming()) { // client only
                 flattened.addKdoc(
@@ -396,8 +396,8 @@ internal class FunctionsImpl(
                     )
                 )
                 flattened.addCode(
-                    "return %N.%N.executeClientStreaming { it::%N }",
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name
+                    "return %N.%N.executeClientStreaming(%S) { it::%N }",
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name, name
                 )
             } else if (method.hasServerStreaming()) { // server only
                 flattened.addKdoc(
@@ -413,14 +413,14 @@ internal class FunctionsImpl(
                 flattened.returns(GrpcTypes.Support.ServerStreamingCall(normalOutputType))
                 flattened.addCode(
                     """
-                    |return %N.%N.executeServerStreaming { stub, observer ->
+                    |return %N.%N.executeServerStreaming(%S) { stub, observer ->
                     |    stub.%N(
                     |        %L,
                     |        observer
                     |    )
                     |}
                     |""".trimMargin(),
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name,
                     name, request.indent(2)
                 )
             } else {
@@ -448,8 +448,8 @@ internal class FunctionsImpl(
                     )
                 )
                 normal.addCode(
-                    "return %N.%N.executeStreaming { it::%N }",
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name
+                    "return %N.%N.executeStreaming(%S) { it::%N }",
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name, name
                 )
             } else if (method.hasClientStreaming()) { // client only
                 normal.returns(
@@ -458,8 +458,8 @@ internal class FunctionsImpl(
                     )
                 )
                 normal.addCode(
-                    "return %N.%N.executeClientStreaming { it::%N }",
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name
+                    "return %N.%N.executeClientStreaming(%S) { it::%N }",
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name, name
                 )
             } else if (method.hasServerStreaming()) { // server only
                 val param = ParameterSpec.builder(Functions.PARAM_REQUEST, normalInputType).build()
@@ -468,11 +468,11 @@ internal class FunctionsImpl(
                 normal.returns(GrpcTypes.Support.ServerStreamingCall(normalOutputType))
                 normal.addCode(
                     """
-                    |return %N.%N.executeServerStreaming { stub, observer ->
+                    |return %N.%N.executeServerStreaming(%S) { stub, observer ->
                     |    stub.%N(%N, observer)
                     |}
                     |""".trimMargin(),
-                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
+                    Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name,
                     name, Functions.PARAM_REQUEST
                 )
             } else {
