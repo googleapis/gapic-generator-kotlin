@@ -206,7 +206,7 @@ internal class UnitTestImpl(
         givenBlock.code.add(
             """
            |val future: %T = mock()
-           |whenever(%N.executeFuture<%T>(any())).thenReturn(future)
+           |whenever(%N.executeFuture<%T>(any(), any())).thenReturn(future)
            |""".trimMargin(),
             GrpcTypes.Support.FutureCall(originalReturnType),
             UnitTest.MOCK_API_STUB, originalReturnType
@@ -271,7 +271,7 @@ internal class UnitTestImpl(
         // verify the executeFuture occurred (and use input block to verify)
         thenBlock.code.add(
             """
-            |verify(%N).executeFuture<%T>(check {
+            |verify(%N).executeFuture<%T>(any(), check {
             |    val mock: %T = mock()
             |    it(mock)
             |    verify(mock).%N(%L)
@@ -337,7 +337,7 @@ internal class UnitTestImpl(
             )
         }
         givenBlock.code.addStatement(
-            "whenever(%N.%L(any())).thenReturn(streaming)",
+            "whenever(%N.%L(any(), any())).thenReturn(streaming)",
             UnitTest.MOCK_API_STUB,
             streamMethod
         )
@@ -359,7 +359,7 @@ internal class UnitTestImpl(
             val check = createStubCheckCode(givenBlock, context, method, flatteningConfig)
             thenBlock.code.add(
                 """
-                |verify(%N).%L(check {
+                |verify(%N).%L(any(), check {
                 |    val mock: %T = mock()
                 |    val mockObserver: %T = mock()
                 |    it(mock, mockObserver)
@@ -374,7 +374,7 @@ internal class UnitTestImpl(
         } else {
             thenBlock.code.add(
                 """
-                |verify(%N).%L(check {
+                |verify(%N).%L(any(), check {
                 |    val mock: %T = mock()
                 |    assertEquals(mock::%L, it(mock))
                 |})
