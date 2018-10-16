@@ -70,6 +70,6 @@ class MainActivityInterceptor : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
 
-//        client.shutdownChannel()
+        client.shutdownChannel()
     }
 }
