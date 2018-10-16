@@ -88,6 +88,8 @@ jobs:
     steps:
       - checkout:
           path: ~/gapic-generator-kotlin
+      - attach_workspace:
+          at: ./..
       - restore_cache:
           key: cloud-examples-v0-{{ checksum "build.gradle" }}
       - run: 
