@@ -81,7 +81,6 @@ jobs:
   # Examples
   # -------------------------------------------------------------------------------  
 
-
   build_examples:
     docker:
       - image: circleci/openjdk:8-jdk
@@ -124,14 +123,14 @@ jobs:
       - attach_workspace:
           at: ./..
       - restore_cache:
-          key: examples-v0-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
+          key: cloud-examples-android-v0-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
       - run:
           name: Download dependencies
           command: ./gradlew androidDependencies
       - save_cache:
           paths:
             - ~/.gradle
-          key: examples-v0-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
+          key: cloud-examples-android-v0-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
       - run:
           name: Create placeholder key
           command: touch app/src/main/res/raw/sa.json
