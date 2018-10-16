@@ -14,13 +14,13 @@ use. To get started:
     + [Enable Cloud Natural Language API](https://console.cloud.google.com/apis/library/language.googleapis.com)
     + [Enable Stackdriver Logging API](https://console.cloud.google.com/apis/library/logging.googleapis.com)
 1. [Create a new service account](https://console.cloud.google.com/apis/credentials/serviceaccountkey) with a JSON keyfile
-1. Move the service account JSON file to `app/src/main/res/raw/sa.json`
+1. Define an environment variable so the example application uses your service account credentials:
+    ```bash
+    $ export CREDENTIALS <path to your service account JSON file>  
+    ```
+1. Run via gradle:
+    ```bash
+    $ ./gradlew run
+    ```
 
-After your Google Cloud project is setup you are ready to run the examples. Each example is a single
-`Activity` that calls an API and puts a stringified version of the result on the UI. 
-
-To switch between examples, modify the sample application's manifest `app/src/main/AndroidManifest.xml` 
-and change the main activity (i.e. move the `intent-filter` under the example that you want to run).
-
-*Note:* You should not normally put a service account keyfile in an application that will be distributed.
-It is done in these examples for simplicity but not should not be done in real applications.
+To switch between examples modify the `mainClassName` in the application's `build.gradle`. 

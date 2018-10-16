@@ -97,8 +97,8 @@ $ cd example-server && ./gradlew run
 $ cd example-client && ./gradlew run
 ```
 
-More complex examples, using Google Cloud APIs on Android, can be found in the 
-[examples directory](example-api-clients/README.md).
+More complex examples, using Google Cloud APIs, can be found in the 
+[examples directory](example-api-cloud-clients/README.md).
 
 ## Configuration
 
