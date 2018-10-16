@@ -38,8 +38,12 @@ internal class ProtobufTypeMapper private constructor() {
 
     /** Get all Kotlin types (excluding enums and map types) */
     fun getAllKotlinTypes() = knownProtoTypes.keys
+        .asSequence()
         .filter { !(knownProtoTypes[it]?.options?.mapEntry ?: false) }
         .map { typeMap[it] ?: throw IllegalStateException("unknown type: $it") }
+        .toList()
+
+    fun getAllTypes() = knownProtoTypes.keys.map { TypeNamePair(it, typeMap[it]!!) }
 
     /** Checks if the message type is in this mapper */
     fun hasProtoTypeDescriptor(type: String) = knownProtoTypes.containsKey(type)
@@ -134,3 +138,5 @@ internal class ProtobufTypeMapper private constructor() {
         }
     }
 }
+
+internal data class TypeNamePair(val protoName: String, val kotlinName: String)

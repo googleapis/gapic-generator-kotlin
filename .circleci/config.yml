@@ -81,10 +81,41 @@ jobs:
   # Examples
   # -------------------------------------------------------------------------------  
 
+
   build_examples:
-    working_directory: ~/gapic-generator-kotlin/example-api-clients
     docker:
-      - image: circleci/android:api-27-alpha
+      - image: circleci/openjdk:8-jdk
+    working_directory: ~/gapic-generator-kotlin/example-api-cloud-clients
+    steps:
+      - checkout:
+          path: ~/gapic-generator-kotlin
+      - restore_cache:
+          key: cloud-examples-v0-{{ checksum "build.gradle" }}
+      - run: 
+          name: Download dependencies
+          command: ./gradlew dependencies
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: cloud-examples-v0-{{ checksum "build.gradle" }}
+      - run: 
+           name: Build and run checks
+           command: ./gradlew build
+      - run: 
+          name: Save test results
+          command: |
+            mkdir -p ~/junit/
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} ~/junit/ \;
+          when: always
+      - store_test_results:
+          path: ~/junit
+      - store_artifacts:
+          path: ~/junit
+
+  build_android_examples:
+    working_directory: ~/gapic-generator-kotlin/example-api-cloud-clients-android
+    docker:
+      - image: circleci/android:api-28-alpha
     environment:
       JVM_OPTS: -Xmx3200m
     steps:
@@ -272,6 +303,9 @@ workflows:
       - build_examples:
           requires:
             - build
+      - build_android_examples:
+          requires:
+            - build
       - test_showcase:
           requires:
             - build
@@ -283,6 +317,7 @@ workflows:
             - build
             - dockerize
             - build_examples
+            - build_android_examples
             - test_showcase
             - test_example
           filters:

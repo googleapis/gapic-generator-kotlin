@@ -24,7 +24,10 @@ import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.asTypeName
+import java.io.File
 import java.io.InputStream
+import java.lang.IllegalStateException
 
 /**
  * Generates a companion object for the client, which is responsible for
@@ -88,17 +91,15 @@ internal class CompanionObjectImpl : CompanionObject {
                     .build()
             )
             .returns(ctx.className)
-            .addStatement(
-                "val credentials = %T.create(accessToken).createScoped(scopes)",
-                GrpcTypes.Auth.GoogleCredentials
-            )
-            .addStatement(
+            .addCode(
                 """
+                |val credentials = %T.create(accessToken).createScoped(scopes)
                 |return %T(
                 |    channel ?: createChannel(),
                 |    %T(%T.from(credentials))
                 |)
-                """.trimMargin(),
+                |""".trimMargin(),
+                GrpcTypes.Auth.GoogleCredentials,
                 ctx.className,
                 GrpcTypes.Support.ClientCallOptions,
                 GrpcTypes.Auth.MoreCallCredentials
@@ -132,20 +133,63 @@ internal class CompanionObjectImpl : CompanionObject {
                     .build()
             )
             .returns(ctx.className)
-            .addStatement(
-                "val credentials = %T.fromStream(keyFile).createScoped(scopes)",
-                GrpcTypes.Auth.GoogleCredentials
-            )
-            .addStatement(
+            .addCode(
                 """
+                |val credentials = %T.fromStream(keyFile).createScoped(scopes)
                 |return %T(
                 |    channel ?: createChannel(),
                 |    %T(%T.from(credentials))
                 |)
-                """.trimMargin(),
+                |""".trimMargin(),
+                GrpcTypes.Auth.GoogleCredentials,
                 ctx.className,
                 GrpcTypes.Support.ClientCallOptions,
                 GrpcTypes.Auth.MoreCallCredentials
+            )
+            .build()
+
+        val fromEnv = FunSpec.builder("fromEnvironment")
+            .addKdoc(
+                """
+                |Create a %N from the current system's environment.
+                |
+                |Currently, this method only supports service account credentials that are read from the
+                |path defined by the environment [variableName], which is `CREDENTIALS` by default.
+                |
+                |If a [channel] is not provided one will be created automatically (recommended).
+                |""".trimMargin(), ctx.className.simpleName
+            )
+            .addAnnotation(JvmStatic::class)
+            .addAnnotation(JvmOverloads::class)
+            .addParameter(ParameterSpec.builder("variableName", String::class)
+                .defaultValue("%S", "CREDENTIALS")
+                .build())
+            .addParameter(
+                ParameterSpec.builder(
+                    "scopes",
+                    List::class.parameterizedBy(String::class)
+                )
+                    .defaultValue("%N", CompanionObject.VAL_ALL_SCOPES)
+                    .build()
+            )
+            .addParameter(
+                ParameterSpec.builder(
+                    "channel", GrpcTypes.ManagedChannel.asNullable()
+                )
+                    .defaultValue("null")
+                    .build()
+            )
+            .returns(ctx.className)
+            .addCode(
+                """
+                |val path = System.getenv(variableName) ?: throw %T("Credentials environment variable is not set: ${'$'}variableName")
+                |return %T(path).inputStream().use {
+                |    %T.fromServiceAccount(it, scopes, channel)
+                |}
+                |""".trimMargin(),
+                IllegalStateException::class.asTypeName(),
+                File::class.asTypeName(),
+                ctx.className
             )
             .build()
 
@@ -174,14 +218,14 @@ internal class CompanionObjectImpl : CompanionObject {
                     .build()
             )
             .returns(ctx.className)
-            .addStatement(
+            .addCode(
                 """
                 |val cred = credentials?.let { %T.from(it) }
                 |return %T(
                 |    channel ?: createChannel(),
                 |    %T(cred)
                 |)
-                """.trimMargin(),
+                |""".trimMargin(),
                 GrpcTypes.Auth.MoreCallCredentials,
                 ctx.className,
                 GrpcTypes.Support.ClientCallOptions
@@ -219,14 +263,14 @@ internal class CompanionObjectImpl : CompanionObject {
                     .build()
             )
             .returns(ctx.className)
-            .addStatement(
+            .addCode(
                 """
                 |return %T(
                 |    channel ?: createChannel(),
                 |    options ?: %T(),
                 |    factory
                 |)
-                """.trimMargin(),
+                |""".trimMargin(),
                 ctx.className,
                 GrpcTypes.Support.ClientCallOptions
             )
@@ -270,9 +314,10 @@ internal class CompanionObjectImpl : CompanionObject {
             .build()
 
         return listOf(
-            fromAccessToken,
-            fromServiceAccount,
             fromCredentials,
+            fromEnv,
+            fromServiceAccount,
+            fromAccessToken,
             fromStubs,
             createChannel
         )

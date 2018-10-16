@@ -106,13 +106,15 @@ internal fun getProtoFieldInfoForPath(
 internal fun DescriptorProtos.MethodDescriptorProto.isLongRunningOperation() =
     this.outputType == ".google.longrunning.Operation"
 
+internal fun DescriptorProtos.DescriptorProto.isMap() = this.options.mapEntry
+
 /** Checks if this proto field is a map type. */
 internal fun DescriptorProtos.FieldDescriptorProto.isMap(typeMap: ProtobufTypeMapper): Boolean {
     if (this.hasTypeName()) {
         if (typeMap.hasProtoEnumDescriptor(this.typeName)) {
             return false
         }
-        return typeMap.getProtoTypeDescriptor(this.typeName).options.mapEntry
+        return typeMap.getProtoTypeDescriptor(this.typeName).isMap()
     }
     return false
 }

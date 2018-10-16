@@ -91,6 +91,9 @@ internal object FieldNamer {
         return getAccessorName(fieldInfo.field.name)
     }
 
+    fun getFieldName(protoFieldName: String) =
+        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
+
     fun getSetterMapName(protoFieldName: String) =
         "putAll" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)
 

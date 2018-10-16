@@ -43,6 +43,14 @@ android {
         exclude 'META-INF/main.kotlin_module'
     }
     sourceSets {
+        // add the proto file from the server project
+        main {
+            proto {
+                srcDir '../../example-apis'
+            }
+        }
+
+        // add generated unit tests to the project
         test.java.srcDirs += "${project.buildDir}/generated/source/protoTest/debugUnitTest/client"
     }
     compileOptions {
@@ -103,10 +111,14 @@ protobuf {
                 javalite {}
                 // generate clients
                 client {
-                    option "source=${projectDir}/src/main/proto"
+                    // this option will add generated unit tests for the client to the project
+                    // be sure to add the directory to your test source set(s) as shown above
                     option "test_output=${project.buildDir}/generated/source/protoTest/debugUnitTest/client"
-                    //option "test_output=${projectDir}/src/test/java"
-                    //option "fallback"
+                    
+                    // this option is not typical. It is used here because the cloud API
+                    // definitions used in this example use a legacy configuration format.
+                    // This will be removed once they are updated.
+                    option "source=${projectDir}/../../example-apis"
                 }
             }
             // add something like this to have the generated clients formatted with your project settings
