@@ -1,51 +1,121 @@
 # Configuration
 
-Kgen currently uses a legacy format based on `.yaml` files for configuration. However, it is being replaced 
-with a set of annotations that can be put directly into the `.proto` files describing the API. We do 
-not recommend using the legacy configuration, so it's not described here. 
+Kgen can be used without any additional configuration beyond your proto files. 
 
-Kgen can be used without any additional configuration :), but you won't be able to use the 
-cutomizations described below just yet :(. We will update our documentation when the new format is ready.
+However, you can customize the generated code by annotating your proto files with any of
+the options described below.
 
 ## Configuration Options
+
+### Packaging
+  
+  + You can provide metadata about your client library that will appear in
+    method comments and set global preferences, such as the namespace.
+      ```proto
+      option (google.api.metadata) = {
+          product_name: "My Awesome Library"
+          product_uri: "https://github.com/my/project"
+          package_namespace: ["com", "my", "project"]
+      };
+      ```
+
+  + You should also configure the host and port that your back-end service
+    will run on so that users do not need to configure it directly.
+      ```proto
+      service AnnotationService {
+          option (google.api.default_host) = "localhost:7469";
+          // ...
+      }
+      ````
 
 ### Method Signatures
 
   + Specify alternative method signature(s) to simplify your API.
-      ```kotlin
-       // instead of using the signature defined in the proto file:
-       fun createUser(request: CreateUserRequest): CreateUserResponse
-       
-       // generate alternative methods that take multiple or smaller arguments
-       // for common use cases.
-       fun createUser(userName: String, userLocation: Location): CreateUserResponse
-       fun createUser(user: User): CreateUserResponse
+
+      ```proto
+      rpc CreateUser (CreateUserRequest) returns (CreateUserResponse) {
+          option (google.api.method_signature) = {
+              fields: ["user_name", "user_location.country"]
+          };
+      }
+
+      message CreateUserRequest {
+          string user_name = 1;
+          UserLocation user_location = 2;
+          // ...
+      }
+
+      message UserLocation {
+          string country = 1;
+          // ...
+      }
       ```
 
-### Return Type Transformations
+      ```kotlin
+       // In addition to the standard method:
+       fun createUser(request: CreateUserRequest): CreateUserResponse
+       
+       // this overload will also be generated:
+       fun createUser(userName: String, country: String): CreateUserResponse
+      ```
 
-  + Paged responses
+### Paged Responses
+
+  + Large responses are automatically paged if your message types define a `page_size` 
+    and a `page_token` parameter in the request and a `responses` and a `next_page_token`
+    parameter in the response. Of course, make sure that your back-end implements the
+    paged method.
+
+    ```proto
+    rpc MyPagedMethod (PagedRequest) returns (PagedResponse);
+
+    message PagedRequest {
+        int32 page_size = 1;
+        string page_token = 2;
+        bool flag = 3;
+    }
+
+    message PagedResponse {
+        repeated Element responses = 1;
+        string next_page_token = 2;
+    }
+    ```
+
+    ```kotlin
+    // the generated code will return a Pager that wraps the result
+    // type and allows the user to make incremental paged requests.
+    //
+    // You may combine paging with additional method signatures for ease of use.
+    fun myPagedMethod(
+        request: PagedRequest
+    ): Pager<PagedRequest, CallResult<PagedResponse>, Element>
+    ```
+
+### Long Running Operations
+
   + Transparent handling of long running operations using [google.longrunning.Operation](https://github.com/googleapis/googleapis/blob/master/google/longrunning/operations.proto)
 
-### Example Code
+    ```proto
+    rpc MethodThatTakesForever (MyRequest) returns (google.longrunning.Operation) {
+        option (google.api.operation) = {
+            response_type: "MyResponse"
+            metadata_type: "MyMetadata"
+        };
+    }
+    ```
 
-  + Specify values for examples in method documentation.
-     ```kotlin
-     /**
-     * val result = client.hiThere(
-     *     HiRequest {
-     *         query = "Hey!"
-     *     }
-     * )
-     */
-     fun hiThere(request: HiRequest): HiResponse
-     ```
-### Test Code
-
-  + Unit tests
-  + Functional tests using specified data values
+    ```kotlin
+    // The generated code will return a LongRunningCall<MyResponse> instead of a 
+    // FutureCall<MyResponse>. This long running call acts similar to a future, but
+    // can potentially make multiple round trips to the server and does not 
+    // resolve as completed until the operation is complete.
+    //
+    // Note: the use of this option requires that your back-end follow Google's
+    // long running design pattern described in the link above.
+    fun methodThatTakesForever(request: MyRequest): LongRunningCall<MyResponse>
+    ```
 
 ### Kgax
 
   + All API methods are invoked using the [Google API extension library for Kotlin](https://github.com/googleapis/gax-kotlin) 
-   and can take advantage of it's features, including a simplified interface for streaming methods, metadata access, interceptors, etc. 
+   and can take advantage of it's features, including a simplified interface for streaming methods, metadata access, automatic retries, interceptors, etc. 

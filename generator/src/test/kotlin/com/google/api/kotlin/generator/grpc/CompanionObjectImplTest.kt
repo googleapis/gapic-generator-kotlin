@@ -161,6 +161,40 @@ internal class CompanionObjectImplTest {
     }
 
     @Test
+    fun `Generates factory with environment`() {
+        whenever(serviceOptions.scopes).doReturn(listOf("a", "b c d e"))
+        whenever(ctx.className).doReturn(ClassName("r.r.r", "Clazz"))
+
+        val type = CompanionObjectImpl().generate(ctx)
+
+        val method = type.funSpecs.first { it.name == "fromEnvironment" }
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            | * Create a Clazz from the current system's environment.
+            | *
+            | * Currently, this method only supports service account credentials that are read from the
+            | * path defined by the environment [variableName], which is `CREDENTIALS` by default.
+            | *
+            | * If a [channel] is not provided one will be created automatically (recommended).
+            | */
+            |@kotlin.jvm.JvmStatic
+            |@kotlin.jvm.JvmOverloads
+            |fun fromEnvironment(
+            |    variableName: kotlin.String = "CREDENTIALS",
+            |    scopes: kotlin.collections.List<kotlin.String> = ALL_SCOPES,
+            |    channel: io.grpc.ManagedChannel? = null
+            |): r.r.r.Clazz {
+            |    val path = System.getenv(variableName) ?: throw java.lang.IllegalStateException("Credentials environment variable is not set: ${'$'}variableName")
+            |    return java.io.File(path).inputStream().use {
+            |        r.r.r.Clazz.fromServiceAccount(it, scopes, channel)
+            |    }
+            |}
+            |""".asNormalizedString()
+        )
+    }
+
+    @Test
     fun `Generates factory with stubs`() {
         whenever(serviceOptions.scopes).doReturn(listOf("a", "b c d e"))
         whenever(ctx.className).doReturn(ClassName("r.r.r", "Clazz"))

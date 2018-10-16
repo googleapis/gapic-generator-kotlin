@@ -30,7 +30,7 @@ internal class ProtobufTypeMapperTest : BaseGeneratorTest(GRPCGenerator()) {
     fun `maps all Kotlin types`() {
         val mapper = ProtobufTypeMapper.fromProtos(listOf(testProto, testTypesProto))
 
-        assertThat(mapper.getAllKotlinTypes()).containsExactly(
+        val kotlinTypes = listOf(
             "google.example.TestRequest",
             "google.example.TestResponse",
             "google.example.Result",
@@ -43,6 +43,11 @@ internal class ProtobufTypeMapperTest : BaseGeneratorTest(GRPCGenerator()) {
             "google.example.StillNotPagedResponse",
             "google.example.SomeResponse",
             "google.example.SomeMetadata"
+        )
+
+        assertThat(mapper.getAllKotlinTypes()).containsExactlyElementsIn(kotlinTypes)
+        assertThat(mapper.getAllTypes()).containsExactlyElementsIn(
+            kotlinTypes.map { TypeNamePair(".$it", it) }
         )
     }
 

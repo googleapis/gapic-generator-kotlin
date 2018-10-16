@@ -42,6 +42,9 @@ class MainActivity : AppCompatActivity() {
 
         val textView: TextView = findViewById(R.id.text_view)
 
+        // get a source for access tokens
+        // Note: access tokens should be generated on a back end server
+        // and securely sent to an application (it's done here to keep the example simple)
         val tokenFactory = applicationContext.resources.openRawResource(R.raw.sa).use {
             AccessTokens(it, LanguageServiceClient.ALL_SCOPES)
         }

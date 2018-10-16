@@ -18,20 +18,27 @@ package com.google.api.kotlin.generator
 
 import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.ProtobufTypeMapper
+import com.google.api.kotlin.config.TypeNamePair
 import com.google.common.truth.Truth.assertThat
+import com.google.protobuf.DescriptorProtos
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
+import com.squareup.kotlinpoet.ClassName
 import kotlin.test.Test
 
 internal class BuilderGeneratorTest {
 
     @Test
     fun `generates builders`() {
+        val types = listOf(
+            "com.google.api.Foo",
+            "com.google.api.Bar"
+        )
         val typeMap: ProtobufTypeMapper = mock {
-            on { getAllKotlinTypes() }.thenReturn(
-                listOf(
-                    "com.google.api.Foo",
-                    "com.google.api.Bar"
-                )
+            on { getAllTypes() }.thenReturn(types.map { TypeNamePair(".$it", it) })
+            on { getProtoTypeDescriptor(any()) }.thenReturn(
+                DescriptorProtos.DescriptorProto.newBuilder().build()
             )
         }
 
@@ -62,19 +69,21 @@ internal class BuilderGeneratorTest {
 
     @Test
     fun `generates nested builders`() {
+        val types = listOf(
+            "com.google.api.Foo",
+            "com.google.api.Foo.A",
+            "com.google.api.Foo.A.B",
+            "com.google.api.Foo.A.B.C",
+            "com.google.api.Bar",
+            "com.google.api.Bar.X",
+            "com.google.api.Bar.Y",
+            "com.google.api.Bar.Z",
+            "com.google.api.Baz"
+        )
         val typeMap: ProtobufTypeMapper = mock {
-            on { getAllKotlinTypes() }.thenReturn(
-                listOf(
-                    "com.google.api.Foo",
-                    "com.google.api.Foo.A",
-                    "com.google.api.Foo.A.B",
-                    "com.google.api.Foo.A.B.C",
-                    "com.google.api.Bar",
-                    "com.google.api.Bar.X",
-                    "com.google.api.Bar.Y",
-                    "com.google.api.Bar.Z",
-                    "com.google.api.Baz"
-                )
+            on { getAllTypes() }.thenReturn(types.map { TypeNamePair(".$it", it) })
+            on { getProtoTypeDescriptor(any()) }.thenReturn(
+                DescriptorProtos.DescriptorProto.newBuilder().build()
             )
         }
 
@@ -95,7 +104,7 @@ internal class BuilderGeneratorTest {
             |    init: (@com.google.kgax.ProtoBuilder com.google.api.$type.Builder).() -> kotlin.Unit
             |): com.google.api.$type =
             |    com.google.api.$type.newBuilder().apply(init).build()
-            """.trimMargin().asNormalizedString()
+            """.asNormalizedString()
         listOf(
             "Foo.A",
             "Foo.A.B",
@@ -112,13 +121,104 @@ internal class BuilderGeneratorTest {
     }
 
     @Test
-    fun `skips descriptor types`() {
+    fun `generates repeated setters`() {
+        val types = listOf(
+            "com.google.api.Foo"
+        )
         val typeMap: ProtobufTypeMapper = mock {
-            on { getAllKotlinTypes() }.thenReturn(
-                listOf(
-                    "com.google.protobuf.DescriptorProtos",
-                    "com.google.protobuf.FileDescriptorProtos"
-                )
+            on { getAllTypes() }.thenReturn(types.map { TypeNamePair(".$it", it) })
+            on { getProtoTypeDescriptor(eq(".com.google.api.Foo")) }.thenReturn(
+                DescriptorProtos.DescriptorProto.newBuilder()
+                    .addField(
+                        DescriptorProtos.FieldDescriptorProto.newBuilder()
+                            .setName("responses")
+                            .setLabel(DescriptorProtos.FieldDescriptorProto.Label.LABEL_REPEATED)
+                            .setType(DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE)
+                            .setTypeName(".com.google.api.Response")
+                            .build()
+                    )
+                    .build()
+            )
+            on { getProtoTypeDescriptor(eq(".com.google.api.Response")) }.thenReturn(
+                DescriptorProtos.DescriptorProto.newBuilder().build()
+            )
+            on { getKotlinType(eq(".com.google.api.Response")) }.thenReturn(ClassName("com.google.api", "Response"))
+        }
+
+        // build types
+        val files = BuilderGenerator().generate(typeMap)
+
+        assertThat(files).hasSize(1)
+        val file = files.first()
+        assertThat(file.packageName).isEqualTo("com.google.api")
+        assertThat(file.name).isEqualTo("KotlinBuilders")
+
+        val funs = file.functions
+        assertThat(funs).hasSize(2)
+
+        val repeatedSetter = funs[1]
+        assertThat(repeatedSetter.toString().asNormalizedString()).isEqualTo(
+            """
+            |fun com.google.api.Foo.Builder.responses(
+            |    vararg init: (@com.google.kgax.ProtoBuilder com.google.api.Response.Builder).() -> kotlin.Unit
+            |) {
+            |    this.addAllResponses(init.map { com.google.api.Response.newBuilder().apply(it).build() })
+            |}
+            """.trimIndent().asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `generates repeated setters with primities`() {
+        val types = listOf(
+            "com.google.api.Foo"
+        )
+        val typeMap: ProtobufTypeMapper = mock {
+            on { getAllTypes() }.thenReturn(types.map { TypeNamePair(".$it", it) })
+            on { getProtoTypeDescriptor(eq(".com.google.api.Foo")) }.thenReturn(
+                DescriptorProtos.DescriptorProto.newBuilder()
+                    .addField(
+                        DescriptorProtos.FieldDescriptorProto.newBuilder()
+                            .setName("the_strings")
+                            .setLabel(DescriptorProtos.FieldDescriptorProto.Label.LABEL_REPEATED)
+                            .setType(DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING)
+                            .build()
+                    )
+                    .build()
+            )
+        }
+
+        // build types
+        val files = BuilderGenerator().generate(typeMap)
+
+        assertThat(files).hasSize(1)
+        val file = files.first()
+        assertThat(file.packageName).isEqualTo("com.google.api")
+        assertThat(file.name).isEqualTo("KotlinBuilders")
+
+        val funs = file.functions
+        assertThat(funs).hasSize(2)
+
+        val repeatedSetter = funs[1]
+        assertThat(repeatedSetter.toString().asNormalizedString()).isEqualTo(
+            """
+            |fun com.google.api.Foo.Builder.theStrings(vararg items: kotlin.String) {
+            |    this.addAllTheStrings(items.asList())
+            |}
+            """.trimIndent().asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `skips descriptor types`() {
+        val types = listOf(
+            "com.google.protobuf.DescriptorProtos",
+            "com.google.protobuf.FileDescriptorProtos"
+        )
+        val typeMap: ProtobufTypeMapper = mock {
+            on { getAllTypes() }.thenReturn(types.map { TypeNamePair(".$it", it) })
+            on { getProtoTypeDescriptor(any()) }.thenReturn(
+                DescriptorProtos.DescriptorProto.newBuilder().build()
             )
         }
 
@@ -130,13 +230,15 @@ internal class BuilderGeneratorTest {
 
     @Test
     fun `skips Any and Empty`() {
+        val types = listOf(
+            "com.google.protobuf.Any",
+            "com.google.protobuf.Empty",
+            "com.google.protobuf.Surprise"
+        )
         val typeMap: ProtobufTypeMapper = mock {
-            on { getAllKotlinTypes() }.thenReturn(
-                listOf(
-                    "com.google.protobuf.Any",
-                    "com.google.protobuf.Empty",
-                    "com.google.protobuf.Surprise"
-                )
+            on { getAllTypes() }.thenReturn(types.map { TypeNamePair(".$it", it) })
+            on { getProtoTypeDescriptor(any()) }.thenReturn(
+                DescriptorProtos.DescriptorProto.newBuilder().build()
             )
         }
 

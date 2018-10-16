@@ -138,6 +138,15 @@ internal class FieldNamerTest {
     }
 
     @Test
+    fun `can generate field names`() {
+        assertThat(FieldNamer.getFieldName("fun_stuff")).isEqualTo("funStuff")
+        assertThat(FieldNamer.getFieldName("a")).isEqualTo("a")
+        assertThat(FieldNamer.getFieldName("xyz")).isEqualTo("xyz")
+        assertThat(FieldNamer.getFieldName("a_long_name_yes")).isEqualTo("aLongNameYes")
+        assertThat(FieldNamer.getFieldName("justaword")).isEqualTo("justaword")
+    }
+
+    @Test
     fun `can get setter name`() =
         testSetterMethod(FieldNamer::getSetterName, "set")
 

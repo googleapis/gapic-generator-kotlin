@@ -1,0 +1,17 @@
+*.iml
+.idea/
+.gradle
+.vscode
+/local.properties
+
+.project
+.settings
+
+.DS_Store
+/bin
+/build
+/captures
+/out
+.externalNativeBuild
+
+src/main/resources/sa.json
