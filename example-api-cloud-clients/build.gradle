@@ -33,7 +33,7 @@ apply plugin: 'application'
 apply plugin: 'com.google.protobuf'
 apply plugin: 'idea'
 
-mainClassName = 'example.Language'
+mainClassName = 'example.Main'
 
 defaultTasks 'run'
 

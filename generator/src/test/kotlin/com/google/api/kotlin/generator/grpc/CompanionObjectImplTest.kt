@@ -61,7 +61,7 @@ internal class CompanionObjectImplTest {
         assertThat(prop.toString().asNormalizedString()).isEqualTo(
             """
             |/**
-            | * Default scopes to use.
+            | * Default scopes to use. Use [prepare] to override as needed.
             | */
             |@kotlin.jvm.JvmStatic
             |val ALL_SCOPES: kotlin.collections.List<kotlin.String> = listOf("a", "b c d e")
@@ -79,7 +79,10 @@ internal class CompanionObjectImplTest {
         assertThat(prop.toString().asNormalizedString()).isEqualTo(
             """
             |/**
-            | * Default operations to retry.
+            | * Default operations to retry on failure. Use [prepare] to override as needed.
+            | *
+            | * Note: This setting controls client side retries. If you enable
+            | * server managed retries on the channel do not use this.
             | */
             |@kotlin.jvm.JvmStatic val RETRY: com.google.kgax.Retry = com.google.kgax.grpc.GrpcBasicRetry(mapOf())
             |""".asNormalizedString()
@@ -101,7 +104,10 @@ internal class CompanionObjectImplTest {
         assertThat(prop.toString().asNormalizedString()).isEqualTo(
             """
             |/**
-            | * Default operations to retry.
+            | * Default operations to retry on failure. Use [prepare] to override as needed.
+            | *
+            | * Note: This setting controls client side retries. If you enable
+            | * server managed retries on the channel do not use this.
             | */
             |@kotlin.jvm.JvmStatic val RETRY: com.google.kgax.Retry = com.google.kgax.grpc.GrpcBasicRetry(mapOf(
             |    "hasRetry" to setOf(Status.Code.ABORTED),
@@ -287,13 +293,16 @@ internal class CompanionObjectImplTest {
             |*
             |* Prefer to use the default value with [fromAccessToken], [fromServiceAccount],
             |* or [fromCredentials] unless you need to customize the channel.
+            |*
+            |* [enableRetry] can be used to enable server managed retries, which is currently
+            |* experimental. You should not use any client retry settings if you enable it.
             |*/
             |@kotlin.jvm.JvmStatic
             |@kotlin.jvm.JvmOverloads
             |fun createChannel(
             |    host: kotlin.String = null,
             |    port: kotlin.Int = 443,
-            |    enableRetry: kotlin.Boolean = true
+            |    enableRetry: kotlin.Boolean = false
             |): io.grpc.ManagedChannel {
             |    val builder = io.grpc.ManagedChannelBuilder.forAddress(host, port)
             |    if (enableRetry) { builder.enableRetry() }

@@ -55,7 +55,7 @@ internal class CompanionObjectImpl : CompanionObject {
                     CompanionObject.VAL_ALL_SCOPES,
                     List::class.parameterizedBy(String::class)
                 )
-                    .addKdoc("Default scopes to use.\n")
+                    .addKdoc("Default scopes to use. Use [prepare] to override as needed.\n")
                     .addAnnotation(JvmStatic::class)
                     .initializer("listOf(%L)", context.serviceOptions.scopes.joinToString(", ") { "\"$it\"" })
                     .build()
@@ -292,6 +292,9 @@ internal class CompanionObjectImpl : CompanionObject {
                 |
                 |Prefer to use the default value with [fromAccessToken], [fromServiceAccount],
                 |or [fromCredentials] unless you need to customize the channel.
+                |
+                |[enableRetry] can be used to enable server managed retries, which is currently
+                |experimental. You should not use any client retry settings if you enable it.
                 |""".trimMargin(), ctx.className.simpleName
             )
             .addAnnotation(JvmStatic::class)
@@ -308,7 +311,7 @@ internal class CompanionObjectImpl : CompanionObject {
             )
             .addParameter(
                 ParameterSpec.builder("enableRetry", Boolean::class)
-                    .defaultValue("true")
+                    .defaultValue("false")
                     .build()
             )
             .returns(GrpcTypes.ManagedChannel)
@@ -338,7 +341,13 @@ internal class CompanionObjectImpl : CompanionObject {
             CompanionObject.VAL_RETRY, GrpcTypes.Support.Retry
         )
             .addAnnotation(JvmStatic::class)
-            .addKdoc("Default operations to retry.\n")
+            .addKdoc(
+                """
+                |Default operations to retry on failure. Use [prepare] to override as needed.
+                |
+                |Note: This setting controls client side retries. If you enable
+                |server managed retries on the channel do not use this.
+                |""".trimMargin())
 
         // create a map of function name to the retry codes
         val retryEntries = context.serviceOptions.methods
