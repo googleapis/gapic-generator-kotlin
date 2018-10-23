@@ -19,6 +19,7 @@ package com.google.api.kotlin.config
 import com.google.api.kotlin.BaseGeneratorTest
 import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.common.truth.Truth.assertThat
+import com.google.rpc.Code
 import kotlin.test.Test
 import kotlin.test.fail
 
@@ -114,5 +115,36 @@ internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
         val signatures = method?.flattenedMethods ?: fail("method signatures not found")
 
         assertThat(signatures).isEmpty()
+    }
+
+    @Test
+    fun `can detect retry settings`() {
+        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val config = factory.fromProto(testAnnotationsProto)
+
+        val method = config["google.example.AnnotationService"].methods.first { it.name == "AnnotationRetryTest" }
+
+        assertThat(method.retry).isNotNull()
+        assertThat(method.retry!!.codes).containsExactly(Code.UNKNOWN, Code.NOT_FOUND).inOrder()
+    }
+
+    @Test
+    fun `can detect default retry settings`() {
+        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val config = factory.fromProto(testAnnotationsProto)
+
+        val method = config["google.example.AnnotationService"].methods.first { it.name == "AnnotationRetryDefaultTest" }
+
+        assertThat(method.retry).isNotNull()
+        assertThat(method.retry!!.codes).containsExactly(Code.UNAVAILABLE, Code.DEADLINE_EXCEEDED)
+    }
+
+    @Test
+    fun `does not make up retry settings`() {
+        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val config = factory.fromProto(testAnnotationsProto)
+
+        val method = config["google.example.AnnotationService"].methods.first { it.name == "AnnotationTest" }
+        assertThat(method.retry).isNull()
     }
 }

@@ -23,6 +23,7 @@ import com.google.api.kotlin.util.isIntOrLong
 import com.google.api.kotlin.util.isRepeated
 import com.google.api.kotlin.util.isString
 import com.google.protobuf.DescriptorProtos
+import com.google.rpc.Code
 import mu.KotlinLogging
 import org.apache.commons.io.FilenameUtils
 import org.apache.commons.io.IOCase
@@ -123,15 +124,19 @@ internal class AnnotationConfigurationFactory(
         method: DescriptorProtos.MethodDescriptorProto
     ): MethodOptions {
         val signature = method.options.getExtensionOrNull(AnnotationsProto.methodSignature)
-        val retry = method.options.getExtensionOrNull(AnnotationsProto.retry)
         val httpBindings = method.options.getExtensionOrNull(AnnotationsProto.http)
+        val retry = method.options.getExtensionOrNull(AnnotationsProto.retry)
 
-        // TODO
-        if (retry != null) {
-            log.warn { "Retries are not implemented!" }
-        }
+        var retryOptions = if (retry != null) ClientRetry(retry.codesList) else null
+
+        // TODO: headers?
         if (httpBindings != null) {
             log.warn { "Regional headers are not implemented!" }
+
+            // use a default try if not specified
+            if (retryOptions == null && httpBindings.get.isNotBlank()) {
+                retryOptions = ClientRetry(listOf(Code.UNAVAILABLE, Code.DEADLINE_EXCEEDED))
+            }
         }
 
         // TODO: samples?
@@ -142,7 +147,9 @@ internal class AnnotationConfigurationFactory(
             flattenedMethods = getMethodsFrom(signature, pagedResponse),
             keepOriginalMethod = true,
             pagedResponse = pagedResponse,
-            longRunningResponse = getLongRunningResponse(proto, service, method)
+            longRunningResponse = getLongRunningResponse(proto, service, method),
+            retry = retryOptions,
+            samples = listOf()
         )
     }
 
@@ -422,7 +429,8 @@ internal class LegacyConfigurationFactory(
                         keepOriginalMethod = method.request_object_method,
                         pagedResponse = paging,
                         longRunningResponse = null,
-                        samples = samples
+                        samples = samples,
+                        retry = null
                     )
                 }
                 services[service.name] = ServiceOptions(host, scopes.toList(), methods)
@@ -453,8 +461,11 @@ internal data class MethodOptions(
     val keepOriginalMethod: Boolean = true,
     val pagedResponse: PagedResponse? = null,
     val longRunningResponse: LongRunningResponse? = null,
+    val retry: ClientRetry? = null,
     val samples: List<SampleMethod> = listOf()
 )
+
+internal data class ClientRetry(val codes: List<Code>)
 
 /** Flattened method with a list of, potentially nested, [parameters] */
 internal data class FlattenedMethod(val parameters: List<PropertyPath>)

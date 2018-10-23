@@ -87,6 +87,9 @@ internal interface GrpcTypes {
 
             fun PageResult(type: ClassName) =
                 ClassName(SUPPORT_LIB_GRPC_PACKAGE, "PageResult").parameterizedBy(type)
+
+            val Retry = ClassName(SUPPORT_LIB_PACKAGE, "Retry")
+            val GrpcBasicRetry = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "GrpcBasicRetry")
         }
     }
 
@@ -104,6 +107,7 @@ internal interface GrpcTypes {
         val Channel = ClassName("io.grpc", "Channel")
         val ManagedChannel = ClassName("io.grpc", "ManagedChannel")
         val ManagedChannelBuilder = ClassName("io.grpc", "ManagedChannelBuilder")
+        val StatusCode = ClassName("io.grpc", "Status.Code")
         val CallOptions = ClassName("io.grpc", "CallOptions")
         val OperationsGrpc = ClassName("com.google.longrunning", "OperationsGrpc")
         val OperationsFutureStub =
