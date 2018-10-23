@@ -29,7 +29,7 @@ import com.squareup.kotlinpoet.PropertySpec
  * Generates the properties and constructors for the client.
  */
 internal interface Properties {
-    fun generate(ctx: GeneratorContext): List<PropertySpec>
+    fun generate(context: GeneratorContext): List<PropertySpec>
     fun generatePrimaryConstructor(): FunSpec
 
     companion object {
@@ -43,7 +43,7 @@ internal interface Properties {
 
 internal class PropertiesImpl : Properties {
 
-    override fun generate(ctx: GeneratorContext): List<PropertySpec> {
+    override fun generate(context: GeneratorContext): List<PropertySpec> {
         val stub = PropertySpec.builder(
             Properties.PROP_STUBS, ClassName.bestGuess(Stubs.CLASS_STUBS)
         )

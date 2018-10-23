@@ -34,11 +34,11 @@ import com.squareup.kotlinpoet.TypeSpec
  */
 internal interface Stubs {
     /** Creates a nested type that will be used to hold the gRPC stubs used by the client */
-    fun generateHolderType(ctx: GeneratorContext): TypeSpec
+    fun generateHolderType(context: GeneratorContext): TypeSpec
 
-    fun getApiStubType(ctx: GeneratorContext): ParameterizedTypeName
+    fun getApiStubType(context: GeneratorContext): ParameterizedTypeName
 
-    fun getOperationsStubType(ctx: GeneratorContext): ParameterizedTypeName
+    fun getOperationsStubType(context: GeneratorContext): ParameterizedTypeName
 
     companion object {
         const val PROP_STUBS_API = "api"
@@ -50,9 +50,9 @@ internal interface Stubs {
 
 internal class StubsImpl(val baseClass: BaseClass) : Stubs {
 
-    override fun generateHolderType(ctx: GeneratorContext): TypeSpec {
-        val apiType = getApiStubType(ctx)
-        val opType = getOperationsStubType(ctx)
+    override fun generateHolderType(context: GeneratorContext): TypeSpec {
+        val apiType = getApiStubType(context)
+        val opType = getOperationsStubType(context)
 
         return TypeSpec.classBuilder(Stubs.CLASS_STUBS)
             .primaryConstructor(
@@ -89,9 +89,9 @@ internal class StubsImpl(val baseClass: BaseClass) : Stubs {
             .build()
     }
 
-    override fun getApiStubType(ctx: GeneratorContext) =
-        GrpcTypes.Support.GrpcClientStub(baseClass.stubTypeName(ctx))
+    override fun getApiStubType(context: GeneratorContext) =
+        GrpcTypes.Support.GrpcClientStub(baseClass.stubTypeName(context))
 
-    override fun getOperationsStubType(ctx: GeneratorContext) =
+    override fun getOperationsStubType(context: GeneratorContext) =
         GrpcTypes.Support.GrpcClientStub(GrpcTypes.OperationsFutureStub)
 }
