@@ -249,15 +249,19 @@ jobs:
           name: Download dependencies
           command: ./gradlew dependencies
       - run: 
-           name: Run all examples
-           command: |
-             export CREDENTIALS=$GCLOUD_SERVICE_KEY
-             export PROJECT=$GCLOUD_PROJECT_ID
-             ./gradlew run --args language
-             ./gradlew run --args logging
-             ./gradlew run --args speech
-             ./gradlew run --args vision
-             ./gradlew run --args pubsub             
+          name: Run all examples
+          command: |
+            echo $GCLOUD_SERVICE_KEY > _key.json
+            export CREDENTIALS=_key.json
+            export PROJECT=$GCLOUD_PROJECT_ID
+            ./gradlew run --args language
+            ./gradlew run --args logging
+            ./gradlew run --args speech
+            ./gradlew run --args vision
+            ./gradlew run --args pubsub
+      - run:
+          command: rm _key.json
+          when: always
 
   # -------------------------------------------------------------------------------
   # Deploy
