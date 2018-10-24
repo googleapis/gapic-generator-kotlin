@@ -251,14 +251,13 @@ jobs:
       - run: 
            name: Run all examples
            command: |
+             export CREDENTIALS=$GCLOUD_SERVICE_KEY
+             export PROJECT=$GCLOUD_PROJECT_ID
              ./gradlew run --args language
              ./gradlew run --args logging
              ./gradlew run --args speech
              ./gradlew run --args vision
-             ./gradlew run --args pubsub
-           environment:
-             CREDENTIALS: $GCLOUD_SERVICE_KEY
-             PROJECT: $GCLOUD_PROJECT_ID
+             ./gradlew run --args pubsub             
 
   # -------------------------------------------------------------------------------
   # Deploy
