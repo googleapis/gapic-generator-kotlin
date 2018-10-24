@@ -81,13 +81,12 @@ internal fun getProtoFieldInfoForPath(
 
     // if no nesting, we're done
     if (path.size == 1) {
-        val kotlinType = field.asClassName(context.typeMap)
         return ProtoFieldInfo(
-            context.proto,
-            type,
-            field,
-            idx,
-            kotlinType
+            file = context.proto,
+            message = type,
+            field = field,
+            index = idx,
+            kotlinType = field.asClassName(context.typeMap)
         )
     }
 

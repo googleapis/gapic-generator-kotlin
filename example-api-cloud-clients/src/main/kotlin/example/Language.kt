@@ -20,45 +20,27 @@ import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.LanguageServiceClient
 
 /**
- * Simple example of calling the Natural Language API
- * with a generated Kotlin gRPC client.
+ * Simple example of calling the Natural Language API with a generated Kotlin gRPC client.
  *
- * Run this example using your serivce account as follows:
+ * Run this example using your service account as follows:
  *
  * ```
- * $ CREDENTIALS=<path_to_your_service_account.json> ./gradlew run
+ * $ CREDENTIALS=<path_to_your_service_account.json> ./gradlew run --language
  * ```
  */
-class Language {
+fun languageExample() {
+    // create a client
+    val client = LanguageServiceClient.fromEnvironment()
 
-    companion object {
+    // call the API
+    val result = client.analyzeSentiment(Document {
+        content = "Let's see what this API can do. It's great! Right?"
+        type = Document.Type.PLAIN_TEXT
+    }).get()
 
-        @JvmStatic
-        fun main(args: Array<String>) {
-            try {
-                Language().runExample()
-                System.exit(0)
-            } catch (t: Throwable) {
-                System.err.println("Failed: $t")
-            }
-            System.exit(1)
-        }
-    }
+    // print the result
+    println("The response was: ${result.body}")
 
-    fun runExample() {
-        // create a client
-        val client = LanguageServiceClient.fromEnvironment()
-
-        // call the API
-        val result = client.analyzeSentiment(Document {
-            content = "Let's see what this API can do. It's great! Right?"
-            type = Document.Type.PLAIN_TEXT
-        }).get()
-
-        // print the result
-        println("The response was: ${result.body}")
-
-        // shutdown
-        client.shutdownChannel()
-    }
+    // shutdown
+    client.shutdownChannel()
 }

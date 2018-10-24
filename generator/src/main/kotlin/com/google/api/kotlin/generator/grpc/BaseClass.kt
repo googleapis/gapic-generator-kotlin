@@ -35,9 +35,9 @@ import com.squareup.kotlinpoet.TypeSpec
  * that should rarely be viewed by client users.
  */
 internal interface BaseClass {
-    fun generate(ctx: GeneratorContext, by: AnnotationSpec): GeneratedSource
-    fun typeName(ctx: GeneratorContext): TypeName
-    fun stubTypeName(ctx: GeneratorContext): TypeName
+    fun generate(context: GeneratorContext, by: AnnotationSpec): GeneratedSource
+    fun typeName(context: GeneratorContext): TypeName
+    fun stubTypeName(context: GeneratorContext): TypeName
 
     companion object {
         const val PARAM_REQUEST = "request"
@@ -47,15 +47,15 @@ internal interface BaseClass {
 
 internal class BaseClassImpl : BaseClass {
 
-    override fun typeName(ctx: GeneratorContext) =
-        ClassName(ctx.className.packageName, "Abstract${ctx.className.simpleName}")
+    override fun typeName(context: GeneratorContext) =
+        ClassName(context.className.packageName, "${context.className.simpleName}Base")
 
-    override fun stubTypeName(ctx: GeneratorContext) =
-        ClassName("${ctx.className.packageName}.Abstract${ctx.className.simpleName}", "Stub")
+    override fun stubTypeName(context: GeneratorContext) =
+        ClassName("${context.className.packageName}.${context.className.simpleName}Base", "Stub")
 
-    override fun generate(ctx: GeneratorContext, by: AnnotationSpec): GeneratedSource {
+    override fun generate(context: GeneratorContext, by: AnnotationSpec): GeneratedSource {
         // create type
-        val type = createType(ctx, by)
+        val type = createType(context, by)
 
         // add static imports
         val imports = listOf(
@@ -63,21 +63,22 @@ internal class BaseClassImpl : BaseClass {
             ClassName("io.grpc.stub.ClientCalls", "futureUnaryCall"),
             ClassName("io.grpc.stub.ClientCalls", "asyncBidiStreamingCall"),
             ClassName("io.grpc.stub.ClientCalls", "asyncClientStreamingCall"),
-            ClassName("io.grpc.stub.ClientCalls", "asyncServerStreamingCall")
+            ClassName("io.grpc.stub.ClientCalls", "asyncServerStreamingCall"),
+            GrpcTypes.StatusCode
         )
 
         // put it all together
         return GeneratedSource(
-            ctx.className.packageName,
-            typeName(ctx).simpleName,
+            context.className.packageName,
+            typeName(context).simpleName,
             types = listOf(type),
             imports = imports
         )
     }
 
     // creates the base class type
-    private fun createType(ctx: GeneratorContext, by: AnnotationSpec): TypeSpec {
-        val type = TypeSpec.classBuilder(typeName(ctx))
+    private fun createType(context: GeneratorContext, by: AnnotationSpec): TypeSpec {
+        val type = TypeSpec.classBuilder(typeName(context))
             .addModifiers(KModifier.ABSTRACT)
             .addAnnotation(by)
 
@@ -102,23 +103,23 @@ internal class BaseClassImpl : BaseClass {
         )
 
         // generate a method descriptor for each method
-        type.addProperties(ctx.service.methodList.map {
-            createMethodDescriptor(ctx, it)
+        type.addProperties(context.service.methodList.map {
+            createMethodDescriptor(context, it)
         })
 
         // add the nested stub class
-        type.addType(createNestedStubType(ctx))
+        type.addType(createNestedStubType(context))
 
         return type.build()
     }
 
     // creates a method descriptor
     private fun createMethodDescriptor(
-        ctx: GeneratorContext,
+        context: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto
     ): PropertySpec {
-        val inputType = ctx.typeMap.getKotlinType(method.inputType)
-        val outputType = ctx.typeMap.getKotlinType(method.outputType)
+        val inputType = context.typeMap.getKotlinType(method.inputType)
+        val outputType = context.typeMap.getKotlinType(method.outputType)
         val type = GrpcTypes.MethodDescriptor(inputType, outputType)
 
         // create the property
@@ -147,7 +148,7 @@ internal class BaseClassImpl : BaseClass {
             |""".trimMargin(),
             type.rawType, inputType, outputType,
             GrpcTypes.MethodDescriptorType, methodType,
-            "${ctx.proto.`package`}.${ctx.service.name}", method.name,
+            "${context.proto.`package`}.${context.service.name}", method.name,
             GrpcTypes.ProtoLiteUtils,
             inputType,
             GrpcTypes.ProtoLiteUtils,
@@ -167,8 +168,8 @@ internal class BaseClassImpl : BaseClass {
     }
 
     // creates the nested stub type
-    private fun createNestedStubType(ctx: GeneratorContext): TypeSpec {
-        val className = stubTypeName(ctx)
+    private fun createNestedStubType(context: GeneratorContext): TypeSpec {
+        val className = stubTypeName(context)
         val type = TypeSpec.classBuilder(className)
             .addModifiers(KModifier.INNER)
             .superclass(GrpcTypes.AbstractStub(className))
@@ -199,20 +200,20 @@ internal class BaseClassImpl : BaseClass {
         )
 
         // add stub methods
-        type.addFunctions(ctx.service.methodList.map { createNestedStubMethod(ctx, it) })
+        type.addFunctions(context.service.methodList.map { createNestedStubMethod(context, it) })
 
         return type.build()
     }
 
     // create the API method for the stub type
     private fun createNestedStubMethod(
-        ctx: GeneratorContext,
+        context: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto
     ): FunSpec {
         val func = FunSpec.builder(method.name.decapitalize())
 
-        val inputType = ctx.typeMap.getKotlinType(method.inputType)
-        val outputType = ctx.typeMap.getKotlinType(method.outputType)
+        val inputType = context.typeMap.getKotlinType(method.inputType)
+        val outputType = context.typeMap.getKotlinType(method.outputType)
 
         // set return (if needed)
         val returnType = when {

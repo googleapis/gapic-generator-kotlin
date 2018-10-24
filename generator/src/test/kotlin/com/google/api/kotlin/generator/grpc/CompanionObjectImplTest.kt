@@ -18,9 +18,12 @@ package com.google.api.kotlin.generator.grpc
 
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.asNormalizedString
+import com.google.api.kotlin.config.ClientRetry
 import com.google.api.kotlin.config.Configuration
+import com.google.api.kotlin.config.MethodOptions
 import com.google.api.kotlin.config.ServiceOptions
 import com.google.common.truth.Truth.assertThat
+import com.google.rpc.Code
 import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
@@ -54,13 +57,62 @@ internal class CompanionObjectImplTest {
 
         val type = CompanionObjectImpl().generate(ctx)
 
-        assertThat(type.propertySpecs).hasSize(1)
-
         val prop = type.propertySpecs.first { it.name == "ALL_SCOPES" }
         assertThat(prop.toString().asNormalizedString()).isEqualTo(
             """
+            |/**
+            | * Default scopes to use. Use [prepare] to override as needed.
+            | */
             |@kotlin.jvm.JvmStatic
             |val ALL_SCOPES: kotlin.collections.List<kotlin.String> = listOf("a", "b c d e")
+            |""".asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `Generates default retry property`() {
+        whenever(ctx.className).doReturn(ClassName("foo.bar", "RetryTest"))
+
+        val type = CompanionObjectImpl().generate(ctx)
+
+        val prop = type.propertySpecs.first { it.name == "RETRY" }
+        assertThat(prop.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            | * Default operations to retry on failure. Use [prepare] to override as needed.
+            | *
+            | * Note: This setting controls client side retries. If you enable
+            | * server managed retries on the channel do not use this.
+            | */
+            |@kotlin.jvm.JvmStatic val RETRY: com.google.kgax.Retry = com.google.kgax.grpc.GrpcBasicRetry(mapOf())
+            |""".asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `Generates default retry property with values`() {
+        whenever(ctx.className).doReturn(ClassName("foo.bar", "RetryTest"))
+        whenever(serviceOptions.methods).doReturn(listOf(
+            MethodOptions("hasRetry", retry = ClientRetry(listOf(Code.ABORTED))),
+            MethodOptions("hasNone"),
+            MethodOptions("hasSome", retry = ClientRetry(listOf(Code.CANCELLED, Code.DATA_LOSS))),
+            MethodOptions("empty", retry = ClientRetry(listOf()))
+        ))
+        val type = CompanionObjectImpl().generate(ctx)
+
+        val prop = type.propertySpecs.first { it.name == "RETRY" }
+        assertThat(prop.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            | * Default operations to retry on failure. Use [prepare] to override as needed.
+            | *
+            | * Note: This setting controls client side retries. If you enable
+            | * server managed retries on the channel do not use this.
+            | */
+            |@kotlin.jvm.JvmStatic val RETRY: com.google.kgax.Retry = com.google.kgax.grpc.GrpcBasicRetry(mapOf(
+            |    "hasRetry" to setOf(Status.Code.ABORTED),
+            |    "hasSome" to setOf(Status.Code.CANCELLED, Status.Code.DATA_LOSS)
+            ))
             |""".asNormalizedString()
         )
     }
@@ -90,7 +142,7 @@ internal class CompanionObjectImplTest {
             |    val credentials = com.google.auth.oauth2.GoogleCredentials.create(accessToken).createScoped(scopes)
             |    return r.r.r.Clazz(
             |        channel ?: createChannel(),
-            |        com.google.kgax.grpc.ClientCallOptions(io.grpc.auth.MoreCallCredentials.from(credentials))
+            |        com.google.kgax.grpc.ClientCallOptions(credentials = io.grpc.auth.MoreCallCredentials.from(credentials), retry = RETRY)
             |    )
             |}
             |""".asNormalizedString()
@@ -121,7 +173,7 @@ internal class CompanionObjectImplTest {
             |    val cred = credentials?.let { io.grpc.auth.MoreCallCredentials.from(it) }
             |    return r.r.r.Clazz(
             |        channel ?: createChannel(),
-            |        com.google.kgax.grpc.ClientCallOptions(cred)
+            |        com.google.kgax.grpc.ClientCallOptions(credentials = cred, retry = RETRY)
             |    )
             |}
             |""".asNormalizedString()
@@ -153,7 +205,7 @@ internal class CompanionObjectImplTest {
             |    val credentials = com.google.auth.oauth2.GoogleCredentials.fromStream(keyFile).createScoped(scopes)
             |    return r.r.r.Clazz(
             |        channel ?: createChannel(),
-            |        com.google.kgax.grpc.ClientCallOptions(io.grpc.auth.MoreCallCredentials.from(credentials))
+            |        com.google.kgax.grpc.ClientCallOptions(credentials = io.grpc.auth.MoreCallCredentials.from(credentials), retry = RETRY)
             |    )
             |}
             |""".asNormalizedString()
@@ -241,13 +293,16 @@ internal class CompanionObjectImplTest {
             |*
             |* Prefer to use the default value with [fromAccessToken], [fromServiceAccount],
             |* or [fromCredentials] unless you need to customize the channel.
+            |*
+            |* [enableRetry] can be used to enable server managed retries, which is currently
+            |* experimental. You should not use any client retry settings if you enable it.
             |*/
             |@kotlin.jvm.JvmStatic
             |@kotlin.jvm.JvmOverloads
             |fun createChannel(
             |    host: kotlin.String = null,
             |    port: kotlin.Int = 443,
-            |    enableRetry: kotlin.Boolean = true
+            |    enableRetry: kotlin.Boolean = false
             |): io.grpc.ManagedChannel {
             |    val builder = io.grpc.ManagedChannelBuilder.forAddress(host, port)
             |    if (enableRetry) { builder.enableRetry() }

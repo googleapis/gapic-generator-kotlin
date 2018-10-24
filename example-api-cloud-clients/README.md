@@ -12,15 +12,17 @@ use. To get started:
 1. Enable the APIs that the examples use:
     + [Enable Cloud Speech API](https://console.cloud.google.com/apis/library/speech.googleapis.com)
     + [Enable Cloud Natural Language API](https://console.cloud.google.com/apis/library/language.googleapis.com)
+    + [Enable Cloud Vision API](https://console.cloud.google.com/apis/library/vision.googleapis.com)
     + [Enable Stackdriver Logging API](https://console.cloud.google.com/apis/library/logging.googleapis.com)
 1. [Create a new service account](https://console.cloud.google.com/apis/credentials/serviceaccountkey) with a JSON keyfile
 1. Define an environment variable so the example application uses your service account credentials:
     ```bash
-    $ export CREDENTIALS <path to your service account JSON file>  
+    $ export CREDENTIALS=<path to your service account JSON file>
+    $ export PROJECT=<name_of_your_gcp_project>
     ```
 1. Run via gradle:
     ```bash
-    $ ./gradlew run
+    $ ./gradlew run --args language
     ```
 
-To switch between examples modify the `mainClassName` in the application's `build.gradle`. 
+To switch between examples modify the flag passed to the `--args` parameter. 

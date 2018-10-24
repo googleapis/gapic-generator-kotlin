@@ -22,14 +22,15 @@ import com.google.api.kotlin.types.GrpcTypes
 import com.google.api.kotlin.util.FieldNamer
 import com.google.api.kotlin.util.asClassName
 import com.google.api.kotlin.util.isMap
-import com.google.api.kotlin.util.isMessageType
 import com.google.api.kotlin.util.isRepeated
 import com.google.protobuf.DescriptorProtos
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
 
 /**
@@ -42,7 +43,7 @@ internal class BuilderGenerator {
 
     fun generate(types: ProtobufTypeMapper): List<GeneratedSource> {
         // package name -> builder functions
-        val packagesToBuilders = mutableMapOf<String, MutableList<FunSpec>>()
+        val packagesToBuilders = PackagesToBuilders()
 
         // generate all the builder functions
         types.getAllTypes()
@@ -91,55 +92,66 @@ internal class BuilderGenerator {
                     .filter { it.isRepeated() && !it.isMap(types) }
                     .map {
                         val fieldType = it.asClassName(types)
-                        val funName = FieldNamer.getFieldName(it.name)
-                        if (it.isMessageType()) {
-                            val fieldBuilderType = ClassName.bestGuess("$fieldType.Builder")
-                                .annotated(AnnotationSpec.builder(GrpcTypes.Support.ProtoBuilder).build())
-                            FunSpec.builder(funName)
-                                .receiver(builderType)
-                                .addParameter(
-                                    "init",
-                                    LambdaTypeName.get(fieldBuilderType, listOf(), Unit::class.asTypeName()),
-                                    KModifier.VARARG
-                                )
-                                .addStatement(
-                                    "this.%L(init.map { %T.newBuilder().apply(it).build() })",
-                                    FieldNamer.getSetterRepeatedName(it.name),
-                                    fieldType
-                                )
-                                .build()
-                        } else {
-                            FunSpec.builder(funName)
-                                .receiver(builderType)
-                                .addParameter("items", fieldType, KModifier.VARARG)
-                                .addStatement(
-                                    "this.%L(items.asList())",
-                                    FieldNamer.getSetterRepeatedName(it.name)
-                                )
-                                .build()
-                        }
+                        val listType = List::class.asClassName().parameterizedBy(fieldType)
+                        val propertyName = FieldNamer.getFieldName(it.name)
+
+                        PropertySpec.builder(propertyName, listType)
+                            .receiver(builderType)
+                            .mutable(true)
+                            .getter(
+                                FunSpec.getterBuilder()
+                                    .addStatement("return this.%L", FieldNamer.getAccessorRepeatedName(it.name))
+                                    .build()
+                            )
+                            .setter(
+                                FunSpec.setterBuilder()
+                                    .addParameter("values", listType)
+                                    .addStatement("this.%L(values)", FieldNamer.getSetterRepeatedName(it.name))
+                                    .build()
+                            )
+                            .build()
                     }
 
                 // get list of builder functions in this package and append to it
-                var builders = packagesToBuilders[type.className.packageName]
-                if (builders == null) {
-                    builders = mutableListOf()
-                    packagesToBuilders[type.className.packageName] = builders
-                }
-                builders.add(builder.build())
-                builders.addAll(repeatedSetters)
+                var (funBuilders, propBuilders) = packagesToBuilders[type.className.packageName]
+                funBuilders.add(builder.build())
+                propBuilders.addAll(repeatedSetters)
             }
 
         // collect the builder functions into types
-        return packagesToBuilders.keys.map { packageName ->
+        return packagesToBuilders.map { packageName, functions, properties ->
             GeneratedSource(
                 packageName,
                 "KotlinBuilders",
-                functions = packagesToBuilders[packageName]?.toList()
-                    ?: throw IllegalStateException("No functions in package!/**/")
+                functions = functions,
+                properties = properties
             )
         }
     }
 }
 
 private data class TypeInfo(val proto: DescriptorProtos.DescriptorProto, val className: ClassName)
+
+private typealias FunList = MutableList<FunSpec>
+private typealias PropList = MutableList<PropertySpec>
+private typealias BuilderIterator<T> = (packageName: String, functions: List<FunSpec>, properties: List<PropertySpec>) -> T
+
+private data class PackagesToBuilders(
+    private val functions: MutableMap<String, FunList> = mutableMapOf(),
+    private val properties: MutableMap<String, PropList> = mutableMapOf()
+) {
+
+    fun <T> map(handler: BuilderIterator<T>) = functions.keys.map {
+        handler(it, functions[it]!!, properties[it]!!)
+    }
+
+    operator fun get(key: String): Pair<FunList, PropList> {
+        if (!functions.containsKey(key)) {
+            functions[key] = mutableListOf()
+        }
+        if (!properties.containsKey(key)) {
+            properties[key] = mutableListOf()
+        }
+        return Pair(functions[key]!!, properties[key]!!)
+    }
+}

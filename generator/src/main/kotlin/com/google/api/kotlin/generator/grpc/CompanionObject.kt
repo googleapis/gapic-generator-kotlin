@@ -19,6 +19,7 @@ package com.google.api.kotlin.generator.grpc
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.types.GrpcTypes
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -27,37 +28,40 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asTypeName
 import java.io.File
 import java.io.InputStream
-import java.lang.IllegalStateException
 
 /**
  * Generates a companion object for the client, which is responsible for
  * creating instances of the client (i.e. a factory).
  */
 internal interface CompanionObject {
-    fun generate(ctx: GeneratorContext): TypeSpec
+    fun generate(context: GeneratorContext): TypeSpec
 
     companion object {
         const val VAL_ALL_SCOPES = "ALL_SCOPES"
+        const val VAL_RETRY = "RETRY"
     }
 }
 
 internal class CompanionObjectImpl : CompanionObject {
 
-    override fun generate(ctx: GeneratorContext): TypeSpec {
+    override fun generate(context: GeneratorContext): TypeSpec {
         return TypeSpec.companionObjectBuilder()
             .addKdoc(
                 "Utilities for creating a fully configured %N.\n",
-                ctx.className.simpleName
+                context.className.simpleName
             )
             .addProperty(
                 PropertySpec.builder(
-                    CompanionObject.VAL_ALL_SCOPES, List::class.parameterizedBy(String::class)
+                    CompanionObject.VAL_ALL_SCOPES,
+                    List::class.parameterizedBy(String::class)
                 )
+                    .addKdoc("Default scopes to use. Use [prepare] to override as needed.\n")
                     .addAnnotation(JvmStatic::class)
-                    .initializer("listOf(%L)", ctx.serviceOptions.scopes.joinToString(", ") { "\"$it\"" })
+                    .initializer("listOf(%L)", context.serviceOptions.scopes.joinToString(", ") { "\"$it\"" })
                     .build()
             )
-            .addFunctions(createClientFactories(ctx))
+            .addProperty(createDefaultRetries(context))
+            .addFunctions(createClientFactories(context))
             .build()
     }
 
@@ -96,13 +100,14 @@ internal class CompanionObjectImpl : CompanionObject {
                 |val credentials = %T.create(accessToken).createScoped(scopes)
                 |return %T(
                 |    channel ?: createChannel(),
-                |    %T(%T.from(credentials))
+                |    %T(credentials = %T.from(credentials), retry = %L)
                 |)
                 |""".trimMargin(),
                 GrpcTypes.Auth.GoogleCredentials,
                 ctx.className,
                 GrpcTypes.Support.ClientCallOptions,
-                GrpcTypes.Auth.MoreCallCredentials
+                GrpcTypes.Auth.MoreCallCredentials,
+                CompanionObject.VAL_RETRY
             )
             .build()
 
@@ -138,13 +143,14 @@ internal class CompanionObjectImpl : CompanionObject {
                 |val credentials = %T.fromStream(keyFile).createScoped(scopes)
                 |return %T(
                 |    channel ?: createChannel(),
-                |    %T(%T.from(credentials))
+                |    %T(credentials = %T.from(credentials), retry = %L)
                 |)
                 |""".trimMargin(),
                 GrpcTypes.Auth.GoogleCredentials,
                 ctx.className,
                 GrpcTypes.Support.ClientCallOptions,
-                GrpcTypes.Auth.MoreCallCredentials
+                GrpcTypes.Auth.MoreCallCredentials,
+                CompanionObject.VAL_RETRY
             )
             .build()
 
@@ -161,9 +167,11 @@ internal class CompanionObjectImpl : CompanionObject {
             )
             .addAnnotation(JvmStatic::class)
             .addAnnotation(JvmOverloads::class)
-            .addParameter(ParameterSpec.builder("variableName", String::class)
-                .defaultValue("%S", "CREDENTIALS")
-                .build())
+            .addParameter(
+                ParameterSpec.builder("variableName", String::class)
+                    .defaultValue("%S", "CREDENTIALS")
+                    .build()
+            )
             .addParameter(
                 ParameterSpec.builder(
                     "scopes",
@@ -223,12 +231,13 @@ internal class CompanionObjectImpl : CompanionObject {
                 |val cred = credentials?.let { %T.from(it) }
                 |return %T(
                 |    channel ?: createChannel(),
-                |    %T(cred)
+                |    %T(credentials = cred, retry = %L)
                 |)
                 |""".trimMargin(),
                 GrpcTypes.Auth.MoreCallCredentials,
                 ctx.className,
-                GrpcTypes.Support.ClientCallOptions
+                GrpcTypes.Support.ClientCallOptions,
+                CompanionObject.VAL_RETRY
             )
             .build()
 
@@ -283,6 +292,9 @@ internal class CompanionObjectImpl : CompanionObject {
                 |
                 |Prefer to use the default value with [fromAccessToken], [fromServiceAccount],
                 |or [fromCredentials] unless you need to customize the channel.
+                |
+                |[enableRetry] can be used to enable server managed retries, which is currently
+                |experimental. You should not use any client retry settings if you enable it.
                 |""".trimMargin(), ctx.className.simpleName
             )
             .addAnnotation(JvmStatic::class)
@@ -299,7 +311,7 @@ internal class CompanionObjectImpl : CompanionObject {
             )
             .addParameter(
                 ParameterSpec.builder("enableRetry", Boolean::class)
-                    .defaultValue("true")
+                    .defaultValue("false")
                     .build()
             )
             .returns(GrpcTypes.ManagedChannel)
@@ -321,5 +333,45 @@ internal class CompanionObjectImpl : CompanionObject {
             fromStubs,
             createChannel
         )
+    }
+
+    // creates a set of default options
+    private fun createDefaultRetries(context: GeneratorContext): PropertySpec {
+        val prop = PropertySpec.builder(
+            CompanionObject.VAL_RETRY, GrpcTypes.Support.Retry
+        )
+            .addAnnotation(JvmStatic::class)
+            .addKdoc(
+                """
+                |Default operations to retry on failure. Use [prepare] to override as needed.
+                |
+                |Note: This setting controls client side retries. If you enable
+                |server managed retries on the channel do not use this.
+                |""".trimMargin())
+
+        // create a map of function name to the retry codes
+        val retryEntries = context.serviceOptions.methods
+            .filter { it.retry != null && it.retry.codes.isNotEmpty() }
+            .map { method ->
+                val codes = method.retry!!.codes.joinToString(", ") { "Status.Code.${it.name}" }
+                CodeBlock.of("%S to setOf(%L)", method.name.decapitalize(), codes)
+            }
+            .toTypedArray()
+
+        if (retryEntries.isNotEmpty()) {
+            prop.initializer(
+                """
+                |%T(mapOf(
+                |    ${retryEntries.joinToString(",\n    ") { "%L" }}
+                |))
+                """.trimMargin(),
+                GrpcTypes.Support.GrpcBasicRetry,
+                *retryEntries
+            )
+        } else {
+            prop.initializer("%T(mapOf())", GrpcTypes.Support.GrpcBasicRetry)
+        }
+
+        return prop.build()
     }
 }

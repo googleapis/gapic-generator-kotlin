@@ -28,6 +28,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import mu.KotlinLogging
 import org.apache.commons.text.WordUtils
@@ -166,6 +167,7 @@ internal class KotlinClientGenerator(
 
         // add implementation
         source.types.forEach { fileSpec.addType(it) }
+        source.properties.forEach { fileSpec.addProperty(it) }
         source.functions.forEach { fileSpec.addFunction(it) }
         source.imports.forEach { fileSpec.addImport(it.packageName, it.simpleName) }
 
@@ -223,6 +225,7 @@ internal class GeneratedSource(
     val name: String,
     val types: List<TypeSpec> = listOf(),
     val imports: List<ClassName> = listOf(),
+    val properties: List<PropertySpec> = listOf(),
     val functions: List<FunSpec> = listOf(),
     val kind: Kind = Kind.SOURCE
 ) : GeneratedArtifact() {

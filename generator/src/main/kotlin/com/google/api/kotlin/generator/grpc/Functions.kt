@@ -45,7 +45,7 @@ private val log = KotlinLogging.logger {}
 
 /** Generate the API method functions for the client. */
 internal interface Functions {
-    fun generate(ctx: GeneratorContext): List<TestableFunSpec>
+    fun generate(context: GeneratorContext): List<TestableFunSpec>
 
     companion object {
         const val FUN_PREPARE = "prepare"
@@ -58,9 +58,9 @@ internal class FunctionsImpl(
     private val unitTest: UnitTest
 ) : Functions {
 
-    override fun generate(ctx: GeneratorContext): List<TestableFunSpec> {
+    override fun generate(context: GeneratorContext): List<TestableFunSpec> {
         // we'll use this in the example text
-        val firstMethodName = ctx.service.methodList
+        val firstMethodName = context.service.methodList
             .firstOrNull()?.name?.decapitalize()
 
         // extra methods (not part of the target API)
@@ -80,10 +80,10 @@ internal class FunctionsImpl(
                     |You may save the client returned by this call and reuse it if you
                     |plan to make multiple requests with the same settings.
                     |""".trimMargin(),
-                    ctx.className,
+                    context.className,
                     firstMethodName ?: "method"
                 )
-                .returns(ctx.className)
+                .returns(context.className)
                 .addParameter(
                     ParameterSpec.builder(
                         "init",
@@ -102,7 +102,7 @@ internal class FunctionsImpl(
                 .addStatement("options.init()")
                 .addStatement(
                     "return %T(%N, options.build())",
-                    ctx.className, Properties.PROP_CHANNEL
+                    context.className, Properties.PROP_CHANNEL
                 )
                 .build()
                 .asTestable(),
@@ -123,15 +123,15 @@ internal class FunctionsImpl(
         )
 
         // API methods
-        val apiMethods = ctx.service.methodList.flatMap { method ->
+        val apiMethods = context.service.methodList.flatMap { method ->
             log.debug { "processing proto method: ${method.name}" }
 
-            val options = ctx.metadata[ctx.service].methods
+            val options = context.metadata[context.service].methods
                 .firstOrNull { it.name == method.name } ?: MethodOptions(method.name)
             when {
                 method.hasClientStreaming() || method.hasServerStreaming() ->
-                    createStreamingMethods(ctx, method, options)
-                else -> createUnaryMethods(ctx, method, options)
+                    createStreamingMethods(context, method, options)
+                else -> createUnaryMethods(context, method, options)
             }
         }
 
