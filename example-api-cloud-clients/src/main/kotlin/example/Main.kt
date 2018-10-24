@@ -34,8 +34,11 @@ class Main {
             val example = args.firstOrNull()?.toLowerCase()
             try {
                 when (example) {
-                    "language" -> langaugeExample()
+                    "language" -> languageExample()
                     "logging" -> loggingExample()
+                    "speech" -> speechExample()
+                    "vision" -> visionExample()
+                    "pubsub" -> pubSubExample()
                     else -> usage()
                 }
                 System.exit(0)
@@ -55,7 +58,7 @@ class Main {
                 |$ ./gradlew run --args <example_name>
                 |
                 |Options:
-                |  <example_name>: language, logging
+                |  <example_name>: language, logging, speech, vision, pubsub
                 |
                 |Example:
                 |Run the following command to start the Natural Language example:

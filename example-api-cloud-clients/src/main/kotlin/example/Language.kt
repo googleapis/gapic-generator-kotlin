@@ -28,7 +28,7 @@ import com.google.cloud.language.v1.LanguageServiceClient
  * $ CREDENTIALS=<path_to_your_service_account.json> ./gradlew run --language
  * ```
  */
-fun langaugeExample() {
+fun languageExample() {
     // create a client
     val client = LanguageServiceClient.fromEnvironment()
 

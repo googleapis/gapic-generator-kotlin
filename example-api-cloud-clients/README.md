@@ -12,6 +12,7 @@ use. To get started:
 1. Enable the APIs that the examples use:
     + [Enable Cloud Speech API](https://console.cloud.google.com/apis/library/speech.googleapis.com)
     + [Enable Cloud Natural Language API](https://console.cloud.google.com/apis/library/language.googleapis.com)
+    + [Enable Cloud Vision API](https://console.cloud.google.com/apis/library/vision.googleapis.com)
     + [Enable Stackdriver Logging API](https://console.cloud.google.com/apis/library/logging.googleapis.com)
 1. [Create a new service account](https://console.cloud.google.com/apis/credentials/serviceaccountkey) with a JSON keyfile
 1. Define an environment variable so the example application uses your service account credentials:

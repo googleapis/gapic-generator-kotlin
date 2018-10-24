@@ -23,20 +23,19 @@ import java.lang.RuntimeException
 import java.util.Date
 
 /**
- * Simple example of calling the Logging API
- * with a generated Kotlin gRPC client.
+ * Simple example of calling the Logging API with a generated Kotlin gRPC client.
  *
  * Run this example using your service account as follows:
  *
  * ```
- * $ CREDENTIALS=<path_to_your_service_account.json> ./gradlew run --args logging
+ * $ CREDENTIALS=<path_to_your_service_account.json> PROJECT=<your_gcp_project_id> ./gradlew run --args logging
  * ```
  */
 fun loggingExample() {
+    // create a client
     val client = LoggingServiceV2Client.fromEnvironment()
 
     // get the project id
-    // in a real app you could use a constant string
     val projectId = System.getenv("PROJECT")
         ?: throw RuntimeException("You must set the PROJECT environment variable to run this example")
 
@@ -73,4 +72,7 @@ fun loggingExample() {
             println("log : ${entry.textPayload}")
         }
     }
+
+    // shutdown
+    client.shutdownChannel()
 }
