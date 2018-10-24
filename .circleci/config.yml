@@ -343,6 +343,11 @@ workflows:
       - test_cloud_examples:
           requires:
             - build
+          filters: &master-filter
+            branches:
+              only: master
+            tags:
+              only: /.*/
       - release_gcr_snapshot:
           requires:
             - build
@@ -352,12 +357,7 @@ workflows:
             - test_showcase
             - test_example
             - test_cloud_examples
-          #filters: *master-filter
-          filters: &master-filter
-            branches:
-              only: master
-            tags:
-              only: /.*/
+          filters: *master-filter
       - release:
           requires:
             - release_gcr_snapshot
