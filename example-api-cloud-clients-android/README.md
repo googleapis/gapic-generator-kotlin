@@ -13,6 +13,7 @@ use. To get started:
     + [Enable Cloud Speech API](https://console.cloud.google.com/apis/library/speech.googleapis.com)
     + [Enable Cloud Natural Language API](https://console.cloud.google.com/apis/library/language.googleapis.com)
     + [Enable Cloud Vision API](https://console.cloud.google.com/apis/library/vision.googleapis.com)
+    + [Enable Cloud PubSub API](https://console.cloud.google.com/apis/library/pubsub.googleapis.com)
     + [Enable Stackdriver Logging API](https://console.cloud.google.com/apis/library/logging.googleapis.com)
 1. [Create a new service account](https://console.cloud.google.com/apis/credentials/serviceaccountkey) with a JSON keyfile
 1. Move the service account JSON file to `app/src/main/res/raw/sa.json`
