@@ -48,14 +48,9 @@ fun visionExample() {
     val future = client.batchAnnotateImages(listOf(
         AnnotateImageRequest {
             image = Image { content = imageData }
-            features(
-                {
-                    type = Feature.Type.FACE_DETECTION
-                    maxResults = 1
-                },
-                {
-                    type = Feature.Type.LANDMARK_DETECTION
-                }
+            features = listOf(
+                Feature { type = Feature.Type.FACE_DETECTION },
+                Feature { type = Feature.Type.LANDMARK_DETECTION }
             )
         }
     ))

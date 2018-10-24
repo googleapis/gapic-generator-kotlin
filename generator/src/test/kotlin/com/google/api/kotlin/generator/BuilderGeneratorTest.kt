@@ -154,17 +154,18 @@ internal class BuilderGeneratorTest {
         assertThat(file.name).isEqualTo("KotlinBuilders")
 
         val funs = file.functions
-        assertThat(funs).hasSize(2)
+        assertThat(funs).hasSize(1)
 
-        val repeatedSetter = funs[1]
+        val props = file.properties
+        assertThat(props).hasSize(1)
+
+        val repeatedSetter = props.first()
         assertThat(repeatedSetter.toString().asNormalizedString()).isEqualTo(
             """
-            |fun com.google.api.Foo.Builder.responses(
-            |    vararg init: (@com.google.kgax.ProtoBuilder com.google.api.Response.Builder).() -> kotlin.Unit
-            |) {
-            |    this.addAllResponses(init.map { com.google.api.Response.newBuilder().apply(it).build() })
-            |}
-            """.trimIndent().asNormalizedString()
+            |var com.google.api.Foo.Builder.responses: kotlin.collections.List<com.google.api.Response>
+            |    get() = this.responsesList
+            |    set(values) { this.addAllResponses(values) }
+            """.asNormalizedString()
         )
     }
 
@@ -197,15 +198,18 @@ internal class BuilderGeneratorTest {
         assertThat(file.name).isEqualTo("KotlinBuilders")
 
         val funs = file.functions
-        assertThat(funs).hasSize(2)
+        assertThat(funs).hasSize(1)
 
-        val repeatedSetter = funs[1]
+        val props = file.properties
+        assertThat(props).hasSize(1)
+
+        val repeatedSetter = props.first()
         assertThat(repeatedSetter.toString().asNormalizedString()).isEqualTo(
             """
-            |fun com.google.api.Foo.Builder.theStrings(vararg items: kotlin.String) {
-            |    this.addAllTheStrings(items.asList())
-            |}
-            """.trimIndent().asNormalizedString()
+            |var com.google.api.Foo.Builder.theStrings: kotlin.collections.List<kotlin.String>
+            |    get() = this.theStringsList
+            |    set(values) { this.addAllTheStrings(values) }
+            """.asNormalizedString()
         )
     }
 
