@@ -231,6 +231,39 @@ jobs:
           working_directory: ~/gapic-generator-kotlin/example-client
 
   # -------------------------------------------------------------------------------
+  # Tests - Integration (Cloud)
+  # -------------------------------------------------------------------------------
+
+  test_cloud_examples:
+    docker:
+      - image: circleci/openjdk:8-jdk
+    working_directory: ~/gapic-generator-kotlin/example-api-cloud-clients
+    steps:
+      - checkout:
+          path: ~/gapic-generator-kotlin
+      - attach_workspace:
+          at: ./..
+      - restore_cache:
+          key: cloud-examples-v0-{{ checksum "build.gradle" }}
+      - run: 
+          name: Download dependencies
+          command: ./gradlew dependencies
+      - run: 
+          name: Run all examples
+          command: |
+            echo $GCLOUD_SERVICE_KEY > _key.json
+            export CREDENTIALS=_key.json
+            export PROJECT=$GCLOUD_PROJECT_ID
+            ./gradlew run --args language
+            ./gradlew run --args logging
+            ./gradlew run --args speech
+            ./gradlew run --args vision
+            ./gradlew run --args pubsub
+      - run:
+          command: rm _key.json
+          when: always
+
+  # -------------------------------------------------------------------------------
   # Deploy
   # -------------------------------------------------------------------------------
       
@@ -240,7 +273,7 @@ jobs:
     working_directory: ~/gapic-generator-kotlin/generator
     steps:
       - setup_remote_docker
-      - run:
+      - run: &setup-gcloud
           name: Setup gcloud
           command: |
             echo ${GCLOUD_SERVICE_KEY} > ${HOME}/gcp-key.json
@@ -266,13 +299,7 @@ jobs:
     working_directory: ~/gapic-generator-kotlin/generator
     steps:
       - setup_remote_docker
-      - run:
-          name: Setup gcloud
-          command: |
-            echo ${GCLOUD_SERVICE_KEY} > ${HOME}/gcp-key.json
-            gcloud auth activate-service-account --key-file ${HOME}/gcp-key.json
-            gcloud config set project ${GCLOUD_PROJECT_ID}
-            gcloud auth configure-docker
+      - run: *setup-gcloud
       - attach_workspace:
           at: ./..
       - run:
@@ -313,6 +340,14 @@ workflows:
       - test_example:
           requires:
             - build
+      - test_cloud_examples:
+          requires:
+            - build
+          filters: &master-filter
+            branches:
+              only: master
+            tags:
+              only: /.*/
       - release_gcr_snapshot:
           requires:
             - build
@@ -321,11 +356,8 @@ workflows:
             - build_android_examples
             - test_showcase
             - test_example
-          filters:
-            branches:
-              only: master
-            tags:
-              only: /.*/
+            - test_cloud_examples
+          filters: *master-filter
       - release:
           requires:
             - release_gcr_snapshot
