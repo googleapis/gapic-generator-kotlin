@@ -130,8 +130,8 @@ internal class UnitTestImplTest {
             | * You may save the client returned by this call and reuse it if you
             | * plan to make multiple requests with the same settings.
             | */
-            |fun prepare(init: com.google.kgax.grpc.ClientCallOptions.Builder.() -> kotlin.Unit): foo.bar.ZaTest {
-            |    val options = com.google.kgax.grpc.ClientCallOptions.Builder(options)
+            |fun prepare(init: com.google.api.kgax.grpc.ClientCallOptions.Builder.() -> kotlin.Unit): foo.bar.ZaTest {
+            |    val options = com.google.api.kgax.grpc.ClientCallOptions.Builder(options)
             |    options.init()
             |    return foo.bar.ZaTest(channel, options.build())
             |}

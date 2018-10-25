@@ -17,8 +17,8 @@
 package com.google.api.kotlin
 
 import com.google.common.truth.Truth.assertThat
-import com.google.kgax.Retry
-import com.google.kgax.RetryContext
+import com.google.api.kgax.Retry
+import com.google.api.kgax.RetryContext
 import com.google.protobuf.Duration
 import com.google.rpc.Code
 import com.google.rpc.Status

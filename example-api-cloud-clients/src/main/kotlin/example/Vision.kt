@@ -22,7 +22,7 @@ import com.google.cloud.vision.v1.Image
 import com.google.cloud.vision.v1.ImageAnnotatorClient
 import com.google.cloud.vision.v1.features
 import com.google.common.io.ByteStreams
-import com.google.kgax.grpc.on
+import com.google.api.kgax.grpc.on
 import com.google.protobuf.ByteString
 
 /**

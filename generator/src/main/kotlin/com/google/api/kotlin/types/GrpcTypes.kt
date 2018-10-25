@@ -39,7 +39,7 @@ internal interface GrpcTypes {
     // kgax types
     interface Support {
         companion object {
-            const val SUPPORT_LIB_PACKAGE = "com.google.kgax"
+            const val SUPPORT_LIB_PACKAGE = "com.google.api.kgax"
             const val SUPPORT_LIB_GRPC_PACKAGE = "$SUPPORT_LIB_PACKAGE.grpc"
 
             val ProtoBuilder = ClassName(SUPPORT_LIB_PACKAGE, "ProtoBuilder")
