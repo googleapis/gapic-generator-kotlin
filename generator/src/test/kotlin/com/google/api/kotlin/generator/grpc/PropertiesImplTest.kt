@@ -74,7 +74,7 @@ internal class PropertiesImplTest {
             """
             |private constructor(
             |    channel: io.grpc.ManagedChannel,
-            |    options: com.google.kgax.grpc.ClientCallOptions,
+            |    options: com.google.api.kgax.grpc.ClientCallOptions,
             |    factory: Stubs.Factory? = null
             |)
             |""".asNormalizedString()

@@ -56,7 +56,7 @@ internal class BuilderGeneratorTest {
         fun methodBody(type: String) =
             """
             |fun $type(
-            |    init: (@com.google.kgax.ProtoBuilder com.google.api.$type.Builder).() -> kotlin.Unit
+            |    init: (@com.google.api.kgax.ProtoBuilder com.google.api.$type.Builder).() -> kotlin.Unit
             |): com.google.api.$type =
             |    com.google.api.$type.newBuilder().apply(init).build()
             |""".trimMargin().asNormalizedString()
@@ -101,7 +101,7 @@ internal class BuilderGeneratorTest {
         fun methodBody(type: String) =
             """
             |fun com.google.api.$type(
-            |    init: (@com.google.kgax.ProtoBuilder com.google.api.$type.Builder).() -> kotlin.Unit
+            |    init: (@com.google.api.kgax.ProtoBuilder com.google.api.$type.Builder).() -> kotlin.Unit
             |): com.google.api.$type =
             |    com.google.api.$type.newBuilder().apply(init).build()
             """.asNormalizedString()

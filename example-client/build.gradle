@@ -47,7 +47,7 @@ dependencies {
 
     // get the KGax library via jitpack
     // (this library is in preview and not yet published to maven)
-    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:b0ac874'
+    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:4ae88c3'
 
     testCompile 'junit:junit:4.11'
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
@@ -99,8 +99,4 @@ protobuf {
             }
         }
     }
-}
-
-task wrapper(type: Wrapper) {
-    gradleVersion = "4.7"
 }

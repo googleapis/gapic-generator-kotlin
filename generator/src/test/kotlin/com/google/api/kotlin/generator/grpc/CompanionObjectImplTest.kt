@@ -84,7 +84,7 @@ internal class CompanionObjectImplTest {
             | * Note: This setting controls client side retries. If you enable
             | * server managed retries on the channel do not use this.
             | */
-            |@kotlin.jvm.JvmStatic val RETRY: com.google.kgax.Retry = com.google.kgax.grpc.GrpcBasicRetry(mapOf())
+            |@kotlin.jvm.JvmStatic val RETRY: com.google.api.kgax.Retry = com.google.api.kgax.grpc.GrpcBasicRetry(mapOf())
             |""".asNormalizedString()
         )
     }
@@ -109,7 +109,7 @@ internal class CompanionObjectImplTest {
             | * Note: This setting controls client side retries. If you enable
             | * server managed retries on the channel do not use this.
             | */
-            |@kotlin.jvm.JvmStatic val RETRY: com.google.kgax.Retry = com.google.kgax.grpc.GrpcBasicRetry(mapOf(
+            |@kotlin.jvm.JvmStatic val RETRY: com.google.api.kgax.Retry = com.google.api.kgax.grpc.GrpcBasicRetry(mapOf(
             |    "hasRetry" to setOf(Status.Code.ABORTED),
             |    "hasSome" to setOf(Status.Code.CANCELLED, Status.Code.DATA_LOSS)
             ))
@@ -142,7 +142,7 @@ internal class CompanionObjectImplTest {
             |    val credentials = com.google.auth.oauth2.GoogleCredentials.create(accessToken).createScoped(scopes)
             |    return r.r.r.Clazz(
             |        channel ?: createChannel(),
-            |        com.google.kgax.grpc.ClientCallOptions(credentials = io.grpc.auth.MoreCallCredentials.from(credentials), retry = RETRY)
+            |        com.google.api.kgax.grpc.ClientCallOptions(credentials = io.grpc.auth.MoreCallCredentials.from(credentials), retry = RETRY)
             |    )
             |}
             |""".asNormalizedString()
@@ -173,7 +173,7 @@ internal class CompanionObjectImplTest {
             |    val cred = credentials?.let { io.grpc.auth.MoreCallCredentials.from(it) }
             |    return r.r.r.Clazz(
             |        channel ?: createChannel(),
-            |        com.google.kgax.grpc.ClientCallOptions(credentials = cred, retry = RETRY)
+            |        com.google.api.kgax.grpc.ClientCallOptions(credentials = cred, retry = RETRY)
             |    )
             |}
             |""".asNormalizedString()
@@ -205,7 +205,7 @@ internal class CompanionObjectImplTest {
             |    val credentials = com.google.auth.oauth2.GoogleCredentials.fromStream(keyFile).createScoped(scopes)
             |    return r.r.r.Clazz(
             |        channel ?: createChannel(),
-            |        com.google.kgax.grpc.ClientCallOptions(credentials = io.grpc.auth.MoreCallCredentials.from(credentials), retry = RETRY)
+            |        com.google.api.kgax.grpc.ClientCallOptions(credentials = io.grpc.auth.MoreCallCredentials.from(credentials), retry = RETRY)
             |    )
             |}
             |""".asNormalizedString()
@@ -269,10 +269,10 @@ internal class CompanionObjectImplTest {
             |fun fromStubs(
             |    factory: Stubs.Factory,
             |    channel: io.grpc.ManagedChannel? = null,
-            |    options: com.google.kgax.grpc.ClientCallOptions? = null
+            |    options: com.google.api.kgax.grpc.ClientCallOptions? = null
             |): r.r.r.Clazz = r.r.r.Clazz(
             |    channel ?: createChannel(),
-            |    options ?: com.google.kgax.grpc.ClientCallOptions(), factory
+            |    options ?: com.google.api.kgax.grpc.ClientCallOptions(), factory
             |)
             |""".asNormalizedString()
         )

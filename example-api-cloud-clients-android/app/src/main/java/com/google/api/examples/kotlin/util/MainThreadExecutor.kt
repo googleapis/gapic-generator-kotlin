@@ -19,9 +19,9 @@ package com.google.api.examples.kotlin.util
 import android.os.Handler
 import java.util.concurrent.Executor
 import android.os.Looper
-import com.google.kgax.grpc.Callback
-import com.google.kgax.grpc.FutureCall
-import com.google.kgax.grpc.on
+import com.google.api.kgax.grpc.Callback
+import com.google.api.kgax.grpc.FutureCall
+import com.google.api.kgax.grpc.on
 
 /** Executor for the main thread */
 object MainThreadExecutor : Executor {

@@ -23,7 +23,7 @@ import com.google.api.examples.kotlin.util.MainThread
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
-import com.google.kgax.grpc.on
+import com.google.api.kgax.grpc.on
 
 /**
  * Kotlin example showcasing metadata using the client library.

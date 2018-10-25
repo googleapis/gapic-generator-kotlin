@@ -62,11 +62,11 @@ internal class StubsImplTest {
 
         assertThat(result.toString().asNormalizedString()).isEqualTo(
             """|class Stubs(
-               |    val api: com.google.kgax.grpc.GrpcClientStub<a.b.c.Foo>,
-               |    val operation: com.google.kgax.grpc.GrpcClientStub<com.google.longrunning.OperationsGrpc.OperationsFutureStub>
+               |    val api: com.google.api.kgax.grpc.GrpcClientStub<a.b.c.Foo>,
+               |    val operation: com.google.api.kgax.grpc.GrpcClientStub<com.google.longrunning.OperationsGrpc.OperationsFutureStub>
                |) {
                |    interface Factory {
-               |        fun create(channel: io.grpc.ManagedChannel, options: com.google.kgax.grpc.ClientCallOptions): Stubs
+               |        fun create(channel: io.grpc.ManagedChannel, options: com.google.api.kgax.grpc.ClientCallOptions): Stubs
                |    }
                |}""".asNormalizedString()
         )

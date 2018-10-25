@@ -67,7 +67,3 @@ protobuf {
         all()*.plugins { grpc {} }
     }
 }
-
-task wrapper(type: Wrapper) {
-  gradleVersion = "4.7"
-}
