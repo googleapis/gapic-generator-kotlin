@@ -18,6 +18,7 @@ package com.google.api.kotlin.config
 
 import com.google.api.AnnotationsProto
 import com.google.api.MethodSignature
+import com.google.api.kotlin.CLIOptions
 import com.google.api.kotlin.ConfigurationFactory
 import com.google.api.kotlin.util.isIntOrLong
 import com.google.api.kotlin.util.isRepeated
@@ -44,6 +45,7 @@ private val log = KotlinLogging.logger {}
  */
 internal class Configuration constructor(
     val packageName: String,
+    val authentication: AuthOptions,
     val branding: BrandingOptions,
     private val serviceOptions: Map<String, ServiceOptions>
 ) {
@@ -69,6 +71,7 @@ private const val PAGE_FIELD_NEXT_TOKEN = "next_page_token"
 
 /** Factory for creating a new [Configuration]. */
 internal class AnnotationConfigurationFactory(
+    private val authOptions: AuthOptions,
     private val typeMap: ProtobufTypeMapper
 ) : ConfigurationFactory {
 
@@ -94,7 +97,12 @@ internal class AnnotationConfigurationFactory(
         }
 
         // put it all together
-        return Configuration(packageName, branding, apiConfig)
+        return Configuration(
+            packageName = packageName,
+            authentication = authOptions,
+            branding = branding,
+            serviceOptions = apiConfig
+        )
     }
 
     // parse service level metadata
@@ -147,7 +155,7 @@ internal class AnnotationConfigurationFactory(
             flattenedMethods = getMethodsFrom(signature, pagedResponse),
             keepOriginalMethod = true,
             pagedResponse = pagedResponse,
-            longRunningResponse = getLongRunningResponse(proto, service, method),
+            longRunningResponse = getLongRunningResponse(proto, method),
             retry = retryOptions,
             samples = listOf()
         )
@@ -203,7 +211,6 @@ internal class AnnotationConfigurationFactory(
     // determine if a method uses a long running response type
     private fun getLongRunningResponse(
         proto: DescriptorProtos.FileDescriptorProto,
-        service: DescriptorProtos.ServiceDescriptorProto,
         method: DescriptorProtos.MethodDescriptorProto
     ): LongRunningResponse? {
         val longRunning = method.options.getExtensionOrNull(AnnotationsProto.operation)
@@ -243,10 +250,11 @@ internal class AnnotationConfigurationFactory(
  */
 internal class SwappableConfigurationFactory(
     rootDirectory: String = "",
+    authentication: AuthOptions,
     typeMap: ProtobufTypeMapper
 ) : ConfigurationFactory {
-    private val annotation = AnnotationConfigurationFactory(typeMap)
-    private val legacy = LegacyConfigurationFactory(rootDirectory)
+    private val annotation = AnnotationConfigurationFactory(authentication, typeMap)
+    private val legacy = LegacyConfigurationFactory(authentication, rootDirectory)
 
     override fun fromProto(proto: DescriptorProtos.FileDescriptorProto) =
         getFactory(proto).fromProto(proto)
@@ -266,12 +274,22 @@ internal class SwappableConfigurationFactory(
     }
 }
 
+/** Create a config factory from a set of [CLIOptions]. */
+internal fun CLIOptions.asSwappableConfiguration(typeMap: ProtobufTypeMapper): SwappableConfigurationFactory {
+    val auth = mutableListOf<AuthTypes>()
+    if (this.authGoogleCloud) {
+        auth += AuthTypes.GOOGLE_CLOUD
+    }
+    return SwappableConfigurationFactory(this.sourceDirectory, AuthOptions(auth), typeMap)
+}
+
 /**
  * Factory for creating a new [Configuration].
  *
  * This uses the legacy configuration yaml file and will be removed before any stable release.
  */
 internal class LegacyConfigurationFactory(
+    val authentication: AuthOptions,
     private val rootDirectory: String = ""
 ) : ConfigurationFactory {
     private val yaml: Yaml
@@ -376,9 +394,10 @@ internal class LegacyConfigurationFactory(
 
         // put it all together
         return Configuration(
-            packageName,
-            BrandingOptions(name, summary),
-            apiConfig
+            packageName = packageName,
+            authentication = authentication,
+            branding = BrandingOptions(name, summary),
+            serviceOptions = apiConfig
         )
     }
 
@@ -416,9 +435,11 @@ internal class LegacyConfigurationFactory(
                     // collect samples
                     val samples = mutableListOf<SampleMethod>()
                     val sample = method.sample_code_init_fields
+                        .asSequence()
                         .map { it.split("=".toRegex(), 2) }
                         .filter { it.size == 2 }
                         .map { SampleParameterAndValue(it[0], it[1]) }
+                        .toList()
                     if (sample.isNotEmpty()) {
                         samples.add(SampleMethod(sample))
                     }
@@ -446,6 +467,20 @@ internal data class BrandingOptions(
     val summary: String = "",
     val url: String = "http://www.google.com"
 )
+
+/** Authentication options */
+internal data class AuthOptions(
+    val types: List<AuthTypes> = listOf()
+) {
+    val hasGoogleCloud by lazy {
+        types.contains(AuthTypes.GOOGLE_CLOUD)
+    }
+}
+
+/** Well known authentication types */
+internal enum class AuthTypes {
+    GOOGLE_CLOUD
+}
 
 /** Code generator options for a set of APIs methods within a protobuf service */
 internal data class ServiceOptions(

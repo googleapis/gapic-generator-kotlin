@@ -71,7 +71,7 @@ internal class ClientPluginTest {
     @Test
     fun `can generate tests in protoc plugin mode`() {
         val requestBuilder = generatorRequest.toBuilder()
-        requestBuilder.parameter = "test_output=${outDir.absolutePath}"
+        requestBuilder.parameter = "test-output=${outDir.absolutePath}"
 
         io.stdIn = ByteArrayInputStream(requestBuilder.build().toByteArray())
 
@@ -99,7 +99,7 @@ internal class ClientPluginTest {
         inputFile.deleteOnExit()
         inputFile.writeBytes(generatorRequest.toByteArray())
 
-        Main(arrayOf("--input", inputFile.absolutePath, "--test_output", outDir.absolutePath))
+        Main(arrayOf("--input", inputFile.absolutePath, "--test-output", outDir.absolutePath))
 
         verifyResponse(PluginProtos.CodeGeneratorResponse.parseFrom(io.stdoutBytes))
         verifyTests(outDir)

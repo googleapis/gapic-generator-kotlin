@@ -67,35 +67,33 @@ internal class KotlinClientGenerator(
     fun generate(request: CodeGeneratorRequest, typeMap: ProtobufTypeMapper): Artifacts {
         // generate code for the services
         val files = request.protoFileList
-            .asSequence()
             .filter { it.serviceCount > 0 }
             .filter { request.fileToGenerateList.contains(it.name) }
             .filter { !SKIP_PROTOS_WITH_NAME.contains(it.name) }
-            .toList()
-            .flatMap {
-                it.serviceList.mapNotNull { service ->
+            .flatMap { file ->
+                file.serviceList.mapNotNull { service ->
                     try {
                         processProtoService(
-                            it, service, clientConfigFactory.fromProto(it), typeMap
+                            file, service, clientConfigFactory.fromProto(file), typeMap
                         )
                     } catch (e: Throwable) {
-                        log.error(e) { "Failed to generate client for: ${it.name}" }
+                        log.error(e) { "Failed to generate client for: ${file.name}" }
                         null
                     }
                 }
-            }.flatMap { it.asIterable() }
+            }
+            .flatMap { it.asIterable() }
 
         // extract source files
         val sourceFiles = files
-            .asSequence()
             .filterIsInstance(GeneratedSource::class.java)
             .filter { it.kind == GeneratedSource.Kind.SOURCE }
             .map { toSourceFile(it) }
             .toList()
 
         // generate builders
-        val builderFiles = builderGenerator?.let { g ->
-            g.generate(typeMap).map { toSourceFile(it) }
+        val builderFiles = builderGenerator?.let { generator ->
+            generator.generate(typeMap).map { toSourceFile(it) }
         } ?: listOf()
 
         // put all sources together
@@ -187,11 +185,7 @@ internal class KotlinClientGenerator(
     }
 }
 
-/**
- * Generators for concrete types or transports (gRPC, Retrofit, etc.).
- *
- * A concrete generator will be used based on user settings.
- */
+/** Generator for a type of client or transport (gRPC, HTTP, etc.). */
 internal interface ClientGenerator {
 
     /** Generate the client. */
