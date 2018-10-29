@@ -94,7 +94,7 @@ protobuf {
                 client {
                     // this option will add generated unit tests for the client to the project
                     // be sure to add the directory to your test source set(s) as shown above
-                    option "test_output=${project.buildDir}/generated/source/clientTest"
+                    option "test-output=${project.buildDir}/generated/source/clientTest"
                 }
             }
         }
