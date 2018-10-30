@@ -51,7 +51,7 @@ the API, like this ([complete example](example-client/src/main/kotlin/example/Cl
     
 ```kotlin
 // create a client with an insecure channel
-val client = HelloServiceClient.fromCredentials(
+val client = HelloServiceClient.create(
     channel = ManagedChannelBuilder.forAddress("localhost", 8080)
         .usePlaintext()
         .build()
