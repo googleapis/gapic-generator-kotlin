@@ -16,6 +16,8 @@
 
 package com.google.api.kotlin
 
+import com.google.api.kotlin.config.AuthOptions
+import com.google.api.kotlin.config.AuthTypes
 import com.google.api.kotlin.config.BrandingOptions
 import com.google.api.kotlin.config.Configuration
 import com.google.api.kotlin.config.ProtobufExtensionRegistry
@@ -121,6 +123,7 @@ internal abstract class BaseGeneratorTest(private val generator: ClientGenerator
     protected fun getMockedConfig(options: ServiceOptions): Configuration =
         mock {
             on { branding } doReturn BrandingOptions("testing", "just a simple test")
+            on { authentication } doReturn AuthOptions(listOf(AuthTypes.GOOGLE_CLOUD))
             on { get(any<String>()) } doReturn options
             on { get(any<DescriptorProtos.ServiceDescriptorProto>()) } doReturn options
         }

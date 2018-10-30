@@ -94,12 +94,15 @@ protobuf {
                 client {
                     // this option will add generated unit tests for the client to the project
                     // be sure to add the directory to your test source set(s) as shown above
-                    option "test_output=${project.buildDir}/generated/source/clientTest"
+                    option "test-output=${project.buildDir}/generated/source/clientTest"
 
                     // this option is not typical. It is used here because the cloud API
                     // definitions used in this example use a legacy configuration format.
                     // This will be removed once they are updated.
                     option "source=${projectDir}/../example-apis"
+
+                    // this options should be added for Google APIs
+                    option "auth-google-cloud"
                 }
             }
         }

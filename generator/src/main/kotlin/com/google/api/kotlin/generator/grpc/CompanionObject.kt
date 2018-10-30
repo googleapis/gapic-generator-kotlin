@@ -67,196 +67,23 @@ internal class CompanionObjectImpl : CompanionObject {
 
     // client factory methods for creating client instances via various means
     // (i.e. service accounts, access tokens, etc.)
-    private fun createClientFactories(ctx: GeneratorContext): List<FunSpec> {
-        val fromAccessToken = FunSpec.builder("fromAccessToken")
-            .addKdoc(
-                """
-                |Create a %N with the provided [accessToken].
-                |
-                |If a [channel] is not provided one will be created automatically (recommended).
-                |""".trimMargin(), ctx.className.simpleName
-            )
-            .addAnnotation(JvmStatic::class)
-            .addAnnotation(JvmOverloads::class)
-            .addParameter("accessToken", GrpcTypes.Auth.AccessToken)
-            .addParameter(
-                ParameterSpec.builder(
-                    "scopes",
-                    List::class.parameterizedBy(String::class)
-                )
-                    .defaultValue("%N", CompanionObject.VAL_ALL_SCOPES)
-                    .build()
-            )
-            .addParameter(
-                ParameterSpec.builder(
-                    "channel", GrpcTypes.ManagedChannel.asNullable()
-                )
-                    .defaultValue("null")
-                    .build()
-            )
-            .returns(ctx.className)
-            .addCode(
-                """
-                |val credentials = %T.create(accessToken).createScoped(scopes)
-                |return %T(
-                |    channel ?: createChannel(),
-                |    %T(credentials = %T.from(credentials), retry = %L)
-                |)
-                |""".trimMargin(),
-                GrpcTypes.Auth.GoogleCredentials,
-                ctx.className,
-                GrpcTypes.Support.ClientCallOptions,
-                GrpcTypes.Auth.MoreCallCredentials,
-                CompanionObject.VAL_RETRY
-            )
-            .build()
+    private fun createClientFactories(context: GeneratorContext): List<FunSpec> {
+        val preferredMethodText = if (context.metadata.authentication.hasGoogleCloud) {
+            "\n\nThis is an advanced method. Prefer using [fromAccessToken], [fromServiceAccount], or [fromCredentials]."
+        } else {
+            ""
+        }
 
-        val fromServiceAccount = FunSpec.builder("fromServiceAccount")
+        val create = FunSpec.builder("create")
             .addKdoc(
                 """
-                |Create a %N with service account credentials from a JSON [keyFile].
-                |
-                |If a [channel] is not provided one will be created automatically (recommended).
-                |""".trimMargin(), ctx.className.simpleName
-            )
-            .addAnnotation(JvmStatic::class)
-            .addAnnotation(JvmOverloads::class)
-            .addParameter("keyFile", InputStream::class)
-            .addParameter(
-                ParameterSpec.builder(
-                    "scopes",
-                    List::class.parameterizedBy(String::class)
-                )
-                    .defaultValue("%N", CompanionObject.VAL_ALL_SCOPES)
-                    .build()
-            )
-            .addParameter(
-                ParameterSpec.builder(
-                    "channel", GrpcTypes.ManagedChannel.asNullable()
-                )
-                    .defaultValue("null")
-                    .build()
-            )
-            .returns(ctx.className)
-            .addCode(
-                """
-                |val credentials = %T.fromStream(keyFile).createScoped(scopes)
-                |return %T(
-                |    channel ?: createChannel(),
-                |    %T(credentials = %T.from(credentials), retry = %L)
-                |)
+                |Create a %N with the provided [channel], [options], or stub [factory].%L
                 |""".trimMargin(),
-                GrpcTypes.Auth.GoogleCredentials,
-                ctx.className,
-                GrpcTypes.Support.ClientCallOptions,
-                GrpcTypes.Auth.MoreCallCredentials,
-                CompanionObject.VAL_RETRY
-            )
-            .build()
-
-        val fromEnv = FunSpec.builder("fromEnvironment")
-            .addKdoc(
-                """
-                |Create a %N from the current system's environment.
-                |
-                |Currently, this method only supports service account credentials that are read from the
-                |path defined by the environment [variableName], which is `CREDENTIALS` by default.
-                |
-                |If a [channel] is not provided one will be created automatically (recommended).
-                |""".trimMargin(), ctx.className.simpleName
+                context.className.simpleName,
+                preferredMethodText
             )
             .addAnnotation(JvmStatic::class)
             .addAnnotation(JvmOverloads::class)
-            .addParameter(
-                ParameterSpec.builder("variableName", String::class)
-                    .defaultValue("%S", "CREDENTIALS")
-                    .build()
-            )
-            .addParameter(
-                ParameterSpec.builder(
-                    "scopes",
-                    List::class.parameterizedBy(String::class)
-                )
-                    .defaultValue("%N", CompanionObject.VAL_ALL_SCOPES)
-                    .build()
-            )
-            .addParameter(
-                ParameterSpec.builder(
-                    "channel", GrpcTypes.ManagedChannel.asNullable()
-                )
-                    .defaultValue("null")
-                    .build()
-            )
-            .returns(ctx.className)
-            .addCode(
-                """
-                |val path = System.getenv(variableName) ?: throw %T("Credentials environment variable is not set: ${'$'}variableName")
-                |return %T(path).inputStream().use {
-                |    %T.fromServiceAccount(it, scopes, channel)
-                |}
-                |""".trimMargin(),
-                IllegalStateException::class.asTypeName(),
-                File::class.asTypeName(),
-                ctx.className
-            )
-            .build()
-
-        val fromCredentials = FunSpec.builder("fromCredentials")
-            .addKdoc(
-                """
-                |Create a %N with the provided [credentials].
-                |
-                |If a [channel] is not provided one will be created automatically (recommended).
-                |""".trimMargin(), ctx.className.simpleName
-            )
-            .addAnnotation(JvmStatic::class)
-            .addAnnotation(JvmOverloads::class)
-            .addParameter(
-                ParameterSpec.builder(
-                    "credentials", GrpcTypes.Auth.GoogleCredentials.asNullable()
-                )
-                    .defaultValue("null")
-                    .build()
-            )
-            .addParameter(
-                ParameterSpec.builder(
-                    "channel", GrpcTypes.ManagedChannel.asNullable()
-                )
-                    .defaultValue("null")
-                    .build()
-            )
-            .returns(ctx.className)
-            .addCode(
-                """
-                |val cred = credentials?.let { %T.from(it) }
-                |return %T(
-                |    channel ?: createChannel(),
-                |    %T(credentials = cred, retry = %L)
-                |)
-                |""".trimMargin(),
-                GrpcTypes.Auth.MoreCallCredentials,
-                ctx.className,
-                GrpcTypes.Support.ClientCallOptions,
-                CompanionObject.VAL_RETRY
-            )
-            .build()
-
-        val fromStubs = FunSpec.builder("fromStubs")
-            .addKdoc(
-                """
-                |Create a %N with the provided gRPC stubs.
-                |
-                |This is an advanced method and should only be used when you need complete
-                |control over the underlying gRPC stubs that are used by this client.
-                |
-                |Prefer to use [fromAccessToken], [fromServiceAccount], or [fromCredentials].
-                |""".trimMargin(), ctx.className.simpleName
-            )
-            .addAnnotation(JvmStatic::class)
-            .addAnnotation(JvmOverloads::class)
-            .addParameter(
-                "factory", ClassName("", Stubs.CLASS_STUBS, "Factory")
-            )
             .addParameter(
                 ParameterSpec.builder(
                     "channel", GrpcTypes.ManagedChannel.asNullable()
@@ -271,7 +98,14 @@ internal class CompanionObjectImpl : CompanionObject {
                     .defaultValue("null")
                     .build()
             )
-            .returns(ctx.className)
+            .addParameter(
+                ParameterSpec.builder(
+                    "factory", ClassName("", Stubs.CLASS_STUBS, "Factory").asNullable()
+                )
+                    .defaultValue("null")
+                    .build()
+            )
+            .returns(context.className)
             .addCode(
                 """
                 |return %T(
@@ -280,7 +114,7 @@ internal class CompanionObjectImpl : CompanionObject {
                 |    factory
                 |)
                 |""".trimMargin(),
-                ctx.className,
+                context.className,
                 GrpcTypes.Support.ClientCallOptions
             )
             .build()
@@ -290,18 +124,17 @@ internal class CompanionObjectImpl : CompanionObject {
                 """
                 |Create a [ManagedChannel] to use with a %N.
                 |
-                |Prefer to use the default value with [fromAccessToken], [fromServiceAccount],
-                |or [fromCredentials] unless you need to customize the channel.
-                |
                 |[enableRetry] can be used to enable server managed retries, which is currently
-                |experimental. You should not use any client retry settings if you enable it.
-                |""".trimMargin(), ctx.className.simpleName
+                |experimental. You should not use any client retry settings if you enable it.%L
+                |""".trimMargin(),
+                context.className.simpleName,
+                preferredMethodText
             )
             .addAnnotation(JvmStatic::class)
             .addAnnotation(JvmOverloads::class)
             .addParameter(
                 ParameterSpec.builder("host", String::class)
-                    .defaultValue("%S", ctx.serviceOptions.host)
+                    .defaultValue("%S", context.serviceOptions.host)
                     .build()
             )
             .addParameter(
@@ -325,13 +158,195 @@ internal class CompanionObjectImpl : CompanionObject {
             .addStatement("return builder.build()")
             .build()
 
+        val list = mutableListOf<FunSpec>()
+
+        // add any additional auth methods
+        if (context.metadata.authentication.hasGoogleCloud) {
+            list += createGoogleCloudClientFactories(context)
+        }
+
+        return list + listOf(create, createChannel)
+    }
+
+    private fun createGoogleCloudClientFactories(context: GeneratorContext): List<FunSpec> {
+        val fromEnv = FunSpec.builder("fromEnvironment")
+            .addKdoc(
+                """
+                |Create a %N from the current system's environment.
+                |
+                |Currently, this method only supports service account credentials that are read from the
+                |path defined by the environment [variableName], which is `CREDENTIALS` by default.
+                |
+                |If a [channel] is not provided one will be created automatically (recommended).
+                |""".trimMargin(), context.className.simpleName
+            )
+            .addAnnotation(JvmStatic::class)
+            .addAnnotation(JvmOverloads::class)
+            .addParameter(
+                ParameterSpec.builder("variableName", String::class)
+                    .defaultValue("%S", "CREDENTIALS")
+                    .build()
+            )
+            .addParameter(
+                ParameterSpec.builder(
+                    "scopes",
+                    List::class.parameterizedBy(String::class)
+                )
+                    .defaultValue("%N", CompanionObject.VAL_ALL_SCOPES)
+                    .build()
+            )
+            .addParameter(
+                ParameterSpec.builder(
+                    "channel", GrpcTypes.ManagedChannel.asNullable()
+                )
+                    .defaultValue("null")
+                    .build()
+            )
+            .returns(context.className)
+            .addCode(
+                """
+                |val path = System.getenv(variableName) ?: throw %T("Credentials environment variable is not set: ${'$'}variableName")
+                |return %T(path).inputStream().use {
+                |    %T.fromServiceAccount(it, scopes, channel)
+                |}
+                |""".trimMargin(),
+                IllegalStateException::class.asTypeName(),
+                File::class.asTypeName(),
+                context.className
+            )
+            .build()
+
+        val fromAccessToken = FunSpec.builder("fromAccessToken")
+            .addKdoc(
+                """
+                |Create a %N with the provided [accessToken].
+                |
+                |If a [channel] is not provided one will be created automatically (recommended).
+                |""".trimMargin(), context.className.simpleName
+            )
+            .addAnnotation(JvmStatic::class)
+            .addAnnotation(JvmOverloads::class)
+            .addParameter("accessToken", GrpcTypes.Auth.AccessToken)
+            .addParameter(
+                ParameterSpec.builder(
+                    "scopes",
+                    List::class.parameterizedBy(String::class)
+                )
+                    .defaultValue("%N", CompanionObject.VAL_ALL_SCOPES)
+                    .build()
+            )
+            .addParameter(
+                ParameterSpec.builder(
+                    "channel", GrpcTypes.ManagedChannel.asNullable()
+                )
+                    .defaultValue("null")
+                    .build()
+            )
+            .returns(context.className)
+            .addCode(
+                """
+                |val credentials = %T.create(accessToken).createScoped(scopes)
+                |return %T(
+                |    channel ?: createChannel(),
+                |    %T(credentials = %T.from(credentials), retry = %L)
+                |)
+                |""".trimMargin(),
+                GrpcTypes.Auth.GoogleCredentials,
+                context.className,
+                GrpcTypes.Support.ClientCallOptions,
+                GrpcTypes.Auth.MoreCallCredentials,
+                CompanionObject.VAL_RETRY
+            )
+            .build()
+
+        val fromServiceAccount = FunSpec.builder("fromServiceAccount")
+            .addKdoc(
+                """
+                |Create a %N with service account credentials from a JSON [keyFile].
+                |
+                |If a [channel] is not provided one will be created automatically (recommended).
+                |""".trimMargin(), context.className.simpleName
+            )
+            .addAnnotation(JvmStatic::class)
+            .addAnnotation(JvmOverloads::class)
+            .addParameter("keyFile", InputStream::class)
+            .addParameter(
+                ParameterSpec.builder(
+                    "scopes",
+                    List::class.parameterizedBy(String::class)
+                )
+                    .defaultValue("%N", CompanionObject.VAL_ALL_SCOPES)
+                    .build()
+            )
+            .addParameter(
+                ParameterSpec.builder(
+                    "channel", GrpcTypes.ManagedChannel.asNullable()
+                )
+                    .defaultValue("null")
+                    .build()
+            )
+            .returns(context.className)
+            .addCode(
+                """
+                |val credentials = %T.fromStream(keyFile).createScoped(scopes)
+                |return %T(
+                |    channel ?: createChannel(),
+                |    %T(credentials = %T.from(credentials), retry = %L)
+                |)
+                |""".trimMargin(),
+                GrpcTypes.Auth.GoogleCredentials,
+                context.className,
+                GrpcTypes.Support.ClientCallOptions,
+                GrpcTypes.Auth.MoreCallCredentials,
+                CompanionObject.VAL_RETRY
+            )
+            .build()
+
+        val fromCredentials = FunSpec.builder("fromCredentials")
+            .addKdoc(
+                """
+                |Create a %N with the provided [credentials].
+                |
+                |If a [channel] is not provided one will be created automatically (recommended).
+                |""".trimMargin(), context.className.simpleName
+            )
+            .addAnnotation(JvmStatic::class)
+            .addAnnotation(JvmOverloads::class)
+            .addParameter(
+                ParameterSpec.builder(
+                    "credentials", GrpcTypes.Auth.GoogleCredentials.asNullable()
+                )
+                    .defaultValue("null")
+                    .build()
+            )
+            .addParameter(
+                ParameterSpec.builder(
+                    "channel", GrpcTypes.ManagedChannel.asNullable()
+                )
+                    .defaultValue("null")
+                    .build()
+            )
+            .returns(context.className)
+            .addCode(
+                """
+                |val cred = credentials?.let { %T.from(it) }
+                |return %T(
+                |    channel ?: createChannel(),
+                |    %T(credentials = cred, retry = %L)
+                |)
+                |""".trimMargin(),
+                GrpcTypes.Auth.MoreCallCredentials,
+                context.className,
+                GrpcTypes.Support.ClientCallOptions,
+                CompanionObject.VAL_RETRY
+            )
+            .build()
+
         return listOf(
-            fromCredentials,
             fromEnv,
+            fromCredentials,
             fromServiceAccount,
-            fromAccessToken,
-            fromStubs,
-            createChannel
+            fromAccessToken
         )
     }
 
@@ -347,7 +362,8 @@ internal class CompanionObjectImpl : CompanionObject {
                 |
                 |Note: This setting controls client side retries. If you enable
                 |server managed retries on the channel do not use this.
-                |""".trimMargin())
+                |""".trimMargin()
+            )
 
         // create a map of function name to the retry codes
         val retryEntries = context.serviceOptions.methods

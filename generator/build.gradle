@@ -113,12 +113,6 @@ bootJar {
     launchScript()
 }
 
-run {
-    if (project.hasProperty("appArgs")) {
-        args Eval.me(appArgs)
-    }
-}
-
 publishing {
     publications {
         bootJava(MavenPublication) {

@@ -18,6 +18,8 @@ package com.google.api.kotlin.generator.grpc
 
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.asNormalizedString
+import com.google.api.kotlin.config.AuthOptions
+import com.google.api.kotlin.config.AuthTypes
 import com.google.api.kotlin.config.ClientRetry
 import com.google.api.kotlin.config.Configuration
 import com.google.api.kotlin.config.MethodOptions
@@ -48,6 +50,7 @@ internal class CompanionObjectImplTest {
         reset(ctx, meta, serviceOptions)
         whenever(ctx.metadata).doReturn(meta)
         whenever(ctx.serviceOptions).doReturn(serviceOptions)
+        whenever(meta.authentication).doReturn(AuthOptions(listOf(AuthTypes.GOOGLE_CLOUD)))
     }
 
     @Test
@@ -253,26 +256,24 @@ internal class CompanionObjectImplTest {
 
         val type = CompanionObjectImpl().generate(ctx)
 
-        val method = type.funSpecs.first { it.name == "fromStubs" }
+        val method = type.funSpecs.first { it.name == "create" }
         assertThat(method.toString().asNormalizedString()).isEqualTo(
             """
             |/**
-            |* Create a Clazz with the provided gRPC stubs.
+            |* Create a Clazz with the provided [channel], [options], or stub [factory].
             |*
-            |* This is an advanced method and should only be used when you need complete
-            |* control over the underlying gRPC stubs that are used by this client.
-            |*
-            |* Prefer to use [fromAccessToken], [fromServiceAccount], or [fromCredentials].
+            |* This is an advanced method. Prefer using [fromAccessToken], [fromServiceAccount], or [fromCredentials].
             |*/
             |@kotlin.jvm.JvmStatic
             |@kotlin.jvm.JvmOverloads
-            |fun fromStubs(
-            |    factory: Stubs.Factory,
+            |fun create(
             |    channel: io.grpc.ManagedChannel? = null,
-            |    options: com.google.api.kgax.grpc.ClientCallOptions? = null
+            |    options: com.google.api.kgax.grpc.ClientCallOptions? = null,
+            |    factory: Stubs.Factory? = null
             |): r.r.r.Clazz = r.r.r.Clazz(
             |    channel ?: createChannel(),
-            |    options ?: com.google.api.kgax.grpc.ClientCallOptions(), factory
+            |    options ?: com.google.api.kgax.grpc.ClientCallOptions(),
+            |    factory
             |)
             |""".asNormalizedString()
         )
@@ -291,11 +292,10 @@ internal class CompanionObjectImplTest {
             |/**
             |* Create a [ManagedChannel] to use with a Clazz.
             |*
-            |* Prefer to use the default value with [fromAccessToken], [fromServiceAccount],
-            |* or [fromCredentials] unless you need to customize the channel.
-            |*
             |* [enableRetry] can be used to enable server managed retries, which is currently
             |* experimental. You should not use any client retry settings if you enable it.
+            |*
+            |* This is an advanced method. Prefer using [fromAccessToken], [fromServiceAccount], or [fromCredentials].
             |*/
             |@kotlin.jvm.JvmStatic
             |@kotlin.jvm.JvmOverloads

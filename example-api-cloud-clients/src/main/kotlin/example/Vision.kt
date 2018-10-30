@@ -39,7 +39,6 @@ fun visionExample() {
     val client = ImageAnnotatorClient.fromEnvironment()
 
     // get image
-    // get audio
     val imageData = Main::class.java.getResourceAsStream("/statue.jpg").use {
         ByteString.copyFrom(ByteStreams.toByteArray(it))
     }

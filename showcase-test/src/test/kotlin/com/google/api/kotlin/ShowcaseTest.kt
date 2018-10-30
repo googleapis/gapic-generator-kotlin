@@ -16,9 +16,9 @@
 
 package com.google.api.kotlin
 
-import com.google.common.truth.Truth.assertThat
 import com.google.api.kgax.Retry
 import com.google.api.kgax.RetryContext
+import com.google.common.truth.Truth.assertThat
 import com.google.protobuf.Duration
 import com.google.rpc.Code
 import com.google.rpc.Status
@@ -54,7 +54,7 @@ class ShowcaseTest {
         private val port = System.getenv("PORT") ?: "7469"
 
         // use insecure client
-        val client = EchoClient.fromCredentials(
+        val client = EchoClient.create(
             channel = ManagedChannelBuilder.forAddress(host, port.toInt())
                 .usePlaintext()
                 .build()

@@ -123,16 +123,19 @@ internal class UnitTestImpl(
                 .returns(context.className)
                 .addStatement(
                     """
-                    |return %T.fromStubs(object: %T.%L.Factory {
+                    |return %T.create(
+                    |    channel = ${UnitTest.MOCK_CHANNEL},
+                    |    options = ${UnitTest.MOCK_CALL_OPTS},
+                    |    factory = object: %T.%L.Factory {
                     |    override fun create(channel: %T, options: %T) =
                     |        %T.%L(%N, %N)
-                    |}, %N, %N)
+                    |})
                     |""".trimMargin(),
-                    context.className, context.className, Stubs.CLASS_STUBS,
+                    context.className,
+                    context.className, Stubs.CLASS_STUBS,
                     GrpcTypes.ManagedChannel, GrpcTypes.Support.ClientCallOptions,
                     context.className, Stubs.CLASS_STUBS,
-                    UnitTest.MOCK_API_STUB, UnitTest.MOCK_OPS_STUB,
-                    UnitTest.MOCK_CHANNEL, UnitTest.MOCK_CALL_OPTS
+                    UnitTest.MOCK_API_STUB, UnitTest.MOCK_OPS_STUB
                 )
                 .build()
         )

@@ -27,7 +27,7 @@ internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `can use default for file level proto annotations`() {
-        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val factory = AnnotationConfigurationFactory(AuthOptions(), getMockedTypeMap())
         val config = factory.fromProto(testProto)
 
         assertThat(config.branding.name).isEqualTo("")
@@ -37,7 +37,7 @@ internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `can parse file level proto annotations`() {
-        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val factory = AnnotationConfigurationFactory(AuthOptions(), getMockedTypeMap())
         val config = factory.fromProto(testAnnotationsProto)
 
         assertThat(config.branding.name).isEqualTo("The Test Product")
@@ -47,7 +47,7 @@ internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `can detect a paged method`() {
-        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val factory = AnnotationConfigurationFactory(AuthOptions(), getMockedTypeMap())
         val config = factory.fromProto(testProto)
 
         val method = config["google.example.TestService"].methods.find { it.name == "PagedTest" }
@@ -70,7 +70,7 @@ internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
     fun `skips the badly paged NotPagedTest2 method`() = skipsBadlyPagedMethod("NotPagedTest2")
 
     private fun skipsBadlyPagedMethod(methodName: String) {
-        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val factory = AnnotationConfigurationFactory(AuthOptions(), getMockedTypeMap())
         val config = factory.fromProto(testProto)
 
         val method = config["google.example.TestService"].methods.first { it.name == methodName }
@@ -80,7 +80,7 @@ internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `can detected a long running method`() {
-        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val factory = AnnotationConfigurationFactory(AuthOptions(), getMockedTypeMap())
         val config = factory.fromProto(testAnnotationsProto)
 
         val method = config["google.example.AnnotationService"].methods.first { it.name == "AnnotationLongRunningTest" }
@@ -92,7 +92,7 @@ internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `can detect method signatures`() {
-        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val factory = AnnotationConfigurationFactory(AuthOptions(), getMockedTypeMap())
         val config = factory.fromProto(testAnnotationsProto)
 
         val method = config["google.example.AnnotationService"].methods.find { it.name == "AnnotationSignatureTest" }
@@ -108,7 +108,7 @@ internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `does not make up method signatures`() {
-        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val factory = AnnotationConfigurationFactory(AuthOptions(), getMockedTypeMap())
         val config = factory.fromProto(testAnnotationsProto)
 
         val method = config["google.example.AnnotationService"].methods.find { it.name == "AnnotationTest" }
@@ -119,7 +119,7 @@ internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `can detect retry settings`() {
-        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val factory = AnnotationConfigurationFactory(AuthOptions(), getMockedTypeMap())
         val config = factory.fromProto(testAnnotationsProto)
 
         val method = config["google.example.AnnotationService"].methods.first { it.name == "AnnotationRetryTest" }
@@ -130,7 +130,7 @@ internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `can detect default retry settings`() {
-        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val factory = AnnotationConfigurationFactory(AuthOptions(), getMockedTypeMap())
         val config = factory.fromProto(testAnnotationsProto)
 
         val method = config["google.example.AnnotationService"].methods.first { it.name == "AnnotationRetryDefaultTest" }
@@ -141,7 +141,7 @@ internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `does not make up retry settings`() {
-        val factory = AnnotationConfigurationFactory(getMockedTypeMap())
+        val factory = AnnotationConfigurationFactory(AuthOptions(), getMockedTypeMap())
         val config = factory.fromProto(testAnnotationsProto)
 
         val method = config["google.example.AnnotationService"].methods.first { it.name == "AnnotationTest" }

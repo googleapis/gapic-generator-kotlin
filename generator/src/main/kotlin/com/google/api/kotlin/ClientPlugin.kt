@@ -18,7 +18,7 @@ package com.google.api.kotlin
 
 import com.google.api.kotlin.config.ProtobufExtensionRegistry
 import com.google.api.kotlin.config.ProtobufTypeMapper
-import com.google.api.kotlin.config.SwappableConfigurationFactory
+import com.google.api.kotlin.config.asSwappableConfiguration
 import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.devtools.common.options.Option
@@ -54,7 +54,7 @@ fun main(args: Array<String>) {
     }
 
     // parse request
-    val runAsPlugin = options.inputFile.isNullOrBlank()
+    val runAsPlugin = options.inputFile.isBlank()
     val request = if (runAsPlugin) {
         CodeGeneratorRequest.parseFrom(System.`in`, ProtobufExtensionRegistry.INSTANCE)
     } else {
@@ -74,10 +74,7 @@ fun main(args: Array<String>) {
         options = parser.getOptions(CLIOptions::class.java)
             ?: throw IllegalStateException("Unable to parse options")
     }
-
-    // determine source dir
-    val sourceDirectory = options.sourceDirectory ?: request.parameter
-    log.info { "Using source directory: $sourceDirectory" }
+    log.info { "Using source directory: ${options.sourceDirectory}" }
 
     // create type map
     val typeMap = ProtobufTypeMapper.fromProtos(request.protoFileList)
@@ -88,7 +85,7 @@ fun main(args: Array<String>) {
         when {
             options.fallback -> throw RuntimeException("gRPC fallback support is not implemented")
             else -> GRPCGenerator()
-        }, SwappableConfigurationFactory(sourceDirectory, typeMap), BuilderGenerator()
+        }, options.asSwappableConfiguration(typeMap), BuilderGenerator()
     )
     val (sourceCode, testCode) = generator.generate(request, typeMap)
 
@@ -112,17 +109,17 @@ fun main(args: Array<String>) {
 
     // write source code
     try {
-        if (options.outputDirectory.isNullOrBlank()) {
+        if (options.outputDirectory.isBlank()) {
             sourceCode.writeTo(System.out)
         } else {
             log.info { "Writing source code output to: '${options.outputDirectory}'" }
-            sourceCode.fileList.forEach { writeFile(options.outputDirectory!!, it) }
+            sourceCode.fileList.forEach { writeFile(options.outputDirectory, it) }
         }
 
         // write test code
-        if (options.testOutputDirectory != null) {
+        if (options.testOutputDirectory.isNotBlank()) {
             log.info { "Writing test code output to: '${options.testOutputDirectory}'" }
-            testCode.fileList.forEach { writeFile(options.testOutputDirectory!!, it) }
+            testCode.fileList.forEach { writeFile(options.testOutputDirectory, it) }
         } else {
             log.warn { "Test output directory not specified. Omitted generated tests." }
         }
@@ -149,9 +146,9 @@ class CLIOptions : OptionsBase() {
         abbrev = 'i',
         help = "A serialized code generation request proto (if not set it is read from stdin).",
         category = "io",
-        defaultValue = "null"
+        defaultValue = ""
     )
-    var inputFile: String? = null
+    var inputFile: String = ""
 
     @JvmField
     @Option(
@@ -159,29 +156,27 @@ class CLIOptions : OptionsBase() {
         abbrev = 'o',
         help = "Output directory for generated source code (if not set will be written to stdout).",
         category = "io",
-        defaultValue = "null"
+        defaultValue = ""
     )
-    var outputDirectory: String? = null
+    var outputDirectory: String = ""
 
     @JvmField
     @Option(
-        name = "test_output",
-        abbrev = 't',
+        name = "test-output",
         help = "Output directory for generated test code (if not set test code will be omitted).",
         category = "io",
-        defaultValue = "null"
+        defaultValue = ""
     )
-    var testOutputDirectory: String? = null
+    var testOutputDirectory: String = ""
 
     @JvmField
     @Option(
         name = "source",
-        abbrev = 's',
         help = "Source directory (proto files). This option is deprecated and will be removed once the configuration process is migrated to use proto annotations.",
         category = "io",
-        defaultValue = "null"
+        defaultValue = ""
     )
-    var sourceDirectory: String? = null
+    var sourceDirectory: String = ""
 
     @JvmField
     @Option(
@@ -190,4 +185,12 @@ class CLIOptions : OptionsBase() {
         defaultValue = "false"
     )
     var fallback: Boolean = false
+
+    @JvmField
+    @Option(
+        name = "auth-google-cloud",
+        help = "Add additional methods to support authentication on Google Cloud",
+        defaultValue = "false"
+    )
+    var authGoogleCloud: Boolean = false
 }

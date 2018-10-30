@@ -77,7 +77,6 @@ cp -R build/generated/source/protoTest/* /generated
 if [ -z ${SKIP_FORMAT+x} ]; then
   echo
   echo "Formatting Java code..."
-  java -jar /usr/google-java-format/formatter.jar --dry-run $(find /generated -type f -name "*.java")
   java -jar /usr/google-java-format/formatter.jar --replace $(find /generated -type f -name "*.java")
 
   echo
