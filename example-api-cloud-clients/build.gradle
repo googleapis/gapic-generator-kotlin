@@ -103,10 +103,6 @@ protobuf {
 
                     // this options should be added for Google APIs
                     option "auth-google-cloud"
-
-                    option "fallback"
-
-                    option "sample=blah..."
                 }
             }
         }
