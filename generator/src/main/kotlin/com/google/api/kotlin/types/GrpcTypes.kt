@@ -109,9 +109,8 @@ internal interface GrpcTypes {
         val ManagedChannelBuilder = ClassName("io.grpc", "ManagedChannelBuilder")
         val StatusCode = ClassName("io.grpc", "Status.Code")
         val CallOptions = ClassName("io.grpc", "CallOptions")
-        val OperationsGrpc = ClassName("com.google.longrunning", "OperationsGrpc")
-        val OperationsFutureStub =
-            ClassName("com.google.longrunning.OperationsGrpc", "OperationsFutureStub")
+        val OperationsClient = ClassName("com.google.longrunning", "OperationsClient")
+        val OperationsClientStub = ClassName("com.google.longrunning", "OperationsClientStub")
         val ByteString = ClassName("com.google.protobuf", "ByteString")
         val MethodDescriptorType = ClassName("io.grpc", "MethodDescriptor.MethodType")
         val ProtoLiteUtils = ClassName("io.grpc.protobuf.lite", "ProtoLiteUtils")

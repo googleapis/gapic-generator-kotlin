@@ -39,7 +39,6 @@ import kotlin.test.Test
  */
 internal class StubsImplTest {
 
-    private val baseClassGenerator: BaseClass = mock()
     private val proto: DescriptorProtos.FileDescriptorProto = mock()
     private val service: DescriptorProtos.ServiceDescriptorProto = mock()
     private val types: ProtobufTypeMapper = mock()
@@ -47,23 +46,23 @@ internal class StubsImplTest {
 
     @BeforeTest
     fun before() {
-        reset(baseClassGenerator, proto, service, types, ctx)
+        reset(proto, service, types, ctx)
         whenever(ctx.proto).doReturn(proto)
         whenever(ctx.service).doReturn(service)
         whenever(ctx.typeMap).doReturn(types)
-        whenever(baseClassGenerator.stubTypeName(ctx)).doReturn(ClassName("a.b.c", "Foo"))
+        whenever(ctx.className).doReturn(ClassName("a.b.c", "Foo"))
     }
 
     @Test
     fun `Generates a stub holder`() {
         whenever(service.name).doReturn("stub")
 
-        val result = StubsImpl(baseClassGenerator).generateHolderType(ctx)
+        val result = StubsImpl().generateHolderType(ctx)
 
         assertThat(result.toString().asNormalizedString()).isEqualTo(
             """|class Stubs(
-               |    val api: com.google.api.kgax.grpc.GrpcClientStub<a.b.c.Foo>,
-               |    val operation: com.google.api.kgax.grpc.GrpcClientStub<com.google.longrunning.OperationsGrpc.OperationsFutureStub>
+               |    val api: com.google.api.kgax.grpc.GrpcClientStub<a.b.c.FooStub>,
+               |    val operation: com.google.api.kgax.grpc.GrpcClientStub<com.google.longrunning.OperationsClientStub>
                |) {
                |    interface Factory {
                |        fun create(channel: io.grpc.ManagedChannel, options: com.google.api.kgax.grpc.ClientCallOptions): Stubs
@@ -74,11 +73,11 @@ internal class StubsImplTest {
 
     @Test
     fun `Generates operation type name`() {
-        val result = StubsImpl(baseClassGenerator).getOperationsStubType(ctx)
+        val result = StubsImpl().getOperationsStubType(ctx)
 
         assertThat(result).isEqualTo(
             grpcStub(
-                ClassName("com.google.longrunning.OperationsGrpc", "OperationsFutureStub")
+                ClassName("com.google.longrunning", "OperationsClientStub")
             )
         )
     }

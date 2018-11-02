@@ -81,6 +81,8 @@ internal class DocumentationImpl : Documentation {
         // remove the spacing from proto files
         fun cleanupComment(text: String?) = text
             ?.replace("\\n\\s".toRegex(), "\n")
+            ?.replace("/*", "/ *")
+            ?.replace("*/", "* /")
             ?.trim()
 
         // add proto comments

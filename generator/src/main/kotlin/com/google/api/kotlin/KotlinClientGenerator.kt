@@ -47,14 +47,6 @@ internal class KotlinClientGenerator(
     private val builderGenerator: BuilderGenerator? = null
 ) {
 
-    companion object {
-        /** protos to ignore if found during processing */
-        private val SKIP_PROTOS_WITH_NAME = listOf(
-            "google/bytestream/bytestream.proto",
-            "google/longrunning/operations.proto"
-        )
-    }
-
     data class Artifacts(
         val sourceCode: CodeGeneratorResponse,
         val testCode: CodeGeneratorResponse
@@ -64,12 +56,16 @@ internal class KotlinClientGenerator(
      * Generate the client from the protobuf code generation [request] and return
      * the response to forward to the protobuf code generator.
      */
-    fun generate(request: CodeGeneratorRequest, typeMap: ProtobufTypeMapper): Artifacts {
+    fun generate(
+        request: CodeGeneratorRequest,
+        typeMap: ProtobufTypeMapper,
+        filter: (DescriptorProtos.FileDescriptorProto) -> Boolean = { true }
+    ): Artifacts {
         // generate code for the services
         val files = request.protoFileList
             .filter { it.serviceCount > 0 }
             .filter { request.fileToGenerateList.contains(it.name) }
-            .filter { !SKIP_PROTOS_WITH_NAME.contains(it.name) }
+            .filter { filter(it) }
             .flatMap { file ->
                 file.serviceList.mapNotNull { service ->
                     try {
@@ -189,7 +185,7 @@ internal class KotlinClientGenerator(
 internal interface ClientGenerator {
 
     /** Generate the client. */
-    fun generateServiceClient(ctx: GeneratorContext): List<GeneratedArtifact>
+    fun generateServiceClient(context: GeneratorContext): List<GeneratedArtifact>
 }
 
 /** Generate a configuration from a protocol buffer file. */

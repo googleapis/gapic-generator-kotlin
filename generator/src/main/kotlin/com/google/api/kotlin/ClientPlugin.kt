@@ -21,6 +21,7 @@ import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.asSwappableConfiguration
 import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.api.kotlin.generator.GRPCGenerator
+import com.google.api.kotlin.types.isNotWellKnown
 import com.google.devtools.common.options.Option
 import com.google.devtools.common.options.OptionsBase
 import com.google.devtools.common.options.OptionsParser
@@ -85,9 +86,13 @@ fun main(args: Array<String>) {
         when {
             options.fallback -> throw RuntimeException("gRPC fallback support is not implemented")
             else -> GRPCGenerator()
-        }, options.asSwappableConfiguration(typeMap), BuilderGenerator()
+        },
+        options.asSwappableConfiguration(typeMap),
+        if (options.noBuilders) null else BuilderGenerator()
     )
-    val (sourceCode, testCode) = generator.generate(request, typeMap)
+    val (sourceCode, testCode) = generator.generate(request, typeMap) { proto ->
+        if (options.includeGoogleCommon) true else proto.isNotWellKnown()
+    }
 
     // utility for creating files
     val writeFile = { directory: String, file: PluginProtos.CodeGeneratorResponse.File ->
@@ -181,16 +186,32 @@ class CLIOptions : OptionsBase() {
     @JvmField
     @Option(
         name = "fallback",
-        help = "Use gRPC fallback. This option is not yet implemented",
+        help = "Use gRPC fallback. This option is not yet implemented.",
         defaultValue = "false"
     )
     var fallback: Boolean = false
 
     @JvmField
     @Option(
+        name = "no-builders",
+        help = "Do not generate DSL style builders for message types.",
+        defaultValue = "false"
+    )
+    var noBuilders: Boolean = false
+
+    @JvmField
+    @Option(
         name = "auth-google-cloud",
-        help = "Add additional methods to support authentication on Google Cloud",
+        help = "Add additional methods to support authentication on Google Cloud.",
         defaultValue = "false"
     )
     var authGoogleCloud: Boolean = false
+
+    @JvmField
+    @Option(
+        name = "include-google-common",
+        help = "Well known Google types will be ignored if they are found in the input. This is normally useful to prevent well known types from being generated multiples times, but it can be disabled with this flag.",
+        defaultValue = "false"
+    )
+    var includeGoogleCommon: Boolean = false
 }
