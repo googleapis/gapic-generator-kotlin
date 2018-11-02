@@ -114,10 +114,6 @@ bootJar {
     launchScript()
 }
 
-jar {
-    classifier = 'core'
-}
-
 publishing {
     publications {
         bootJava(MavenPublication) {
