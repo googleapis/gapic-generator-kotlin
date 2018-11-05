@@ -26,6 +26,7 @@ import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.whenever
+import com.squareup.kotlinpoet.ClassName
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -36,6 +37,7 @@ import kotlin.test.Test
  */
 internal class PropertiesImplTest {
 
+    private val stubs: Stubs = mock()
     private val proto: DescriptorProtos.FileDescriptorProto = mock()
     private val service: DescriptorProtos.ServiceDescriptorProto = mock()
     private val meta: Configuration = mock()
@@ -44,23 +46,30 @@ internal class PropertiesImplTest {
 
     @BeforeTest
     fun before() {
-        reset(proto, service, meta, types, ctx)
+        reset(stubs, proto, service, meta, types, ctx)
         whenever(ctx.proto).doReturn(proto)
         whenever(ctx.service).doReturn(service)
         whenever(ctx.metadata).doReturn(meta)
         whenever(ctx.typeMap).doReturn(types)
+        whenever(stubs.getStubTypeName(ctx)).doReturn(ClassName("foo.bar", "DaStub"))
     }
 
     @Test
     fun `Generates client properties`() {
-        val result = PropertiesImpl().generate(ctx)
+        val result = PropertiesImpl(stubs).generate(ctx)
 
-        assertThat(result).hasSize(1)
-        assertThat(result.first().toString().asNormalizedString()).isEqualTo(
+        assertThat(result).hasSize(3)
+        assertThat(result[0].toString().asNormalizedString()).isEqualTo(
+            "val channel: io.grpc.ManagedChannel = channel"
+        )
+        assertThat(result[1].toString().asNormalizedString()).isEqualTo(
+            "val options: com.google.api.kgax.grpc.ClientCallOptions = options"
+        )
+        assertThat(result[2].toString().asNormalizedString()).isEqualTo(
             """
             |private val stubs: Stubs = factory?.create(channel, options) ?: Stubs(
-            |    Stub(channel).prepare(options),
-            |    com.google.longrunning.OperationsGrpc.newFutureStub(channel).prepare(options)
+            |    foo.bar.DaStub(channel).prepare(options),
+            |    com.google.longrunning.OperationsClientStub(channel).prepare(options)
             |)
             |""".asNormalizedString()
         )
@@ -68,7 +77,7 @@ internal class PropertiesImplTest {
 
     @Test
     fun `Generates the client constructor`() {
-        val result = PropertiesImpl().generatePrimaryConstructor()
+        val result = PropertiesImpl(stubs).generatePrimaryConstructor()
 
         assertThat(result.toString().asNormalizedString()).isEqualTo(
             """

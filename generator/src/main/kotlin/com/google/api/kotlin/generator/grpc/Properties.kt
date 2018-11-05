@@ -41,9 +41,17 @@ internal interface Properties {
     }
 }
 
-internal class PropertiesImpl : Properties {
+internal class PropertiesImpl(val stubs: Stubs) : Properties {
 
     override fun generate(context: GeneratorContext): List<PropertySpec> {
+        val channel = PropertySpec.builder(Properties.PROP_CHANNEL, GrpcTypes.ManagedChannel)
+            .initializer("%L", Properties.PROP_CHANNEL)
+            .build()
+
+        val opts = PropertySpec.builder(Properties.PROP_CALL_OPTS, GrpcTypes.Support.ClientCallOptions)
+            .initializer("%L", Properties.PROP_CALL_OPTS)
+            .build()
+
         val stub = PropertySpec.builder(
             Properties.PROP_STUBS, ClassName.bestGuess(Stubs.CLASS_STUBS)
         )
@@ -58,13 +66,14 @@ internal class PropertiesImpl : Properties {
                         ClassName.bestGuess(Stubs.CLASS_STUBS)
                     )
                     .add(
-                        "Stub(%N).prepare(%N),\n",
+                        "%T(%N).prepare(%N),\n",
+                        stubs.getStubTypeName(context),
                         Properties.PROP_CHANNEL,
                         Properties.PROP_CALL_OPTS
                     )
                     .add(
-                        "%T.newFutureStub(%N).prepare(%N))",
-                        GrpcTypes.OperationsGrpc,
+                        "%T(%N).prepare(%N))",
+                        GrpcTypes.OperationsClientStub,
                         Properties.PROP_CHANNEL,
                         Properties.PROP_CALL_OPTS
                     )
@@ -72,7 +81,7 @@ internal class PropertiesImpl : Properties {
             )
             .build()
 
-        return listOf(stub)
+        return listOf(channel, opts, stub)
     }
 
     override fun generatePrimaryConstructor(): FunSpec {

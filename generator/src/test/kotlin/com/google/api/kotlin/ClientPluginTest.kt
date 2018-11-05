@@ -120,10 +120,10 @@ internal class ClientPluginTest {
         assertThat(response.fileCount).isEqualTo(3)
 
         val client = response.fileList.first { it.name == "google/example/SimpleServiceClient.kt" }.content
-        val clientBase = response.fileList.first { it.name == "google/example/SimpleServiceClientBase.kt" }.content
+        val clientStub = response.fileList.first { it.name == "google/example/SimpleServiceClientStub.kt" }.content
         val builders = response.fileList.first { it.name == "google/example/KotlinBuilders.kt" }.content
 
-        verifyResponse(client, clientBase, builders)
+        verifyResponse(client, clientStub, builders)
     }
 
     private fun verifyResponse(directory: File) {
@@ -135,22 +135,22 @@ internal class ClientPluginTest {
         assertThat(files).hasSize(3)
 
         val client = files.first { it.path.endsWith("google/example/SimpleServiceClient.kt") }.readText()
-        val clientBase = files.first { it.path.endsWith("google/example/SimpleServiceClientBase.kt") }.readText()
+        val clientStub = files.first { it.path.endsWith("google/example/SimpleServiceClientStub.kt") }.readText()
         val builders = files.first { it.path.endsWith("google/example/KotlinBuilders.kt") }.readText()
 
-        verifyResponse(client, clientBase, builders)
+        verifyResponse(client, clientStub, builders)
     }
 
-    private fun verifyResponse(client: String, clientBase: String, builders: String) {
-        for (file in listOf(client, clientBase, builders)) {
+    private fun verifyResponse(client: String, clientStub: String, builders: String) {
+        for (file in listOf(client, clientStub, builders)) {
             assertThat(file.substringBefore("\n")).contains("Copyright")
         }
-        for (file in listOf(client, clientBase)) {
+        for (file in listOf(client, clientStub)) {
             assertThat(file).contains("@Generated(\"${GRPCGenerator::class.qualifiedName}\")")
         }
 
         assertThat(client).contains("class SimpleServiceClient")
-        assertThat(clientBase).contains("abstract class SimpleServiceClientBase")
+        assertThat(clientStub).contains("class SimpleServiceClientStub")
         assertThat(builders).contains("fun SimpleRequest")
         assertThat(builders).contains("fun SimpleResponse")
     }

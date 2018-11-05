@@ -213,7 +213,7 @@ internal class FunctionsImpl(
 
         // build method body
         when {
-            method.isLongRunningOperation() -> {
+            method.isLongRunningOperation(context.proto) -> {
                 val realResponseType = getLongRunningResponseType(context, method, methodOptions.longRunningResponse)
                 val returnType = GrpcTypes.Support.LongRunningCall(realResponseType)
 

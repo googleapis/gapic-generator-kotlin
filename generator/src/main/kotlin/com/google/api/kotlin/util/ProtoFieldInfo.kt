@@ -20,6 +20,7 @@ import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.config.PropertyPath
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.types.GrpcTypes
+import com.google.api.kotlin.types.isGoogleOperationsProto
 import com.google.protobuf.DescriptorProtos
 import com.squareup.kotlinpoet.BOOLEAN
 import com.squareup.kotlinpoet.ClassName
@@ -104,6 +105,10 @@ internal fun getProtoFieldInfoForPath(
 /** Checks if this methods is a LRO. */
 internal fun DescriptorProtos.MethodDescriptorProto.isLongRunningOperation() =
     this.outputType == ".google.longrunning.Operation"
+
+internal fun DescriptorProtos.MethodDescriptorProto.isLongRunningOperation(
+    proto: DescriptorProtos.FileDescriptorProto
+) = this.outputType == ".google.longrunning.Operation" && !proto.isGoogleOperationsProto()
 
 internal fun DescriptorProtos.DescriptorProto.isMap() = this.options.mapEntry
 

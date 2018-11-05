@@ -29,15 +29,14 @@ import com.google.showcase.v1alpha2.PaginationRequest
 import com.google.showcase.v1alpha2.WaitRequest
 import io.grpc.ManagedChannelBuilder
 import io.grpc.StatusRuntimeException
-import kotlinx.coroutines.experimental.CoroutineScope
-import kotlinx.coroutines.experimental.channels.Channel
-import kotlinx.coroutines.experimental.launch
-import kotlinx.coroutines.experimental.runBlocking
-import kotlinx.coroutines.experimental.withTimeout
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.AfterClass
 import java.util.Random
 import java.util.concurrent.ExecutionException
-import java.util.concurrent.TimeUnit
 import kotlin.streams.asSequence
 import kotlin.test.Test
 import kotlin.test.fail
@@ -266,6 +265,6 @@ class ShowcaseTest {
 
     // standard 5 second timeout handler for streaming tests
     private fun <T> runBlockingWithTimeout(seconds: Long = 5, block: suspend CoroutineScope.() -> T) = runBlocking {
-        withTimeout(seconds, TimeUnit.SECONDS, block)
+        withTimeout(seconds * 1_000, block)
     }
 }

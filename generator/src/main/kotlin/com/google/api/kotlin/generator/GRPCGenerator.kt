@@ -20,8 +20,6 @@ import com.google.api.kotlin.ClientGenerator
 import com.google.api.kotlin.GeneratedArtifact
 import com.google.api.kotlin.GeneratedSource
 import com.google.api.kotlin.GeneratorContext
-import com.google.api.kotlin.generator.grpc.BaseClass
-import com.google.api.kotlin.generator.grpc.BaseClassImpl
 import com.google.api.kotlin.generator.grpc.CompanionObject
 import com.google.api.kotlin.generator.grpc.CompanionObjectImpl
 import com.google.api.kotlin.generator.grpc.Documentation
@@ -46,16 +44,15 @@ import javax.annotation.Generated
  * @author jbolinger
  */
 internal class GRPCGenerator(
-    private val baseClass: BaseClass = BaseClassImpl(),
-    private val stubs: Stubs = StubsImpl(baseClass),
-    private val properties: Properties = PropertiesImpl(),
+    private val stubs: Stubs = StubsImpl(),
+    private val properties: Properties = PropertiesImpl(stubs),
     private val companion: CompanionObject = CompanionObjectImpl(),
     private val documentation: Documentation = DocumentationImpl(),
     private val unitTests: UnitTest = UnitTestImpl(stubs),
     private val functions: Functions = FunctionsImpl(documentation, unitTests)
 ) : ClientGenerator {
 
-    override fun generateServiceClient(ctx: GeneratorContext): List<GeneratedArtifact> {
+    override fun generateServiceClient(context: GeneratorContext): List<GeneratedArtifact> {
         val artifacts = mutableListOf<GeneratedArtifact>()
 
         // hallmark
@@ -63,43 +60,43 @@ internal class GRPCGenerator(
             .addMember("%S", this::class.qualifiedName!!)
             .build()
 
-        // build base class for client
-        val base = baseClass.generate(ctx, byAnnotation)
+        // build stub class for client
+        val stub = stubs.generate(context, byAnnotation)
 
-        val clientType = TypeSpec.classBuilder(ctx.className)
-        val apiMethods = functions.generate(ctx)
+        // build client type
+        val clientType = TypeSpec.classBuilder(context.className)
+        val clientImports = mutableListOf<ClassName>()
 
-        // build client
+        // build client implementation
         clientType.addAnnotation(byAnnotation)
-        clientType.superclass(baseClass.typeName(ctx))
-        clientType.addSuperclassConstructorParameter("%N", Properties.PROP_CHANNEL)
-        clientType.addSuperclassConstructorParameter("%N", Properties.PROP_CALL_OPTS)
-        clientType.addKdoc(documentation.generateClassKDoc(ctx))
+        clientType.addKdoc(documentation.generateClassKDoc(context))
+
+        val clientApiMethods = functions.generate(context)
         clientType.primaryConstructor(properties.generatePrimaryConstructor())
-        clientType.addProperties(properties.generate(ctx))
-        clientType.addFunctions(apiMethods.map { it.function })
-        clientType.addType(companion.generate(ctx))
-        clientType.addType(stubs.generateHolderType(ctx))
+        clientType.addProperties(properties.generate(context))
+        clientType.addFunctions(clientApiMethods.map { it.function })
+        clientType.addType(companion.generate(context))
+        clientType.addType(stubs.generateHolderType(context))
 
         // add statics
-        val imports = listOf("pager")
+        clientImports += listOf("pager")
             .map { ClassName(GrpcTypes.Support.SUPPORT_LIB_PACKAGE, it) }
-        val grpcImports = listOf("prepare")
+        clientImports += listOf("prepare")
             .map { ClassName(GrpcTypes.Support.SUPPORT_LIB_GRPC_PACKAGE, it) }
 
         // add client type
         artifacts.add(
             GeneratedSource(
-                ctx.className.packageName,
-                ctx.className.simpleName,
+                context.className.packageName,
+                context.className.simpleName,
                 types = listOf(clientType.build()),
-                imports = imports + grpcImports
+                imports = clientImports
             )
         )
-        artifacts.add(base)
+        artifacts.add(stub)
 
         // build unit tests
-        unitTests.generate(ctx, apiMethods)?.let {
+        unitTests.generate(context, clientApiMethods)?.let {
             artifacts.add(it)
         }
 
