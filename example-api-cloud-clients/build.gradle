@@ -47,7 +47,7 @@ dependencies {
 
     // get the KGax library via jitpack
     // (this library is in preview and not yet published to maven)
-    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:4ae88c3'
+    compile 'com.github.googleapis.gax-kotlin:kgax-grpc:b7e7920'
 
     testCompile 'junit:junit:4.11'
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
@@ -72,9 +72,6 @@ protobuf {
         artifact = 'com.google.protobuf:protoc:3.6.1'
     }
     plugins {
-        javalite {
-            artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0'
-        }
         client {
             // get the KGen code generator
             // this is normally done through the package manager, i.e.:
@@ -85,12 +82,7 @@ protobuf {
     }
     generateProtoTasks {
         all().each { task ->
-            task.builtins {
-                remove java
-            }
             task.plugins {
-                javalite {}
-                // generate the Kotlin API clients
                 client {
                     // this option will add generated unit tests for the client to the project
                     // be sure to add the directory to your test source set(s) as shown above

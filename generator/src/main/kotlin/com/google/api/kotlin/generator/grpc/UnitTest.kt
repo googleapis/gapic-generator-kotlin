@@ -155,6 +155,7 @@ internal class UnitTestImpl(
                     ClassName("com.nhaarman.mockito_kotlin", "reset"),
                     ClassName("com.nhaarman.mockito_kotlin", "whenever"),
                     ClassName("com.nhaarman.mockito_kotlin", "doReturn"),
+                    ClassName("com.nhaarman.mockito_kotlin", "doAnswer"),
                     ClassName("com.nhaarman.mockito_kotlin", "mock"),
                     ClassName("com.nhaarman.mockito_kotlin", "verify"),
                     ClassName("com.nhaarman.mockito_kotlin", "times"),
@@ -227,13 +228,13 @@ internal class UnitTestImpl(
                 |
                 |val pageBodyMock: %T = mock {
                 |    on { %L } doReturn "token"
-                |    on { %L } doReturn mock<List<%T>>()
+                |    on { %L } doAnswer { mock() }
                 |}
                 |whenever(future.get()).thenReturn(%T(pageBodyMock, mock()))
                 |""".trimMargin(),
                 originalReturnType,
                 nextPageTokenGetter,
-                responseListGetter, responseListItemType,
+                responseListGetter,
                 GrpcTypes.Support.CallResult(originalReturnType)
             )
 
