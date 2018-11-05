@@ -92,18 +92,13 @@ protobuf {
         artifact = 'com.google.protobuf:protoc:3.6.1'
     }
     plugins {
-        javalite {
-            artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0'
-        }
         client {
             path = "${projectDir}/../runLocalGenerator.sh"
         }
     }
     generateProtoTasks {
         all().each { task ->
-            task.builtins { remove java }
             task.plugins {
-                javalite {}
                 client {}
             }
         }
