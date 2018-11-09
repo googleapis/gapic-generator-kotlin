@@ -376,11 +376,11 @@ workflows:
       - test_cloud_examples:
           requires:
             - build
-        #   filters: *master-filter
+          filters: *master-filter
       - test_cloud_android_examples:
           requires:
             - build
-        #   filters: *master-filter
+          filters: *master-filter
       - release_gcr_snapshot:
           requires:
             - build
