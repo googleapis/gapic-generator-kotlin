@@ -376,7 +376,11 @@ workflows:
       - test_cloud_examples:
           requires:
             - build
-          filters: *master-filter
+          filters: &master-filter
+            branches:
+              only: master
+            tags:
+              only: /.*/
       - test_cloud_android_examples:
           requires:
             - build
@@ -391,11 +395,7 @@ workflows:
             - test_example
             - test_cloud_examples
             - test_cloud_android_examples
-          filters: &master-filter
-            branches:
-              only: master
-            tags:
-              only: /.*/
+          filters: *master-filter
       - release:
           requires:
             - release_gcr_snapshot
