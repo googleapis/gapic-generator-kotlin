@@ -18,25 +18,32 @@ package com.google.api.examples.kotlin.client
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.widget.TextView
 import com.google.api.examples.kotlin.util.MainThread
+import com.google.api.kgax.grpc.BasicInterceptor
+import com.google.api.kgax.grpc.on
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
-import com.google.api.kgax.grpc.on
+
+private const val TAG = "Demo"
 
 /**
- * Kotlin example showcasing metadata using the client library.
- *
- * @author jbolinger
+ * Kotlin example showcasing the Language API and a gRPC interceptor.
  */
-class MainActivityMetadata : AppCompatActivity() {
+class LanguageInterceptorActivity : AppCompatActivity() {
 
     private val client by lazy {
         // create a client using a service account for simplicity
-        // refer to see MainActivity for more details on how to authenticate
+        // do not use service accounts in real applications
         applicationContext.resources.openRawResource(R.raw.sa).use {
             LanguageServiceClient.fromServiceAccount(it)
+        }.prepare {
+            // add an interceptor
+            withInterceptor(BasicInterceptor(
+                onMessage = { Log.i(TAG, "A message of type: '${it.javaClass}' was received!") }
+            ))
         }
     }
 
@@ -46,18 +53,18 @@ class MainActivityMetadata : AppCompatActivity() {
 
         val textView: TextView = findViewById(R.id.text_view)
 
-        // call the api
-        client.prepare {
-            withMetadata("foo", listOf("1", "2"))
-            withMetadata("bar", listOf("a", "b"))
-        }.analyzeEntities(Document {
+        val document = Document {
             content = "Hi there Joe"
             type = Document.Type.PLAIN_TEXT
-        }, EncodingType.UTF8).on(MainThread) {
-            success = {
-                textView.text = "The API says: ${it.body}\n\n" +
-                        "with metadata of: ${it.metadata.keys().joinToString(",")}"
-            }
+        }
+
+        // make an API call
+        client.analyzeEntities(document, EncodingType.UTF8)
+
+        // do a second call so we can see how the interceptor sees all outbound messages
+        client.analyzeEntitySentiment(document, EncodingType.UTF8).on(MainThread) {
+            success = { textView.text = "The API says: ${it.body}" }
+            error = { textView.text = "Error: $it" }
         }
     }
 

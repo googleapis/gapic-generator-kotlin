@@ -21,7 +21,9 @@ import java.util.concurrent.Executor
 import android.os.Looper
 import com.google.api.kgax.grpc.Callback
 import com.google.api.kgax.grpc.FutureCall
+import com.google.api.kgax.grpc.LongRunningCall
 import com.google.api.kgax.grpc.on
+import com.google.protobuf.MessageLite
 
 /** Executor for the main thread */
 object MainThreadExecutor : Executor {
@@ -36,3 +38,4 @@ typealias MainThread = MainThreadExecutor
 
 /** extension to make jumping back to the UI more concise */
 fun <T> FutureCall<T>.onUI(callback: Callback<T>.() -> Unit) = this.on(MainThread, callback)
+fun <T : MessageLite> LongRunningCall<T>.onUI(callback: Callback<T>.() -> Unit) = this.on(MainThread, callback)

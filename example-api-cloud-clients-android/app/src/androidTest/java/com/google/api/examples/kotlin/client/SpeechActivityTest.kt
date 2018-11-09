@@ -23,25 +23,25 @@ import android.support.test.espresso.matcher.ViewMatchers.withText
 import android.support.test.filters.LargeTest
 import android.support.test.rule.ActivityTestRule
 import android.support.test.runner.AndroidJUnit4
-import org.hamcrest.Matchers.containsString
+import org.hamcrest.CoreMatchers.containsString
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-class MainActivityTest {
+class SpeechActivityTest {
 
     @Rule
     @JvmField
-    val activityRule: ActivityTestRule<MainActivity> =
-            ActivityTestRule(MainActivity::class.java)
+    val rule: ActivityTestRule<SpeechActivity> =
+            ActivityTestRule(SpeechActivity::class.java)
 
     @Test
-    fun returnsIdentifiedEntity() {
+    fun returnsRecognizedResult() {
         awaitApiCall()
 
         onView(withId(R.id.text_view))
-                .check(matches(withText(containsString("type: PERSON"))))
+                .check(matches(withText(containsString("Brooklyn Bridge"))))
     }
 }

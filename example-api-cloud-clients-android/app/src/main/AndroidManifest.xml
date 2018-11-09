@@ -29,24 +29,22 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity">
+        <activity android:name=".LanguageActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".MainActivityOn">
+        <activity android:name=".LanguageInterceptorActivity">
         </activity>
-        <activity android:name=".MainActivityLRO">
+        <activity android:name=".LanguageMetadataActivity">
         </activity>
-        <activity android:name=".MainActivityMetadata">
+        <activity android:name=".LanguageSignInActivity">
         </activity>
-        <activity android:name=".MainActivityStreaming">
+        <activity android:name=".SpeechActivity">
         </activity>
-        <activity android:name=".MainActivityPaging">
-        </activity>
-        <activity android:name=".MainActivityInterceptor">
+        <activity android:name=".SpeechStreamingActivity">
         </activity>
     </application>
 

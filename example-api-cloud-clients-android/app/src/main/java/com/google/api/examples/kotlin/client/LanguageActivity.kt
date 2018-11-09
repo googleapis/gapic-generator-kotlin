@@ -18,31 +18,22 @@ package com.google.api.examples.kotlin.client
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import android.util.Log
 import android.widget.TextView
-import com.google.api.examples.kotlin.util.MainThread
+import com.google.api.examples.kotlin.util.onUI
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
-import com.google.api.kgax.grpc.BasicInterceptor
-import com.google.api.kgax.grpc.on
-
-private const val TAG = "Demo"
 
 /**
- * Kotlin example calling the language API and a gRPC interceptor.
+ * Kotlin example showcasing the Language API.
  */
-class MainActivityInterceptor : AppCompatActivity() {
+class LanguageActivity : AppCompatActivity() {
 
     private val client by lazy {
         // create a client using a service account for simplicity
-        // refer to see MainActivity for more details on how to authenticate
+        // do not use service accounts in real applications
         applicationContext.resources.openRawResource(R.raw.sa).use {
             LanguageServiceClient.fromServiceAccount(it)
-        }.prepare {
-            withInterceptor(BasicInterceptor(
-                    onMessage = { Log.i(TAG, "A message of type: '${it.javaClass}' was received!") }
-            ))
         }
     }
 
@@ -52,17 +43,12 @@ class MainActivityInterceptor : AppCompatActivity() {
 
         val textView: TextView = findViewById(R.id.text_view)
 
-        val document = Document {
+        // call the API
+        client.analyzeEntities(Document {
             content = "Hi there Joe"
             type = Document.Type.PLAIN_TEXT
-        }
-
-        // make an API call
-        client.analyzeEntities(document, EncodingType.UTF8)
-
-        // do a second call so we can see how the interceptor sees all outbound messages
-        client.analyzeEntitySentiment(document, EncodingType.UTF8).on(MainThread) {
-            success = { textView.text = "The API says: ${it.body}" }
+        }, EncodingType.UTF8).onUI {
+            success = { textView.text = "The API says: $it" }
             error = { textView.text = "Error: $it" }
         }
     }

@@ -124,18 +124,20 @@ jobs:
           path: ~/gapic-generator-kotlin
       - attach_workspace:
           at: ./..
-      - restore_cache:
+      - restore_cache: &android-example-key
           key: cloud-examples-android-v0-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
       - run:
           name: Download dependencies
           command: ./gradlew androidDependencies
       - save_cache:
+          <<: *android-example-key
           paths:
             - ~/.gradle
-          key: cloud-examples-android-v0-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
       - run:
           name: Create placeholder key
-          command: touch app/src/main/res/raw/sa.json
+          command: |
+            touch app/src/main/res/raw/sa.json
+            touch app/src/main/res/raw/client_config.json
       - run:
           name: Run checks
           command: ./gradlew check
@@ -251,8 +253,8 @@ jobs:
       - run: 
           name: Run all examples
           command: |
-            echo $GCLOUD_SERVICE_KEY > _key.json
-            export CREDENTIALS=_key.json
+            echo $GCLOUD_SERVICE_KEY > /tmp/_key.json
+            export CREDENTIALS=/tmp/_key.json
             export PROJECT=$GCLOUD_PROJECT_ID
             ./gradlew run --args language
             ./gradlew run --args logging
@@ -260,8 +262,39 @@ jobs:
             ./gradlew run --args vision
             ./gradlew run --args pubsub
       - run:
-          command: rm _key.json
+          command: rm /tmp/_key.json
           when: always
+
+  test_cloud_android_examples:
+    working_directory: ~/gapic-generator-kotlin/example-api-cloud-clients-android
+    docker:
+      - image: circleci/android:api-28-alpha
+    environment:
+      JVM_OPTS: -Xmx3200m
+    steps:
+      - checkout:
+          path: ~/gapic-generator-kotlin
+      - attach_workspace:
+          at: ./..
+      - restore_cache:
+          <<: *android-example-key
+      - run:
+          name: Build debug APK and release APK
+          command: |
+            echo $GCLOUD_SERVICE_KEY > app/src/main/res/raw/sa.json
+            echo $GCLOUD_CLIENT_CONFIG > app/src/main/res/raw/client_config.json
+            ./gradlew assembleDebug assembleDebugAndroidTest
+      - run:
+          name: Run all examples
+          command: |
+            sudo gcloud auth activate-service-account --key-file=app/src/main/res/raw/sa.json
+            sudo gcloud --quiet config set project $GCLOUD_PROJECT_ID
+            sudo gcloud firebase test android run --app app/build/outputs/apk/debug/app-debug.apk --test app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+      - run:
+          command: |
+            rm app/src/main/res/raw/sa.json
+            rm app/src/main/res/raw/client_config.json
+          when: always          
 
   # -------------------------------------------------------------------------------
   # Deploy
@@ -348,6 +381,10 @@ workflows:
               only: master
             tags:
               only: /.*/
+      - test_cloud_android_examples:
+          requires:
+            - build
+          filters: *master-filter
       - release_gcr_snapshot:
           requires:
             - build
@@ -357,6 +394,7 @@ workflows:
             - test_showcase
             - test_example
             - test_cloud_examples
+            - test_cloud_android_examples
           filters: *master-filter
       - release:
           requires:

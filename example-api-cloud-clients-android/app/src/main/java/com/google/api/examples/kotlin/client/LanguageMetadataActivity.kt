@@ -19,23 +19,19 @@ package com.google.api.examples.kotlin.client
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.TextView
-import com.google.api.examples.kotlin.util.MainThread
+import com.google.api.examples.kotlin.util.onUI
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
-import com.google.api.kgax.grpc.on
 
 /**
- * Kotlin example calling the language API.
- *
- * This example is the same as [MainActivity] but it uses [enqueue] instead of the `get`
- * methods to avoid using an AsyncTask.
+ * Kotlin example showcasing metadata using the Language client library.
  */
-class MainActivityOn : AppCompatActivity() {
+class LanguageMetadataActivity : AppCompatActivity() {
 
     private val client by lazy {
         // create a client using a service account for simplicity
-        // refer to see MainActivity for more details on how to authenticate
+        // do not use service accounts in real applications
         applicationContext.resources.openRawResource(R.raw.sa).use {
             LanguageServiceClient.fromServiceAccount(it)
         }
@@ -47,14 +43,18 @@ class MainActivityOn : AppCompatActivity() {
 
         val textView: TextView = findViewById(R.id.text_view)
 
-        val call = client.analyzeEntities(Document {
+        // call the api
+        client.prepare {
+            withMetadata("foo", listOf("1", "2"))
+            withMetadata("bar", listOf("a", "b"))
+        }.analyzeEntities(Document {
             content = "Hi there Joe"
             type = Document.Type.PLAIN_TEXT
-        }, EncodingType.UTF8)
-
-        call.on(MainThread) {
-            success = { textView.text = "The API says: ${it.body}" }
-            error = { textView.text = "Error: $it" }
+        }, EncodingType.UTF8).onUI {
+            success = {
+                textView.text = "The API says: ${it.body}\n\n" +
+                    "with metadata of: ${it.metadata.keys().joinToString(",")}"
+            }
         }
     }
 
