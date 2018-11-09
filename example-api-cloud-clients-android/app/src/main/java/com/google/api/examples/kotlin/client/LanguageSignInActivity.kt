@@ -45,6 +45,9 @@ private const val RC_SIGN_IN = 100
 
 /**
  * Kotlin example showcasing the Language API and user-level credentials.
+ *
+ * See the notes on the [AccessTokenFetcher] for important details about how this
+ * should be done in real apps.
  */
 class LanguageSignInActivity : AppCompatActivity() {
 
@@ -63,7 +66,7 @@ class LanguageSignInActivity : AppCompatActivity() {
             val config = input.bufferedReader().use { Gson().fromJson(it, ClientConfig::class.java) }
             authClientId = config.client_id
 
-            // Note: you should not store this in a real app refer to [AccessTokenFetcher] for more details
+            // Note: you should not store this in a real app
             authClientSecret = config.client_secret
         }
 
