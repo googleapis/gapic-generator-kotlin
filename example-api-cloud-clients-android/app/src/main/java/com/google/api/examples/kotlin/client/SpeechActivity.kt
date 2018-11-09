@@ -19,7 +19,7 @@ package com.google.api.examples.kotlin.client
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.TextView
-import com.google.api.examples.kotlin.util.MainThread
+import com.google.api.examples.kotlin.util.onUI
 import com.google.cloud.speech.v1.LongRunningRecognizeRequest
 import com.google.cloud.speech.v1.RecognitionAudio
 import com.google.cloud.speech.v1.RecognitionConfig
@@ -28,15 +28,13 @@ import com.google.common.io.ByteStreams
 import com.google.protobuf.ByteString
 
 /**
- * Kotlin example showcasing LRO using the client library.
- *
- * @author jbolinger
+ * Kotlin example showcasing long running operations using the Speech client library.
  */
-class MainActivityLRO : AppCompatActivity() {
+class SpeechActivity : AppCompatActivity() {
 
     private val client by lazy {
         // create a client using a service account for simplicity
-        // refer to see MainActivity for more details on how to authenticate
+        // do not use service accounts in real applications
         applicationContext.resources.openRawResource(R.raw.sa).use {
             SpeechClient.fromServiceAccount(it)
         }
@@ -64,7 +62,7 @@ class MainActivityLRO : AppCompatActivity() {
             }
         })
 
-        lro.on(MainThread) {
+        lro.onUI {
             success = {
                 textView.text = "The API says: ${it.body}\n via operation: ${lro.operation?.name}"
             }

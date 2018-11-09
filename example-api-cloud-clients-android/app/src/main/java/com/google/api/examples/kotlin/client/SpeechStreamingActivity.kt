@@ -33,11 +33,9 @@ import com.google.cloud.speech.v1.StreamingRecognizeRequest
 private const val TAG = "Demo"
 
 /**
- * Kotlin example showcasing duplex streaming using the client library.
- *
- * @author jbolinger
+ * Kotlin example showcasing duplex streaming using the Speech client library.
  */
-class MainActivityStreaming : AppCompatActivity() {
+class SpeechStreamingActivity : AppCompatActivity() {
 
     companion object {
         private val PERMISSIONS = arrayOf(Manifest.permission.RECORD_AUDIO)
@@ -49,7 +47,7 @@ class MainActivityStreaming : AppCompatActivity() {
 
     private val client by lazy {
         // create a client using a service account for simplicity
-        // refer to see MainActivity for more details on how to authenticate
+        // do not use service accounts in real applications
         applicationContext.resources.openRawResource(R.raw.sa).use {
             SpeechClient.fromServiceAccount(it)
         }

@@ -15,3 +15,5 @@
 .externalNativeBuild
 
 app/src/main/res/raw/sa.json
+app/src/main/res/raw/client_config.json
+

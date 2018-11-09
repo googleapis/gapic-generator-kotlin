@@ -30,12 +30,12 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-class MainActivityOnTest {
+class LanguageInterceptorActivityTest {
 
     @Rule
     @JvmField
-    val activityRule: ActivityTestRule<MainActivityOn> =
-            ActivityTestRule(MainActivityOn::class.java)
+    val activityRule: ActivityTestRule<LanguageInterceptorActivity> =
+            ActivityTestRule(LanguageInterceptorActivity::class.java)
 
     @Test
     fun returnsIdentifiedEntity() {

@@ -49,7 +49,7 @@ dependencies {
 
     // temporary
     // TODO: don't want to use android by default
-    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc-android:b7e7920'
+    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc-android:2964619'
 }
 
 compileKotlin {
