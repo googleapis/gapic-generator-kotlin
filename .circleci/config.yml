@@ -81,7 +81,7 @@ jobs:
   # Examples
   # -------------------------------------------------------------------------------  
 
-  build_examples:
+  build_cloud_examples:
     docker:
       - image: circleci/openjdk:8-jdk
     working_directory: ~/gapic-generator-kotlin/example-api-cloud-clients
@@ -113,7 +113,7 @@ jobs:
       - store_artifacts:
           path: ~/junit
 
-  build_android_examples:
+  build_cloud_android_examples:
     working_directory: ~/gapic-generator-kotlin/example-api-cloud-clients-android
     docker:
       - image: circleci/android:api-28-alpha
@@ -361,10 +361,10 @@ workflows:
       - dockerize:
           requires:
             - build
-      - build_examples:
+      - build_cloud_examples:
           requires:
             - build
-      - build_android_examples:
+      - build_cloud_android_examples:
           requires:
             - build
       - test_showcase:
@@ -373,26 +373,24 @@ workflows:
       - test_example:
           requires:
             - build
-      - test_cloud_examples:
+      - test_cloud_android_examples:
           requires:
             - build
-            - build_examples
           filters: &master-filter
             branches:
               only: master
             tags:
               only: /.*/
-      - test_cloud_android_examples:
+      - test_cloud_examples:
           requires:
             - build
-            - build_android_examples
           filters: *master-filter
       - release_gcr_snapshot:
           requires:
             - build
             - dockerize
-            - build_examples
-            - build_android_examples
+            - build_cloud_examples
+            - build_cloud_android_examples
             - test_showcase
             - test_example
             - test_cloud_examples
