@@ -373,20 +373,18 @@ workflows:
       - test_example:
           requires:
             - build
-      - test_cloud_examples:
+      - test_cloud_android_examples:
           requires:
             - build
-            - build_examples
           filters: &master-filter
             branches:
               only: master
             tags:
               only: /.*/
-      - test_cloud_android_examples:
+      - test_cloud_examples:
           requires:
             - build
-            - build_android_examples
-          filters: *master-filter
+          #filters: *master-filter
       - release_gcr_snapshot:
           requires:
             - build
