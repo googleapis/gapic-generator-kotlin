@@ -229,14 +229,14 @@ internal class CompanionObjectImplTest {
             | * Create a Clazz from the current system's environment.
             | *
             | * Currently, this method only supports service account credentials that are read from the
-            | * path defined by the environment [variableName], which is `CREDENTIALS` by default.
+            | * path defined by the environment [variableName], which is `GOOGLE_APPLICATION_CREDENTIALS` by default.
             | *
             | * If a [channel] is not provided one will be created automatically (recommended).
             | */
             |@kotlin.jvm.JvmStatic
             |@kotlin.jvm.JvmOverloads
             |fun fromEnvironment(
-            |    variableName: kotlin.String = "CREDENTIALS",
+            |    variableName: kotlin.String = "GOOGLE_APPLICATION_CREDENTIALS",
             |    scopes: kotlin.collections.List<kotlin.String> = ALL_SCOPES,
             |    channel: io.grpc.ManagedChannel? = null
             |): r.r.r.Clazz {
