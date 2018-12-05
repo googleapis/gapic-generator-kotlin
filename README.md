@@ -50,7 +50,7 @@ repositories {
 }
 
 plugins {
-    id "com.google.protobuf" version "0.8.5"
+    id "com.google.protobuf" version "0.8.7"
 }
 
 dependencies {

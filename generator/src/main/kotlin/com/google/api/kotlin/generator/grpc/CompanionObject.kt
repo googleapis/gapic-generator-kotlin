@@ -175,7 +175,7 @@ internal class CompanionObjectImpl : CompanionObject {
                 |Create a %N from the current system's environment.
                 |
                 |Currently, this method only supports service account credentials that are read from the
-                |path defined by the environment [variableName], which is `CREDENTIALS` by default.
+                |path defined by the environment [variableName], which is `GOOGLE_APPLICATION_CREDENTIALS` by default.
                 |
                 |If a [channel] is not provided one will be created automatically (recommended).
                 |""".trimMargin(), context.className.simpleName
@@ -184,7 +184,7 @@ internal class CompanionObjectImpl : CompanionObject {
             .addAnnotation(JvmOverloads::class)
             .addParameter(
                 ParameterSpec.builder("variableName", String::class)
-                    .defaultValue("%S", "CREDENTIALS")
+                    .defaultValue("%S", "GOOGLE_APPLICATION_CREDENTIALS")
                     .build()
             )
             .addParameter(
