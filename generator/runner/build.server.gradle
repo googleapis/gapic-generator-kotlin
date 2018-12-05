@@ -26,7 +26,7 @@ buildscript {
 }
 
 plugins {
-    id "com.google.protobuf" version "0.8.6"
+    id "com.google.protobuf" version "0.8.7"
 }
 
 apply plugin: 'kotlin'
@@ -48,8 +48,7 @@ dependencies {
     implementation 'javax.annotation:javax.annotation-api:1.3.2'
 
     // temporary
-    // TODO: don't want to use android by default
-    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc-android:2964619'
+    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:2964619'
 }
 
 compileKotlin {
@@ -65,23 +64,17 @@ protobuf {
         artifact = 'com.google.protobuf:protoc:3.6.1'
     }
     plugins {
-        javalite {
-            artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0'
-        }
         client {
             path = '/usr/generator/bin/generator'
         }
     }
     generateProtoTasks {
         all().each { task ->
-            task.builtins {
-                remove java
-            }
             task.plugins {
-                javalite {}
                 client {
                     option "source=${projectDir}/src/main/proto"
                     option "test-output=${project.buildDir}/generated/source/protoTest/clientTest"
+                    // EXTRA-PLUGIN-OPTIONS
                 }
             }
         }

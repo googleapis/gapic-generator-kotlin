@@ -10,6 +10,18 @@ while (( "$#" )); do
     #   FARG=$2
     #   shift 2
     #   ;;
+    --auth-google-cloud)
+      IS_AUTH_GCLOUD=1
+      shift
+      ;;
+    --no-builders)
+      IS_NO_BUILDERS=1
+      shift
+      ;;
+    --android)
+      IS_ANDROID=1
+      shift
+      ;;
     --no-format)
       SKIP_FORMAT=1
       shift
@@ -56,6 +68,31 @@ if [ ! -z "$(ls -A /generated)" ]; then
     rm -rf /generated/*
   fi
 fi
+
+# create build config
+if [ -z ${IS_ANDROID+x} ]; then
+  echo "Using standard configuration..."
+  cp build.server.gradle build.gradle
+else
+  echo "Using Android configuration..."
+  cp build.android.gradle build.gradle
+fi
+
+# configure options
+if [ ! -z ${IS_AUTH_GCLOUD+x} ]; then
+  sed -i '/\/\/ EXTRA-PLUGIN-OPTIONS/a\
+                    option "auth-google-cloud"
+  ' build.gradle
+fi
+if [ ! -x ${IS_NO_BUILDERS+x} ]; then
+  sed -i '/\/\/ EXTRA-PLUGIN-OPTIONS/a\
+                    option "no-builders"
+  ' build.gradle
+fi
+
+echo "result is (android=${IS_ANDROID})"
+cat build.gradle
+exit 1
 
 # generate
 echo

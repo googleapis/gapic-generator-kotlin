@@ -100,7 +100,11 @@ RUN mkdir -p /root/.gradle && \
     echo "org.gradle.jvmargs=-Xmx4096m -XX:MaxPermSize=4096m" >> /root/.gradle/gradle.properties 
 
 # run a build to cache the build artifacts
-RUN ./gradlew build clean
+RUN cp build.android.gradle build.gradle && \
+    ./gradlew build clean && \
+    cp build.server.gradle build.gradle && \
+    ./gradlew build clean && \
+    rm build.gradle
 
 # create input directories
 RUN  rm -rf src/main/proto && \
