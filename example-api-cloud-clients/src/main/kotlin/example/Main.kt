@@ -22,7 +22,7 @@ package example
  * Run the examples using your service account as follows:
  *
  * ```
- * $ CREDENTIALS=<path_to_your_service_account.json> ./gradlew run
+ * $ GOOGLE_APPLICATION_CREDENTIALS=<path_to_your_service_account.json> ./gradlew run
  * ```
  */
 class Main {

@@ -29,7 +29,7 @@ import com.google.protobuf.ByteString
  * Run this example using your service account as follows:
  *
  * ```
- * $ CREDENTIALS=<path_to_your_service_account.json> ./gradlew run --args speech
+ * $ GOOGLE_APPLICATION_CREDENTIALS=<path_to_your_service_account.json> ./gradlew run --args speech
  * ```
  */
 fun speechExample() {

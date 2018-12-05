@@ -25,7 +25,7 @@ import com.google.cloud.language.v1.LanguageServiceClient
  * Run this example using your service account as follows:
  *
  * ```
- * $ CREDENTIALS=<path_to_your_service_account.json> ./gradlew run --language
+ * $ GOOGLE_APPLICATION_CREDENTIALS=<path_to_your_service_account.json> ./gradlew run --language
  * ```
  */
 fun languageExample() {

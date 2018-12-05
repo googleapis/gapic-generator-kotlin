@@ -254,7 +254,7 @@ jobs:
           name: Run all examples
           command: |
             echo $GCLOUD_SERVICE_KEY > /tmp/_key.json
-            export CREDENTIALS=/tmp/_key.json
+            export GOOGLE_APPLICATION_CREDENTIALS=/tmp/_key.json
             export PROJECT=$GCLOUD_PROJECT_ID
             ./gradlew run --args language
             ./gradlew run --args logging

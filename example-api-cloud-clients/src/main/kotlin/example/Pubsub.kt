@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit
  * Run this example using your service account as follows:
  *
  * ```
- * $ CREDENTIALS=<path_to_your_service_account.json> ./gradlew run --args pubsub
+ * $ GOOGLE_APPLICATION_CREDENTIALS=<path_to_your_service_account.json> ./gradlew run --args pubsub
  * ```
  */
 fun pubSubExample() {

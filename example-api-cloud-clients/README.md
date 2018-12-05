@@ -18,7 +18,7 @@ use. To get started:
 1. [Create a new service account](https://console.cloud.google.com/apis/credentials/serviceaccountkey) with a JSON keyfile
 1. Define an environment variable so the example application uses your service account credentials:
     ```bash
-    $ export CREDENTIALS=<path to your service account JSON file>
+    $ export GOOGLE_APPLICATION_CREDENTIALS=<path to your service account JSON file>
     $ export PROJECT=<name_of_your_gcp_project>
     ```
 1. Run via gradle:

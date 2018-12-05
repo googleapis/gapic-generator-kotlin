@@ -28,7 +28,7 @@ import java.util.Date
  * Run this example using your service account as follows:
  *
  * ```
- * $ CREDENTIALS=<path_to_your_service_account.json> PROJECT=<your_gcp_project_id> ./gradlew run --args logging
+ * $ GOOGLE_APPLICATION_CREDENTIALS=<path_to_your_service_account.json> PROJECT=<your_gcp_project_id> ./gradlew run --args logging
  * ```
  */
 fun loggingExample() {
