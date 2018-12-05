@@ -90,10 +90,6 @@ if [ ! -x ${IS_NO_BUILDERS+x} ]; then
   ' build.gradle
 fi
 
-echo "result is (android=${IS_ANDROID})"
-cat build.gradle
-exit 1
-
 # generate
 echo
 echo "Generating client code..."
