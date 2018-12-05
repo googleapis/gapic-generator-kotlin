@@ -39,6 +39,20 @@ $ docker run -it --rm \
 That's it. Be sure to add the required [dependencies](#dependencies) to your project when using
 the generated code.
 
+#### Options
+
+The docker images supports the following command line arguments:
+
+| Option                | Description |
+| ----                  | ----------- |
+| `--android`           | Generate Android style code |
+| `--auth-google-cloud` | Include Google authentication mechanisms (only use for Google APIs) |
+| `--no-builders`       | Do not generate Kotlin DSL builders for proto message types |
+| `--no-format`         | Do not format the generated code |
+| `--no-lint`           | Do not lint the generated code |
+| `--no-compile`        | Do not compile the generated code (compilation is a sanity check) |
+| `--overwrite`         | Delete the output directory if it exists before generating code |
+
 ### Gradle
 
 To use gradle put all of your `.proto` files in `app/src/main/proto` (Android) or `src/main/proto` (non-Android)
@@ -52,7 +66,7 @@ identical for a standalone Kotlin application.
 
 ```groovy
 plugins {
-    id "com.google.protobuf" version "0.8.5"
+    id "com.google.protobuf" version "0.8.7"
 }
 
 // if you are not making an Android app use the vanilla java or kotlin plugin(s)
@@ -96,7 +110,10 @@ protobuf {
                 //javalite {}
 
                 // this generates your client library and helper Kotlin builders!
-                client {}
+                client {
+                  // set any options here
+                  option "test-output=${project.buildDir}/generated/source/clientTest"
+                }
             }
         }
     }
@@ -106,12 +123,22 @@ protobuf {
 Build your application with gradle as usual:
 
 ```bash
-        $ ./gradlew build
+$ ./gradlew build
 ```
 
 Enjoy your new client library! The generated source code will available on the classpath
 for your application to use, and you can find it at `app/build/generated/source/proto`
 (Android) or `build/generated/source/proto` (standalone application).
+
+#### Options
+
+The `client {}` block supports the following options:
+
+| Option                         | Description |
+| ----                           | ----------- |
+| `option "test-output=<path>"`  | Generate unit tests for the client at the given `path` |
+| `option "auth-google-cloud"`   | Include Google authentication mechanisms (only use for Google APIs) |
+| `option "no-builders"`         | Do not generate Kotlin DSL builders for proto message types |
 
 ### Protoc
 
