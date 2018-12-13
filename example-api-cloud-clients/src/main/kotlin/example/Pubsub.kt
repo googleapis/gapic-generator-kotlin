@@ -23,9 +23,13 @@ import com.google.pubsub.v1.PushConfig
 import com.google.pubsub.v1.ReceivedMessage
 import com.google.pubsub.v1.SubscriberClient
 import com.google.pubsub.v1.Topic
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.util.Date
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
 /**
  * Simple example of calling the PubSub API with a generated Kotlin gRPC client.
@@ -36,7 +40,7 @@ import java.util.concurrent.TimeUnit
  * $ GOOGLE_APPLICATION_CREDENTIALS=<path_to_your_service_account.json> ./gradlew run --args pubsub
  * ```
  */
-fun pubSubExample() {
+fun pubSubExample() = runBlocking {
     // get the project id
     val projectId = System.getenv("PROJECT")
         ?: throw RuntimeException("You must set the PROJECT environment variable to run this example")
@@ -51,11 +55,10 @@ fun pubSubExample() {
     val subscriber = Subscriber(projectId, subscriptionName, topic)
     subscriber.start()
 
-    // wait a little...
-    Thread.sleep(10_000)
+    // wait for all the events to be published
+    publisher.await()
 
-    // stop
-    publisher.stop()
+    // shutdown the subscriber
     subscriber.stop()
 }
 
@@ -63,42 +66,47 @@ fun pubSubExample() {
 private class Publisher(
     projectId: String,
     topicName: String,
-    val messagesPerSecond: Long = 1
+    val messagesToSend: Int = 20,
+    val delayBetweenMessages: Long = 500
 ) {
-    private val executor = Executors.newSingleThreadScheduledExecutor()
-
     private val client by lazy {
         PublisherClient.fromEnvironment()
     }
 
     private val topic = "projects/$projectId/topics/$topicName"
+    private lateinit var job: Job
 
     /** Start sending periodic messgages */
-    fun start(): Topic {
+    suspend fun start(): Topic = coroutineScope {
         // create the topic to send on
-        val topic = client.createTopic(topic).get().body
+        val topic = client.createTopic(topic).body
 
         // send messages
-        executor.scheduleAtFixedRate({
-            println("Sending a message...")
+        job = launch(Dispatchers.IO) {
+            repeat(messagesToSend) {
+                println("Sending a message...")
 
-            // send a new message
-            client.publish(topic.name, listOf(
-                PubsubMessage {
-                    data = "it's now: ${Date().time}".asByteString()
-                }
-            ))
-        }, 0, messagesPerSecond, TimeUnit.SECONDS)
-        return topic
+                // send a new message
+                client.publish(topic.name, listOf(
+                    PubsubMessage {
+                        data = "it's now: ${Date().time}".asByteString()
+                    }
+                ))
+
+                delay(delayBetweenMessages)
+            }
+        }
+
+        topic
     }
 
     /** Stop sending new messages */
-    fun stop() {
-        executor.shutdownNow()
+    suspend fun await() {
+        job.join()
 
         // clean up resources
         println("Removing topic...")
-        client.deleteTopic(topic).get()
+        client.deleteTopic(topic)
 
         client.shutdownChannel()
     }
@@ -108,41 +116,47 @@ private class Publisher(
 private class Subscriber(
     projectId: String,
     subscriptionName: String,
-    val topic: Topic
+    val topic: Topic,
+    val delayBetweenPulls: Long = 500
 ) {
-    private val executor = Executors.newSingleThreadExecutor()
-
     private val client by lazy {
         SubscriberClient.fromEnvironment()
     }
 
     private val subscription = "projects/$projectId/subscriptions/$subscriptionName"
+    private lateinit var job: Job
+    private var running = false
 
     /** Start listening and print incoming messages */
-    fun start() {
-        val sub = client.createSubscription(subscription, topic.name, PushConfig {}, 10).get().body
+    suspend fun start() = coroutineScope {
+        val sub = client.createSubscription(subscription, topic.name, PushConfig {}, 10).body
 
-        executor.submit {
-            while (true) {
+        // pool for new messages
+        running = true
+        job = launch(Dispatchers.IO) {
+            while (running) {
                 // get a new message
-                val result = client.pull(sub.name, false, 5).get().body
+                val result = client.pull(sub.name, false, 5).body
                 for (received in result.receivedMessagesList) {
                     println("Received message: ${received.asString()}")
                 }
 
                 // ack all of the messages
                 client.acknowledge(subscription, result.receivedMessagesList.map { it.ackId })
+
+                delay(delayBetweenPulls)
             }
         }
     }
 
     /** Stop listening for new messages */
-    fun stop() {
-        executor.shutdownNow()
+    suspend fun stop() {
+        running = false
+        job.join()
 
         // clean up resources
         println("Removing subscription...")
-        client.deleteSubscription(subscription).get()
+        client.deleteSubscription(subscription)
 
         client.shutdownChannel()
     }

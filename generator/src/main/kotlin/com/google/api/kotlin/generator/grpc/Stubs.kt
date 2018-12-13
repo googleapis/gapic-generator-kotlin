@@ -179,7 +179,7 @@ internal class StubsImpl : Stubs {
         // wrap it in a lazy delegate
         prop.delegate(
             """
-            |lazy {
+            |lazy·{
             |%L
             |}""".trimMargin(),
             init

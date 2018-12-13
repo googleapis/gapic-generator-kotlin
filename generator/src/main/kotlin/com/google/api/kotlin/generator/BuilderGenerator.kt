@@ -71,7 +71,7 @@ internal class BuilderGenerator {
                     .addParameter(
                         "init",
                         LambdaTypeName.get(
-                            builderType.annotated(AnnotationSpec.builder(GrpcTypes.Support.ProtoBuilder).build()),
+                            builderType.copy(annotations = listOf(AnnotationSpec.builder(GrpcTypes.Support.ProtoBuilder).build())),
                             listOf(),
                             Unit::class.asTypeName()
                         )

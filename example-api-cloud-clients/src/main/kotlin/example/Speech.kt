@@ -22,6 +22,7 @@ import com.google.cloud.speech.v1.RecognitionConfig
 import com.google.cloud.speech.v1.SpeechClient
 import com.google.common.io.ByteStreams
 import com.google.protobuf.ByteString
+import kotlinx.coroutines.runBlocking
 
 /**
  * Simple example of calling the Logging API with a generated Kotlin gRPC client.
@@ -32,7 +33,7 @@ import com.google.protobuf.ByteString
  * $ GOOGLE_APPLICATION_CREDENTIALS=<path_to_your_service_account.json> ./gradlew run --args speech
  * ```
  */
-fun speechExample() {
+fun speechExample() = runBlocking {
     // create a client
     val client = SpeechClient.fromEnvironment()
 
@@ -54,7 +55,7 @@ fun speechExample() {
     })
 
     // wait for the result
-    println("The response is: ${operation.get().body}")
+    println("The response is: ${operation.await().body}")
 
     // shutdown
     client.shutdownChannel()

@@ -9,7 +9,7 @@ jobs:
   build:
     docker:
       - image: circleci/openjdk:8-jdk
-    working_directory: ~/gapic-generator-kotlin
+    working_directory: ~/gapic-generator-kotlin/generator
     steps:
       - checkout:
           path: ~/gapic-generator-kotlin
@@ -34,7 +34,7 @@ jobs:
           name: Save test results
           command: |
             mkdir -p ~/junit/
-            find . -type f -regex ".*/generator/build/test-results/.*xml" -exec cp {} ~/junit/ \;
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} ~/junit/ \;
           when: always
       - store_test_results:
           path: ~/junit
@@ -47,8 +47,8 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - generator/build/libs
-            - generator/build/distributions
+            - build/libs
+            - build/distributions
 
   dockerize:
     docker:

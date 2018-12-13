@@ -18,6 +18,7 @@ package example
 
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.LanguageServiceClient
+import kotlinx.coroutines.runBlocking
 
 /**
  * Simple example of calling the Natural Language API with a generated Kotlin gRPC client.
@@ -28,7 +29,7 @@ import com.google.cloud.language.v1.LanguageServiceClient
  * $ GOOGLE_APPLICATION_CREDENTIALS=<path_to_your_service_account.json> ./gradlew run --language
  * ```
  */
-fun languageExample() {
+fun languageExample() = runBlocking {
     // create a client
     val client = LanguageServiceClient.fromEnvironment()
 
@@ -36,7 +37,7 @@ fun languageExample() {
     val result = client.analyzeSentiment(Document {
         content = "Let's see what this API can do. It's great! Right?"
         type = Document.Type.PLAIN_TEXT
-    }).get()
+    })
 
     // print the result
     println("The response was: ${result.body}")
