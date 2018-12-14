@@ -45,10 +45,10 @@ jobs:
           command: bash <(curl -s https://codecov.io/bash)
           when: always
       - persist_to_workspace:
-          root: .
+          root: ./..
           paths:
-            - build/libs
-            - build/distributions
+            - generator/build/libs
+            - generator/build/distributions
 
   dockerize:
     docker:
