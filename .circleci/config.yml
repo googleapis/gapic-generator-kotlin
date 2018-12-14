@@ -19,14 +19,14 @@ jobs:
             git submodule init
             git submodule update
       - restore_cache:
-          key: generator-v0-{{ checksum "build.gradle" }}
+          key: generator-v0-{{ checksum "build.gradle.kts" }}
       - run: 
           name: Download dependencies
           command: ./gradlew dependencies
       - save_cache:
           paths:
             - ~/.gradle
-          key: generator-v0-{{ checksum "build.gradle" }}
+          key: generator-v0-{{ checksum "build.gradle.kts" }}
       - run: 
            name: Build and run checks
            command: ./gradlew build
@@ -91,14 +91,14 @@ jobs:
       - attach_workspace:
           at: ./..
       - restore_cache:
-          key: cloud-examples-v0-{{ checksum "build.gradle" }}
+          key: cloud-examples-v0-{{ checksum "build.gradle.kts" }}
       - run: 
           name: Download dependencies
           command: ./gradlew dependencies
       - save_cache:
           paths:
             - ~/.gradle
-          key: cloud-examples-v0-{{ checksum "build.gradle" }}
+          key: cloud-examples-v0-{{ checksum "build.gradle.kts" }}
       - run: 
            name: Build and run checks
            command: ./gradlew build
@@ -202,7 +202,7 @@ jobs:
       - attach_workspace:
           at: .
       - restore_cache:
-          key: example-server-v0-{{ checksum "example-server/build.gradle" }}-{{ checksum "example-client/build.gradle" }}
+          key: example-server-v0-{{ checksum "example-server/build.gradle.kts" }}-{{ checksum "example-client/build.gradle.kts" }}
       - run: 
           name: Download dependencies
           command: ./gradlew dependencies
@@ -215,7 +215,7 @@ jobs:
           paths:
             - ~/example-server/.gradle
             - ~/example-client/.gradle
-          key: example-server-v0-{{ checksum "example-server/build.gradle" }}-{{ checksum "example-client/build.gradle" }}
+          key: example-server-v0-{{ checksum "example-server/build.gradle.kts" }}-{{ checksum "example-client/build.gradle.kts" }}
       - run:
           name: Run server
           command: ./gradlew run
@@ -246,7 +246,7 @@ jobs:
       - attach_workspace:
           at: ./..
       - restore_cache:
-          key: cloud-examples-v0-{{ checksum "build.gradle" }}
+          key: cloud-examples-v0-{{ checksum "build.gradle.kts" }}
       - run: 
           name: Download dependencies
           command: ./gradlew dependencies

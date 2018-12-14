@@ -1,6 +1,6 @@
 # Kgen
 
-Kgen creates idiomatic gRPC Kotlin client libraries from a [protocol buffer](https://developers.google.com/protocol-buffers/docs/proto3) description of an API.
+Kgen creates idiomatic coroutine-based gRPC Kotlin client libraries from a [protocol buffer](https://developers.google.com/protocol-buffers/docs/proto3) description of an API.
 
 It supports full-stack Kotlin development on the server and in Android applications.
 
@@ -122,20 +122,25 @@ Next, run Kgen on the proto files and it will produce Kotlin code that you can u
 the API, like this ([complete example](example-client/src/main/kotlin/example/Client.kt)):
     
 ```kotlin
-// create a client with an insecure channel
-val client = HelloServiceClient.create(
-    channel = ManagedChannelBuilder.forAddress("localhost", 8080)
-        .usePlaintext()
-        .build()
-)
+fun main() = runBlocking<Unit> {
+    // create a client with an insecure channel
+    val client = HelloServiceClient.create(
+        channel = ManagedChannelBuilder.forAddress("localhost", 8080)
+            .usePlaintext()
+            .build()
+    )
 
-// call the API
-val response = client.hiThere(HiRequest {
-    query = "Hello!"
-}).get()
+    // call the API
+    val response = client.hiThere(HiRequest {
+        query = "Hello!"
+    })
 
-// print the result
-println("The response was: ${response.body.result}")
+    // print the result
+    println("The response was: ${response.body.result}")
+
+    // shutdown
+    client.shutdownChannel()
+}
 ```
 
 The generator creates three things from the proto files:

@@ -16,17 +16,16 @@
 
 import com.google.protobuf.gradle.protobuf
 import com.google.protobuf.gradle.protoc
-import org.springframework.boot.gradle.tasks.bundling.BootJar
+import com.google.protobuf.gradle.plugins
+import com.google.protobuf.gradle.id
+import com.google.protobuf.gradle.generateProtoTasks
+import com.google.protobuf.gradle.ofSourceSet
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 plugins {
     idea
     java
-    application
-    `maven-publish`
-    jacoco
     kotlin("jvm") version "1.3.11"
-    id("org.springframework.boot") version "2.1.1.RELEASE"
     id("com.google.protobuf") version "0.8.7"
 }
 
@@ -42,36 +41,7 @@ repositories {
     google()
     mavenCentral()
     jcenter()
-}
-
-val ktlintImplementation by configurations.creating
-
-dependencies {
-    implementation(kotlin("stdlib-jdk8"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.1")
-
-    implementation("io.github.microutils:kotlin-logging:1.5.4")
-    implementation("org.slf4j:slf4j-api:1.7.25")
-    implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.11.0")
-    implementation("javax.annotation:javax.annotation-api:1.3.2")
-
-    implementation("com.squareup:kotlinpoet:1.0.0")
-
-    implementation("org.yaml:snakeyaml:1.20")
-    implementation("org.apache.commons:commons-io:1.3.2")
-    implementation("org.apache.commons:commons-text:1.4")
-
-    implementation("com.google.guava:guava:25.1-jre")
-    implementation("com.google.protobuf:protobuf-java:3.5.1")
-    implementation("com.github.pcj:google-options:1.0.0")
-
-    testImplementation(kotlin("test"))
-    testImplementation(kotlin("test-junit"))
-    testImplementation("junit:junit:4.12")
-    testImplementation("com.nhaarman:mockito-kotlin:1.6.0")
-    testImplementation("com.google.truth:truth:0.41")
-
-    ktlintImplementation("com.github.shyiko:ktlint:0.29.0")
+    maven(url = "https://jitpack.io")
 }
 
 base {
@@ -79,62 +49,55 @@ base {
     version = "0.1.0-SNAPSHOT"
 }
 
-application {
-    mainClassName = "com.google.api.kotlin.ClientPluginKt"
+val ktlintImplementation by configurations.creating
+
+dependencies {
+    implementation(kotlin("stdlib-jdk8"))
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.0")
+
+    // temporary
+    implementation("com.github.googleapis.gax-kotlin:kgax-grpc:0a3362f")
+    // implementation("com.google.kgax:kgax-grpc:0.1.0-SNAPSHOT")
+
+    testImplementation(kotlin("test"))
+    testImplementation(kotlin("test-junit"))
+    testImplementation("junit:junit:4.12")
+    testImplementation("com.google.truth:truth:0.41")
+
+    ktlintImplementation("com.github.shyiko:ktlint:0.29.0")
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-
+kotlin {
     sourceSets {
-        getByName("main").proto.srcDir("api-common-protos")
+        getByName("test").kotlin.srcDir("build/generated/source/proto/test/client")
     }
 }
 
-// compile proto and generate gRPC stubs
 protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:3.6.1"
     }
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("bootJava") {
-            artifact(tasks.getByName("bootJar"))
+    plugins {
+        id("client") {
+            path = "$projectDir/../runLocalGenerator.sh"
+        }
+    }
+    generateProtoTasks {
+        ofSourceSet("test").forEach {
+            it.plugins {
+                id("client") {}
+            }
         }
     }
 }
 
-jacoco {
-    toolVersion = "0.8.2"
-}
-
 tasks {
-    val test = getByName("test")
     val check = getByName("check")
-
-    withType<BootJar> {
-        enabled = true
-        classifier = "core"
-        mainClassName = "com.google.api.kotlin.ClientPluginKt"
-        launchScript()
-    }
 
     withType<Test> {
         testLogging {
             events = setOf(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED)
         }
-    }
-
-    withType<JacocoReport> {
-        reports {
-            xml.isEnabled = true
-            html.isEnabled = true
-        }
-        sourceDirectories = files(listOf("src/main/kotlin"))
-        test.finalizedBy(this)
     }
 
     val ktlint by creating(JavaExec::class) {

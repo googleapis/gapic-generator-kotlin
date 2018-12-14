@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-rootProject.name = 'showcase'
+rootProject.name = "example-client"

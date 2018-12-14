@@ -18,6 +18,7 @@ package com.google.api.kotlin
 
 import com.google.api.kgax.Retry
 import com.google.api.kgax.RetryContext
+import com.google.api.kgax.grpc.BasicInterceptor
 import com.google.common.truth.Truth.assertThat
 import com.google.protobuf.Duration
 import com.google.rpc.Code
@@ -26,17 +27,15 @@ import com.google.showcase.v1alpha2.EchoClient
 import com.google.showcase.v1alpha2.EchoRequest
 import com.google.showcase.v1alpha2.ExpandRequest
 import com.google.showcase.v1alpha2.PaginationRequest
+import com.google.showcase.v1alpha2.PaginationResponse
 import com.google.showcase.v1alpha2.WaitRequest
 import io.grpc.ManagedChannelBuilder
 import io.grpc.StatusRuntimeException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import org.junit.AfterClass
 import java.util.Random
-import java.util.concurrent.ExecutionException
 import kotlin.streams.asSequence
 import kotlin.test.Test
 import kotlin.test.fail
@@ -45,6 +44,7 @@ import kotlin.test.fail
  * Integration tests via Showcase:
  * https://github.com/googleapis/gapic-showcase
  */
+@ExperimentalCoroutinesApi
 class ShowcaseTest {
 
     // client / connection to server
@@ -67,17 +67,16 @@ class ShowcaseTest {
     }
 
     @Test
-    fun `echos a request`() {
+    fun `echos a request`() = runBlocking<Unit> {
         val result = client.echo(
             EchoRequest { content = "Hi there!" }
-        ).get()
+        )
 
         assertThat(result.body.content).isEqualTo("Hi there!")
     }
 
-    // TODO: wrap the error
-    @Test(expected = ExecutionException::class)
-    fun `throws an error`() {
+    @Test(expected = StatusRuntimeException::class)
+    fun `throws an error`() = runBlocking<Unit> {
         try {
             client.echo(
                 EchoRequest {
@@ -87,86 +86,68 @@ class ShowcaseTest {
                         message = "oh no!"
                     }
                 }
-            ).get()
-        } catch (e: Exception) {
-            val error = e.cause as StatusRuntimeException
+            )
+        } catch (error: StatusRuntimeException) {
             assertThat(error.message).isEqualTo("DATA_LOSS: oh no!")
             assertThat(error.status.code.value()).isEqualTo(Code.DATA_LOSS_VALUE)
-            throw e
+            throw error
         }
     }
 
     @Test
-    fun `can expand a stream of responses`() {
-        val c = Channel<Throwable?>()
+    fun `can expand a stream of responses`() = runBlocking<Unit> {
         val expansions = mutableListOf<String>()
 
-        val err = runBlockingWithTimeout {
-            val stream = client.expand(ExpandRequest {
-                content = "well hello there how are you"
-            })
+        val streams = client.expand(ExpandRequest {
+            content = "well hello there how are you"
+        })
 
-            stream.start {
-                onNext = { expansions.add(it.content) }
-                onError = { launch { c.send(it) } }
-                onCompleted = { launch { c.send(null) } }
-            }
-
-            c.receive()
+        for (response in streams.responses) {
+            expansions.add(response.content)
         }
 
-        assertThat(err).isNull()
         assertThat(expansions).containsExactly("well", "hello", "there", "how", "are", "you").inOrder()
     }
 
     @Test
-    fun `can expand a stream of responses and then error`() {
-        val c = Channel<Throwable?>()
+    fun `can expand a stream of responses and then error`() = runBlocking<Unit> {
         val expansions = mutableListOf<String>()
 
-        val err = runBlockingWithTimeout {
-            val stream = client.expand(ExpandRequest {
-                content = "one two zee"
-                error = Status {
-                    code = Code.ABORTED_VALUE
-                    message = "yikes"
-                }
-            })
-
-            stream.start {
-                onNext = { expansions.add(it.content) }
-                onError = { launch { c.send(it) } }
-                onCompleted = { launch { c.send(null) } }
+        val streams = client.expand(ExpandRequest {
+            content = "one two zee"
+            error = Status {
+                code = Code.ABORTED_VALUE
+                message = "yikes"
             }
+        })
 
-            c.receive()
+        var error: Throwable? = null
+        try {
+            for (response in streams.responses) {
+                expansions.add(response.content)
+            }
+        } catch (t: Throwable) {
+            error = t
         }
 
-        assertThat(err).isNotNull()
+        assertThat(error).isNotNull()
         assertThat(expansions).containsExactly("one", "two", "zee").inOrder()
     }
 
     @Test
-    fun `can collect a stream of requests`() {
-        val result = runBlockingWithTimeout {
-            val stream = client.collect()
+    fun `can collect a stream of requests`() = runBlocking<Unit> {
+        val streams = client.collect()
 
-            stream.start()
-            listOf("a", "b", "c", "done").map {
-                stream.requests.send(EchoRequest { content = it })
-            }
-            stream.requests.close()
-
-            stream.response.get()
+        listOf("a", "b", "c", "done").map {
+            streams.requests.send(EchoRequest { content = it })
         }
+        streams.requests.close()
 
-        assertThat(result.content).isEqualTo("a b c done")
+        assertThat(streams.response.await().content).isEqualTo("a b c done")
     }
 
     @Test
-    fun `can have a random chat`() {
-        val c = Channel<Throwable?>()
-
+    fun `can have a random chat`() = runBlocking<Unit> {
         val inputs = Array(5) { _ ->
             Random().ints(20)
                 .asSequence()
@@ -174,30 +155,25 @@ class ShowcaseTest {
                 .joinToString("->")
         }
 
-        val responses = mutableListOf<String>()
-        val stream = client.chat()
+        val streams = client.chat()
 
-        val err = runBlockingWithTimeout {
-            stream.start {
-                onNext = { responses.add(it.content) }
-                onError = { launch { c.send(it) } }
-                onCompleted = { launch { c.send(null) } }
-            }
-
+        launch {
             for (str in inputs) {
-                stream.requests.send(EchoRequest { content = str })
+                streams.requests.send(EchoRequest { content = str })
             }
-            stream.requests.close()
-
-            c.receive()
+            streams.requests.close()
         }
 
-        assertThat(err).isNull()
+        val responses = mutableListOf<String>()
+        for (response in streams.responses) {
+            responses.add(response.content)
+        }
+
         assertThat(responses).containsExactly(*inputs).inOrder()
     }
 
     @Test
-    fun `pages chucks of responses`() {
+    fun `pages chucks of responses`() = runBlocking<Unit> {
         val numbers = mutableListOf<Int>()
         var pageCount = 0
 
@@ -214,28 +190,37 @@ class ShowcaseTest {
 
         assertThat(pageCount).isEqualTo(4)
         assertThat(numbers).containsExactlyElementsIn((0 until 39).map { it })
-        assertThat(pager.hasNext()).isFalse()
+        assertThat(pager.isClosedForReceive).isTrue()
     }
 
     @Test
-    fun `pages chucks of responses without pre-fetching`() {
-        val pager = client.pagination(PaginationRequest {
+    fun `pages chucks of responses without pre-fetching`() = runBlocking<Unit> {
+        var count = 0
+        val pager = client
+            .prepare {
+                withInterceptor(BasicInterceptor(onMessage = {
+                    count += (it as PaginationResponse).responsesCount
+                }))
+            }
+            .pagination(PaginationRequest {
             pageSize = 20
             pageToken = "0"
             maxResponse = 100
         })
+        assertThat(count).isIn(0..20)
 
-        assertThat(pager.hasNext()).isTrue()
-
-        val page = pager.next()
+        val page = pager.receive()
 
         assertThat(page.elements).containsExactlyElementsIn((0 until 20).map { it })
         assertThat(page.token).isNotEmpty()
-        assertThat(pager.hasNext()).isTrue()
+        assertThat(count).isIn(20..40)
+        assertThat(pager.receive()).isNotNull()
+        assertThat(count).isIn(40..60)
+        assertThat(pager.isClosedForReceive).isFalse()
     }
 
     @Test
-    fun `can wait and retry`() {
+    fun `can wait and retry`() = runBlocking {
         val retry = object : Retry {
             var count = 0
             override fun retryAfter(error: Throwable, context: RetryContext): Long? {
@@ -253,18 +238,13 @@ class ShowcaseTest {
                     code = Code.UNAVAILABLE_VALUE
                     message = "go away"
                 }
-            }).get()
+            })
 
             fail("expected to throw")
-        } catch (t: Throwable) {
-            assertThat(t.cause).isInstanceOf(StatusRuntimeException::class.java)
+        } catch (error: StatusRuntimeException) {
+            assertThat(error.status.description).isEqualTo("go away")
         }
 
         assertThat(retry.count).isEqualTo(6)
-    }
-
-    // standard 5 second timeout handler for streaming tests
-    private fun <T> runBlockingWithTimeout(seconds: Long = 5, block: suspend CoroutineScope.() -> T) = runBlocking {
-        withTimeout(seconds * 1_000, block)
     }
 }
