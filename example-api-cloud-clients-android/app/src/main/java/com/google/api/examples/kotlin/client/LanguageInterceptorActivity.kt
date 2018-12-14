@@ -19,20 +19,28 @@ package com.google.api.examples.kotlin.client
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import android.widget.TextView
-import com.google.api.examples.kotlin.util.MainThread
 import com.google.api.kgax.grpc.BasicInterceptor
-import com.google.api.kgax.grpc.on
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
+import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 
 private const val TAG = "Demo"
 
 /**
  * Kotlin example showcasing the Language API and a gRPC interceptor.
  */
-class LanguageInterceptorActivity : AppCompatActivity() {
+class LanguageInterceptorActivity : AppCompatActivity(), CoroutineScope {
+
+    lateinit var job: Job
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main + job
 
     private val client by lazy {
         // create a client using a service account for simplicity
@@ -51,26 +59,27 @@ class LanguageInterceptorActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val textView: TextView = findViewById(R.id.text_view)
+        job = Job()
 
         val document = Document {
             content = "Hi there Joe"
             type = Document.Type.PLAIN_TEXT
         }
 
-        // make an API call
-        client.analyzeEntities(document, EncodingType.UTF8)
+        // make two API calls so we can see how the interceptor sees all outbound messages
+        val firstResponse = async { client.analyzeEntities(document, EncodingType.UTF8) }
+        val secondResponse = async { client.analyzeEntitySentiment(document, EncodingType.UTF8) }
 
-        // do a second call so we can see how the interceptor sees all outbound messages
-        client.analyzeEntitySentiment(document, EncodingType.UTF8).on(MainThread) {
-            success = { textView.text = "The API says: ${it.body}" }
-            error = { textView.text = "Error: $it" }
+        launch {
+            textView.text = "${firstResponse.await().body}\n\n${secondResponse.await().body}"
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
 
+        // release all resources
+        job.cancel()
         client.shutdownChannel()
     }
 }

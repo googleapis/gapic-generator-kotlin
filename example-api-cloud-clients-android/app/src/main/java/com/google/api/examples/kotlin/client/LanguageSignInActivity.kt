@@ -20,13 +20,11 @@ import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import android.widget.TextView
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.Scope
-import com.google.api.examples.kotlin.util.onUI
 import com.google.auth.oauth2.AccessToken
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
@@ -37,8 +35,16 @@ import com.squareup.okhttp.FormEncodingBuilder
 import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.Request
 import com.squareup.okhttp.Response
+import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import java.io.IOException
 import java.util.Calendar
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 private const val TAG = "SignIn"
 private const val RC_SIGN_IN = 100
@@ -49,7 +55,11 @@ private const val RC_SIGN_IN = 100
  * See the notes on the [AccessTokenFetcher] for important details about how this
  * should be done in real apps.
  */
-class LanguageSignInActivity : AppCompatActivity() {
+class LanguageSignInActivity : AppCompatActivity(), CoroutineScope {
+
+    lateinit var job: Job
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main + job
 
     private var languageClient: LanguageServiceClient? = null
     private lateinit var signInClient: GoogleSignInClient
@@ -59,6 +69,8 @@ class LanguageSignInActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        job = Job()
 
         // get the auth related info
         val scopes = LanguageServiceClient.ALL_SCOPES.asScopes()
@@ -100,32 +112,32 @@ class LanguageSignInActivity : AppCompatActivity() {
                 val tokenSource = AccessTokenFetcher(authCode, authClientId, authClientSecret)
 
                 // fetch a token and call the API
-                tokenSource.fetch { callAPI(it) }
+                launch { callAPI(tokenSource.fetch()) }
             } catch (e: ApiException) {
                 Log.e(TAG, "Unable to login with user account!", e)
             }
         }
     }
 
-    private fun callAPI(token: AccessToken) {
-        val textView: TextView = findViewById(R.id.text_view)
-
+    private suspend fun callAPI(token: AccessToken) {
         // create a client with an access token
         languageClient = LanguageServiceClient.fromAccessToken(token)
 
         // call the API
-        languageClient!!.analyzeEntities(Document {
+        val response = languageClient!!.analyzeEntities(Document {
             content = "Hi there Joe"
             type = Document.Type.PLAIN_TEXT
-        }, EncodingType.UTF8).onUI {
-            success = { textView.text = "The API says: $it" }
-            error = { textView.text = "Error: $it" }
-        }
+        }, EncodingType.UTF8)
+
+        // update the UI
+        textView.text = "The API says: ${response.body}"
     }
 
     override fun onDestroy() {
         super.onDestroy()
 
+        // release all resources
+        job.cancel()
         languageClient?.shutdownChannel()
     }
 }
@@ -142,7 +154,7 @@ private class AccessTokenFetcher(
     private val clientId: String,
     private val clientSecret: String
 ) {
-    fun fetch(onReady: (AccessToken) -> Unit) {
+    suspend fun fetch(): AccessToken = suspendCoroutine { continuation ->
         OkHttpClient().newCall(
             Request.Builder()
                 .url("https://www.googleapis.com/oauth2/v4/token")
@@ -161,7 +173,7 @@ private class AccessTokenFetcher(
                 val token = Gson().fromJson(response.body().string(), TokenResponse::class.java)
                 val expiresAt = Calendar.getInstance()
                 expiresAt.add(Calendar.SECOND, token.expires_in)
-                onReady(AccessToken(token.access_token, expiresAt.time))
+                continuation.resume(AccessToken(token.access_token, expiresAt.time))
             }
 
             override fun onFailure(request: Request, e: IOException) {

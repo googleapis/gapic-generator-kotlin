@@ -18,19 +18,27 @@ package com.google.api.examples.kotlin.client
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import android.widget.TextView
-import com.google.api.examples.kotlin.util.onUI
 import com.google.cloud.speech.v1.LongRunningRecognizeRequest
 import com.google.cloud.speech.v1.RecognitionAudio
 import com.google.cloud.speech.v1.RecognitionConfig
 import com.google.cloud.speech.v1.SpeechClient
 import com.google.common.io.ByteStreams
 import com.google.protobuf.ByteString
+import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 
 /**
  * Kotlin example showcasing long running operations using the Speech client library.
  */
-class SpeechActivity : AppCompatActivity() {
+class SpeechActivity : AppCompatActivity(), CoroutineScope {
+
+    lateinit var job: Job
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main + job
 
     private val client by lazy {
         // create a client using a service account for simplicity
@@ -44,35 +52,37 @@ class SpeechActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val textView: TextView = findViewById(R.id.text_view)
+        job = Job()
 
-        // get audio
-        val audioData = applicationContext.resources.openRawResource(R.raw.audio).use {
-            ByteString.copyFrom(ByteStreams.toByteArray(it))
-        }
+        launch {
+            // get audio
+            val audioData = applicationContext.resources.openRawResource(R.raw.audio).use {
+                ByteString.copyFrom(ByteStreams.toByteArray(it))
+            }
 
-        val lro = client.longRunningRecognize(LongRunningRecognizeRequest {
-            audio = RecognitionAudio {
-                content = audioData
-            }
-            config = RecognitionConfig {
-                encoding = RecognitionConfig.AudioEncoding.LINEAR16
-                sampleRateHertz = 16000
-                languageCode = "en-US"
-            }
-        })
+            // start a long running operation
+            val lro = client.longRunningRecognize(LongRunningRecognizeRequest {
+                audio = RecognitionAudio {
+                    content = audioData
+                }
+                config = RecognitionConfig {
+                    encoding = RecognitionConfig.AudioEncoding.LINEAR16
+                    sampleRateHertz = 16000
+                    languageCode = "en-US"
+                }
+            })
 
-        lro.onUI {
-            success = {
-                textView.text = "The API says: ${it.body}\n via operation: ${lro.operation?.name}"
-            }
-            error = { textView.text = "Error: $it" }
+            // wait for the result and update the UI
+            val response = lro.await()
+            textView.text = "The API says: ${response.body}\n via operation: ${lro.operation?.name}"
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
 
+        // release all resources
+        job.cancel()
         client.shutdownChannel()
     }
 }
