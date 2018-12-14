@@ -48,7 +48,7 @@ class SpeechStreamingActivity : AppCompatActivity(), CoroutineScope {
         private const val REQUEST_RECORD_AUDIO_PERMISSION = 200
     }
 
-    lateinit var job: Job
+    private lateinit var job: Job
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.Main + job
 
@@ -67,8 +67,6 @@ class SpeechStreamingActivity : AppCompatActivity(), CoroutineScope {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        job = Job()
-
         // get permissions
         ActivityCompat.requestPermissions(
             this, PERMISSIONS, REQUEST_RECORD_AUDIO_PERMISSION
@@ -77,6 +75,8 @@ class SpeechStreamingActivity : AppCompatActivity(), CoroutineScope {
 
     override fun onResume() {
         super.onResume()
+
+        job = Job()
 
         // kick-off recording process, if we're allowed
         if (permissionToRecord) {
@@ -124,15 +124,19 @@ class SpeechStreamingActivity : AppCompatActivity(), CoroutineScope {
         super.onPause()
 
         // ensure mic data stops
-        audioEmitter?.stop()
-        audioEmitter = null
+        launch {
+            audioEmitter?.stop()
+            audioEmitter = null
+        }
+
+        // stop streams
+        job.cancel()
     }
 
     override fun onDestroy() {
         super.onDestroy()
 
         // release all resources
-        job.cancel()
         client.shutdownChannel()
     }
 
