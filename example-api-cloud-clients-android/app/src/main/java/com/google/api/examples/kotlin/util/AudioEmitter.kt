@@ -25,6 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.isActive
@@ -83,8 +84,7 @@ internal class AudioEmitter {
     /** Stop Streaming  */
     suspend fun stop() {
         // stop reading audio data
-        job.cancel()
-        job.join()
+        job.cancelAndJoin()
 
         // stop recording
         audioRecorder?.stop()
