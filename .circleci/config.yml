@@ -161,14 +161,14 @@ jobs:
       - attach_workspace:
           at: ./..
       - restore_cache:
-          key: showcase-v0-{{ checksum "build.gradle" }}
+          key: showcase-v0-{{ checksum "build.gradle.kts" }}
       - run: 
           name: Download dependencies
           command: ./gradlew dependencies
       - save_cache:
           paths:
             - ~/.gradle
-          key: showcase-v0-{{ checksum "build.gradle" }}
+          key: showcase-v0-{{ checksum "build.gradle.kts" }}
       - run:
           name: Download showcase
           command: |
