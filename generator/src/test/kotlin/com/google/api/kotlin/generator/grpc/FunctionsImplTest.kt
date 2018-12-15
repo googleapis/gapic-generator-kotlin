@@ -119,7 +119,7 @@ internal class FunctionsImplTest {
             |* val client = foo.bar.ZaTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val response = client.prepare {
             |*     withMetadata("my-custom-header", listOf("some", "thing"))
-            |* }.funFunction(request).get()
+            |* }.funFunction(request)
             |* ```
             |*
             |* You may save the client returned by this call and reuse it if you

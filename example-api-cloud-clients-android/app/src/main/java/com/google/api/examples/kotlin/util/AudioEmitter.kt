@@ -21,64 +21,70 @@ import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.util.Log
 import com.google.protobuf.ByteString
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.produce
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 private const val TAG = "Audio"
 
-/**
- * Create a new emitter
- */
-internal class AudioEmitter() {
+/** Produces audio from the device's mic. */
+@ExperimentalCoroutinesApi
+internal class AudioEmitter {
 
     private var audioRecorder: AudioRecord? = null
     private var buffer: ByteArray? = null
-    private var audioExecutor: ScheduledExecutorService? = null
+    private lateinit var job: Job
 
     /** Start streaming  */
-    fun start(subscriber: (ByteString) -> Unit) {
-        // TODO: in a real app you may not want to fix these
-        val encoding = AudioFormat.ENCODING_PCM_16BIT
-        val channel = AudioFormat.CHANNEL_IN_MONO
-        val sampleRate = 16000
+    suspend fun start(scope: CoroutineScope): ReceiveChannel<ByteString> {
+        job = Job()
+        return scope.produce(job + Dispatchers.IO) {
+            // TODO: in a real app you may not want to fix these
+            val encoding = AudioFormat.ENCODING_PCM_16BIT
+            val channel = AudioFormat.CHANNEL_IN_MONO
+            val sampleRate = 16000
 
-        audioExecutor = Executors.newSingleThreadScheduledExecutor()
-
-        // create and configure recorder
-        // Note: ensure settings are match the speech recognition config
-        audioRecorder = AudioRecord.Builder()
+            // create and configure recorder
+            // Note: ensure settings are match the speech recognition config
+            audioRecorder = AudioRecord.Builder()
                 .setAudioSource(MediaRecorder.AudioSource.MIC)
-                .setAudioFormat(AudioFormat.Builder()
+                .setAudioFormat(
+                    AudioFormat.Builder()
                         .setEncoding(encoding)
                         .setSampleRate(sampleRate)
                         .setChannelMask(channel)
-                        .build())
+                        .build()
+                )
                 .build()
-        buffer = ByteArray(2 * AudioRecord.getMinBufferSize(sampleRate, channel, encoding))
+            buffer = ByteArray(2 * AudioRecord.getMinBufferSize(sampleRate, channel, encoding))
 
-        // start!
-        Log.d(TAG, "Recording audio with buffer size of: ${buffer!!.size} bytes")
-        audioRecorder!!.startRecording()
+            // start!
+            Log.d(TAG, "Recording audio with buffer size of: ${buffer!!.size} bytes")
+            audioRecorder!!.startRecording()
 
-        // stream bytes as they become available in chunks equal to the buffer size
-        audioExecutor!!.scheduleAtFixedRate({
-            // read audio data
-            val read = audioRecorder!!.read(
-                    buffer!!, 0, buffer!!.size, AudioRecord.READ_BLOCKING)
-
-            // send next chunk
-            if (read > 0) {
-                subscriber(ByteString.copyFrom(buffer, 0, read))
+            // stream bytes as they become available in chunks equal to the buffer size
+            launch {
+                while (isActive) {
+                    // read audio & and next chunk
+                    val read = audioRecorder!!.read(buffer!!, 0, buffer!!.size, AudioRecord.READ_BLOCKING)
+                    if (read > 0) {
+                        send(ByteString.copyFrom(buffer, 0, read))
+                    }
+                }
             }
-        }, 0, 10, TimeUnit.MILLISECONDS)
+        }
     }
 
     /** Stop Streaming  */
-    fun stop() {
-        // stop events
-        audioExecutor?.shutdown()
-        audioExecutor = null
+    suspend fun stop() {
+        // stop reading audio data
+        job.cancelAndJoin()
 
         // stop recording
         audioRecorder?.stop()

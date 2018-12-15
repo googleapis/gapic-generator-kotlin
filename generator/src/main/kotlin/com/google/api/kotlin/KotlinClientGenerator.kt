@@ -132,10 +132,10 @@ internal class KotlinClientGenerator(
 
         // create context
         val className = ClassName(packageName, "${service.name}Client")
-        val ctx = GeneratorContext(proto, service, metadata, className, typeMap)
+        val context = GeneratorContext(proto, service, metadata, className, typeMap)
 
         // generate
-        return clientGenerator.generateServiceClient(ctx)
+        return clientGenerator.generateServiceClient(context)
     }
 
     private fun toSourceFile(

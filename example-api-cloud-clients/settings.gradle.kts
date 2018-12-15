@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-rootProject.name = 'example-api-cloud-clients'
+rootProject.name = "example-api-cloud-clients"

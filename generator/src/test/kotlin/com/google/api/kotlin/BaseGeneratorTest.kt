@@ -128,7 +128,7 @@ internal abstract class BaseGeneratorTest(private val generator: ClientGenerator
             on { get(any<DescriptorProtos.ServiceDescriptorProto>()) } doReturn options
         }
 
-    protected fun getMockedContext(options: ServiceOptions = ServiceOptions()): GeneratorContext {
+    protected fun getMockedContext(options: ServiceOptions): GeneratorContext {
         val config = getMockedConfig(options)
         val map = getMockedTypeMap()
 
@@ -165,6 +165,7 @@ fun String?.asNormalizedString(marginPrefix: String = "|"): String {
         ?.replace("\n+".toRegex(), " ") // normalize newlines
         ?.replace("( ", "(") // normalize parens
         ?.replace(" )", ")")
+        ?.replace("·", " ")
         ?.trim()
         ?: throw IllegalStateException("String cannot be null")
 }

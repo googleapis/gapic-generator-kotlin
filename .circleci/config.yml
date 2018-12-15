@@ -9,7 +9,7 @@ jobs:
   build:
     docker:
       - image: circleci/openjdk:8-jdk
-    working_directory: ~/gapic-generator-kotlin
+    working_directory: ~/gapic-generator-kotlin/generator
     steps:
       - checkout:
           path: ~/gapic-generator-kotlin
@@ -19,14 +19,14 @@ jobs:
             git submodule init
             git submodule update
       - restore_cache:
-          key: generator-v0-{{ checksum "build.gradle" }}
+          key: generator-v0-{{ checksum "build.gradle.kts" }}
       - run: 
           name: Download dependencies
           command: ./gradlew dependencies
       - save_cache:
           paths:
             - ~/.gradle
-          key: generator-v0-{{ checksum "build.gradle" }}
+          key: generator-v0-{{ checksum "build.gradle.kts" }}
       - run: 
            name: Build and run checks
            command: ./gradlew build
@@ -34,7 +34,7 @@ jobs:
           name: Save test results
           command: |
             mkdir -p ~/junit/
-            find . -type f -regex ".*/generator/build/test-results/.*xml" -exec cp {} ~/junit/ \;
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} ~/junit/ \;
           when: always
       - store_test_results:
           path: ~/junit
@@ -45,7 +45,7 @@ jobs:
           command: bash <(curl -s https://codecov.io/bash)
           when: always
       - persist_to_workspace:
-          root: .
+          root: ./..
           paths:
             - generator/build/libs
             - generator/build/distributions
@@ -91,14 +91,14 @@ jobs:
       - attach_workspace:
           at: ./..
       - restore_cache:
-          key: cloud-examples-v0-{{ checksum "build.gradle" }}
+          key: cloud-examples-v0-{{ checksum "build.gradle.kts" }}
       - run: 
           name: Download dependencies
           command: ./gradlew dependencies
       - save_cache:
           paths:
             - ~/.gradle
-          key: cloud-examples-v0-{{ checksum "build.gradle" }}
+          key: cloud-examples-v0-{{ checksum "build.gradle.kts" }}
       - run: 
            name: Build and run checks
            command: ./gradlew build
@@ -161,14 +161,14 @@ jobs:
       - attach_workspace:
           at: ./..
       - restore_cache:
-          key: showcase-v0-{{ checksum "build.gradle" }}
+          key: showcase-v0-{{ checksum "build.gradle.kts" }}
       - run: 
           name: Download dependencies
           command: ./gradlew dependencies
       - save_cache:
           paths:
             - ~/.gradle
-          key: showcase-v0-{{ checksum "build.gradle" }}
+          key: showcase-v0-{{ checksum "build.gradle.kts" }}
       - run:
           name: Download showcase
           command: |
@@ -202,7 +202,7 @@ jobs:
       - attach_workspace:
           at: .
       - restore_cache:
-          key: example-server-v0-{{ checksum "example-server/build.gradle" }}-{{ checksum "example-client/build.gradle" }}
+          key: example-server-v0-{{ checksum "example-server/build.gradle.kts" }}-{{ checksum "example-client/build.gradle.kts" }}
       - run: 
           name: Download dependencies
           command: ./gradlew dependencies
@@ -215,7 +215,7 @@ jobs:
           paths:
             - ~/example-server/.gradle
             - ~/example-client/.gradle
-          key: example-server-v0-{{ checksum "example-server/build.gradle" }}-{{ checksum "example-client/build.gradle" }}
+          key: example-server-v0-{{ checksum "example-server/build.gradle.kts" }}-{{ checksum "example-client/build.gradle.kts" }}
       - run:
           name: Run server
           command: ./gradlew run
@@ -246,7 +246,7 @@ jobs:
       - attach_workspace:
           at: ./..
       - restore_cache:
-          key: cloud-examples-v0-{{ checksum "build.gradle" }}
+          key: cloud-examples-v0-{{ checksum "build.gradle.kts" }}
       - run: 
           name: Download dependencies
           command: ./gradlew dependencies

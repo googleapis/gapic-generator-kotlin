@@ -86,21 +86,21 @@ internal class CompanionObjectImpl : CompanionObject {
             .addAnnotation(JvmOverloads::class)
             .addParameter(
                 ParameterSpec.builder(
-                    "channel", GrpcTypes.ManagedChannel.asNullable()
+                    "channel", GrpcTypes.ManagedChannel.copy(nullable = true)
                 )
                     .defaultValue("null")
                     .build()
             )
             .addParameter(
                 ParameterSpec.builder(
-                    "options", GrpcTypes.Support.ClientCallOptions.asNullable()
+                    "options", GrpcTypes.Support.ClientCallOptions.copy(nullable = true)
                 )
                     .defaultValue("null")
                     .build()
             )
             .addParameter(
                 ParameterSpec.builder(
-                    "factory", ClassName("", Stubs.CLASS_STUBS, "Factory").asNullable()
+                    "factory", ClassName("", Stubs.CLASS_STUBS, "Factory").copy(nullable = true)
                 )
                     .defaultValue("null")
                     .build()
@@ -197,7 +197,7 @@ internal class CompanionObjectImpl : CompanionObject {
             )
             .addParameter(
                 ParameterSpec.builder(
-                    "channel", GrpcTypes.ManagedChannel.asNullable()
+                    "channel", GrpcTypes.ManagedChannel.copy(nullable = true)
                 )
                     .defaultValue("null")
                     .build()
@@ -205,8 +205,8 @@ internal class CompanionObjectImpl : CompanionObject {
             .returns(context.className)
             .addCode(
                 """
-                |val path = System.getenv(variableName) ?: throw %T("Credentials environment variable is not set: ${'$'}variableName")
-                |return %T(path).inputStream().use {
+                |val path = System.getenv(variableName) ?: throw·%T("Credentials·environment·variable·is·not·set:·${'$'}variableName")
+                |return %T(path).inputStream().use·{
                 |    %T.fromServiceAccount(it, scopes, channel)
                 |}
                 |""".trimMargin(),
@@ -237,7 +237,7 @@ internal class CompanionObjectImpl : CompanionObject {
             )
             .addParameter(
                 ParameterSpec.builder(
-                    "channel", GrpcTypes.ManagedChannel.asNullable()
+                    "channel", GrpcTypes.ManagedChannel.copy(nullable = true)
                 )
                     .defaultValue("null")
                     .build()
@@ -280,7 +280,7 @@ internal class CompanionObjectImpl : CompanionObject {
             )
             .addParameter(
                 ParameterSpec.builder(
-                    "channel", GrpcTypes.ManagedChannel.asNullable()
+                    "channel", GrpcTypes.ManagedChannel.copy(nullable = true)
                 )
                     .defaultValue("null")
                     .build()
@@ -314,14 +314,14 @@ internal class CompanionObjectImpl : CompanionObject {
             .addAnnotation(JvmOverloads::class)
             .addParameter(
                 ParameterSpec.builder(
-                    "credentials", GrpcTypes.Auth.GoogleCredentials.asNullable()
+                    "credentials", GrpcTypes.Auth.GoogleCredentials.copy(nullable = true)
                 )
                     .defaultValue("null")
                     .build()
             )
             .addParameter(
                 ParameterSpec.builder(
-                    "channel", GrpcTypes.ManagedChannel.asNullable()
+                    "channel", GrpcTypes.ManagedChannel.copy(nullable = true)
                 )
                     .defaultValue("null")
                     .build()
@@ -329,7 +329,7 @@ internal class CompanionObjectImpl : CompanionObject {
             .returns(context.className)
             .addCode(
                 """
-                |val cred = credentials?.let { %T.from(it) }
+                |val cred = credentials?.let·{ %T.from(it) }
                 |return %T(
                 |    channel ?: createChannel(),
                 |    %T(credentials = cred, retry = %L)

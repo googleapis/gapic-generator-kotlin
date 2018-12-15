@@ -73,7 +73,8 @@ dependencies {
 
     // get the KGax library via jitpack
     // (this library is in preview and not yet published to maven)
-    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc-android:2964619'
+    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc-android:0a3362f'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.0.1'
 
     // Dependency for Google Sign-In
     implementation 'com.google.android.gms:play-services-auth:16.0.1'
@@ -85,6 +86,9 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     androidTestImplementation 'org.awaitility:awaitility:3.1.1'
     androidTestImplementation 'org.awaitility:awaitility-kotlin:3.1.1'
+
+    // needed to unit test with suspend functions (can remove when the dependency above is updated most likely)
+    testImplementation("org.mockito:mockito-core:2.23.4")
 
     ktlint "com.github.shyiko:ktlint:0.29.0"
 }

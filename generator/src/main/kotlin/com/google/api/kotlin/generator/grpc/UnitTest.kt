@@ -25,12 +25,10 @@ import com.google.api.kotlin.config.PropertyPath
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.api.kotlin.util.FieldNamer.getAccessorName
-import com.google.api.kotlin.util.FieldNamer.getAccessorRepeatedName
 import com.google.api.kotlin.util.FieldNamer.getSetterName
 import com.google.api.kotlin.util.Flattening
 import com.google.api.kotlin.util.ParameterInfo
 import com.google.api.kotlin.util.ProtoFieldInfo
-import com.google.api.kotlin.util.ResponseTypes.getResponseListElementType
 import com.google.api.kotlin.util.describeMap
 import com.google.api.kotlin.util.isMap
 import com.google.api.kotlin.util.isRepeated
@@ -126,8 +124,8 @@ internal class UnitTestImpl(
                     |return %T.create(
                     |    channel = ${UnitTest.MOCK_CHANNEL},
                     |    options = ${UnitTest.MOCK_CALL_OPTS},
-                    |    factory = object: %T.%L.Factory {
-                    |    override fun create(channel: %T, options: %T) =
+                    |    factory = object:·%T.%L.Factory·{
+                    |    override fun create(channel: %T, options: %T)·=
                     |        %T.%L(%N, %N)
                     |})
                     |""".trimMargin(),
@@ -152,6 +150,7 @@ internal class UnitTestImpl(
                 imports = listOf(
                     ClassName("kotlin.test", "assertEquals"),
                     ClassName("kotlin.test", "assertNotNull"),
+                    ClassName("kotlinx.coroutines", "runBlocking"),
                     ClassName("com.nhaarman.mockito_kotlin", "reset"),
                     ClassName("com.nhaarman.mockito_kotlin", "whenever"),
                     ClassName("com.nhaarman.mockito_kotlin", "doReturn"),
@@ -209,34 +208,16 @@ internal class UnitTestImpl(
         val givenBlock = createGivenCodeBlock(context, parameters)
         givenBlock.code.add(
             """
-           |val future: %T = mock()
-           |whenever(%N.executeFuture<%T>(any(), any())).thenReturn(future)
+           |val callResult = %T(%T.newBuilder().build(), mock())
+           |whenever(%N.execute<%T>(any(), any())).thenReturn(callResult)
            |""".trimMargin(),
-            GrpcTypes.Support.FutureCall(originalReturnType),
+            GrpcTypes.Support.CallResult, originalReturnType,
             UnitTest.MOCK_API_STUB, originalReturnType
         )
 
         // if paging add extra mocks for the page handling
         if (methodOptions.pagedResponse != null) {
             val pageSizeSetter = getSetterName(methodOptions.pagedResponse.pageSize)
-            val nextPageTokenGetter = getAccessorName(methodOptions.pagedResponse.responsePageToken)
-            val responseListGetter = getAccessorRepeatedName(methodOptions.pagedResponse.responseList)
-            val responseListItemType = getResponseListElementType(context, method, methodOptions.pagedResponse)
-
-            givenBlock.code.add(
-                """
-                |
-                |val pageBodyMock: %T = mock {
-                |    on { %L } doReturn "token"
-                |    on { %L } doAnswer { mock() }
-                |}
-                |whenever(future.get()).thenReturn(%T(pageBodyMock, mock()))
-                |""".trimMargin(),
-                originalReturnType,
-                nextPageTokenGetter,
-                responseListGetter,
-                GrpcTypes.Support.CallResult(originalReturnType)
-            )
 
             // non-paged flattened methods need an extra mock since the original
             // request object is not directly used (it's builder is used instead)
@@ -275,7 +256,7 @@ internal class UnitTestImpl(
         // verify the executeFuture occurred (and use input block to verify)
         thenBlock.code.add(
             """
-            |verify(%N).executeFuture<%T>(any(), check {
+            |verify(%N).execute<%T>(any(), check·{
             |    val mock: %T = mock()
             |    it(mock)
             |    verify(mock).%N(%L)
@@ -363,7 +344,7 @@ internal class UnitTestImpl(
             val check = createStubCheckCode(givenBlock, context, method, flatteningConfig)
             thenBlock.code.add(
                 """
-                |verify(%N).%L(any(), check {
+                |verify(%N).%L(any(), check·{
                 |    val mock: %T = mock()
                 |    val mockObserver: %T = mock()
                 |    it(mock, mockObserver)
@@ -378,7 +359,7 @@ internal class UnitTestImpl(
         } else {
             thenBlock.code.add(
                 """
-                |verify(%N).%L(any(), check {
+                |verify(%N).%L(any(), check·{
                 |    val mock: %T = mock()
                 |    assertEquals(mock::%L, it(mock))
                 |})
@@ -395,9 +376,9 @@ internal class UnitTestImpl(
                 createNestedAssertCodeForStubCheck(givenBlock, context, method, flatteningConfig)
             thenBlock.code.add(
                 """
-                |verify(%N).prepare(check<%T.() -> Unit> {
+                |verify(%N).prepare(check<%T.()·->·Unit>·{
                 |    val options = %T().apply(it).build()
-                |    options.initialRequests.map { it as %T }.first().let {
+                |    options.initialRequests.map·{ it as %T }.first().let·{
                 |${checks.joinToString("\n") { "        %L" }}
                 |    }
                 |    assertEquals(options.initialRequests.size, 1)
@@ -457,7 +438,7 @@ internal class UnitTestImpl(
         // create and call client with all parameters
         // add a call to next for paged responses so we don't end up with the pager object
         val params = invokeClientParams.joinToString(", ") { "%N" }
-        val extra = if (isPager) ".next()" else ""
+        val extra = if (isPager) ".receive()" else ""
         val testWhen = CodeBlock.builder().add(
             """
             |val client = %N()
@@ -491,7 +472,7 @@ internal class UnitTestImpl(
             // put it all together in a check block
             check.add(
                 """
-                |check {
+                |check·{
                 |${nestedAssert.joinToString("\n") { "    %L" }}
                 |}""".trimMargin(), *nestedAssert.toTypedArray()
             )
@@ -538,9 +519,11 @@ internal class UnitTestImpl(
     ) =
         CodeBlock.of(
             """
-            |%L
-            |%L
-            |%L""".trimMargin(),
+            |return runBlocking<Unit>·{
+            |    %L
+            |    %L
+            |    %L
+            |}""".trimMargin(),
             givenBlock.code.build(),
             whenBlock.code.build(),
             thenBlock.code.build()

@@ -19,6 +19,7 @@ package example
 import google.example.HelloServiceClient
 import google.example.HiRequest
 import io.grpc.ManagedChannelBuilder
+import kotlinx.coroutines.runBlocking
 
 class Client {
 
@@ -36,7 +37,7 @@ class Client {
         }
     }
 
-    fun runExample() {
+    fun runExample() = runBlocking {
         // create a client with an insecure channel
         val client = HelloServiceClient.create(
             channel = ManagedChannelBuilder.forAddress("localhost", 8080)
@@ -47,7 +48,7 @@ class Client {
         // call the API
         val result = client.hiThere(HiRequest {
             query = "Hello!"
-        }).get()
+        })
 
         // print the result
         println("The response was: ${result.body.result}")

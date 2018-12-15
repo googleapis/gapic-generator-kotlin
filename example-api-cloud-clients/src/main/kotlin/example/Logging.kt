@@ -19,7 +19,8 @@ package example
 import com.google.api.MonitoredResource
 import com.google.logging.v2.LogEntry
 import com.google.logging.v2.LoggingServiceV2Client
-import java.lang.RuntimeException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import java.util.Date
 
 /**
@@ -31,7 +32,7 @@ import java.util.Date
  * $ GOOGLE_APPLICATION_CREDENTIALS=<path_to_your_service_account.json> PROJECT=<your_gcp_project_id> ./gradlew run --args logging
  * ```
  */
-fun loggingExample() {
+fun loggingExample() = runBlocking {
     // create a client
     val client = LoggingServiceV2Client.fromEnvironment()
 
@@ -55,10 +56,10 @@ fun loggingExample() {
 
     // write the entries
     println("Writing log entries...")
-    client.writeLogEntries(log, globalResource, mapOf(), entries).get()
+    client.writeLogEntries(log, globalResource, mapOf(), entries)
 
     // wait a few seconds (if read back immediately the API may not have saved the entries)
-    Thread.sleep(5_000)
+    delay(10_000)
 
     // now, read those entries back
     val pager = client.listLogEntries(

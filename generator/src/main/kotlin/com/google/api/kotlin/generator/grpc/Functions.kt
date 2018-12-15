@@ -35,9 +35,13 @@ import com.google.api.kotlin.util.isLongRunningOperation
 import com.google.protobuf.DescriptorProtos
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
+import kotlinx.coroutines.channels.ReceiveChannel
 import mu.KotlinLogging
 import java.util.concurrent.TimeUnit
 
@@ -74,7 +78,7 @@ internal class FunctionsImpl(
                     |val client = %T.fromServiceAccount(YOUR_KEY_FILE)
                     |val response = client.prepare {
                     |    withMetadata("my-custom-header", listOf("some", "thing"))
-                    |}.%N(request).get()
+                    |}.%N(request)
                     |```
                     |
                     |You may save the client returned by this call and reuse it if you
@@ -196,12 +200,13 @@ internal class FunctionsImpl(
     ): TestableFunSpec {
         val name = methodOptions.name.decapitalize()
 
+        // init function
         val m = FunSpec.builder(name)
             .addParameters(parameters.map { it.spec })
-
-        val extraParamDocs = mutableListOf<CodeBlock>()
+            .addModifiers(KModifier.SUSPEND)
 
         // add request object to documentation
+        val extraParamDocs = mutableListOf<CodeBlock>()
         if (flattenedMethod == null) {
             extraParamDocs.add(
                 CodeBlock.of(
@@ -220,15 +225,19 @@ internal class FunctionsImpl(
                 m.returns(returnType)
                 m.addCode(
                     """
-                    |return %T(
-                    |    %N.%N,
-                    |    %N.%N.executeFuture(%S) {
-                    |        it.%L(
-                    |            %L
-                    |        )
-                    |    },
-                    |    %T::class.java
-                    |)
+                    |return coroutineScope·{
+                    |    %T(
+                    |        %N.%N,
+                    |        async·{
+                    |            %N.%N.execute(%S)·{
+                    |                it.%L(
+                    |                    %L
+                    |                )
+                    |            }
+                    |        },
+                    |        %T::class.java
+                    |    )
+                    |}
                     |""".trimMargin(),
                     returnType,
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_OPERATION,
@@ -238,9 +247,9 @@ internal class FunctionsImpl(
                 )
             }
             methodOptions.pagedResponse != null -> {
-                val inputType = context.typeMap.getKotlinType(method.inputType)
                 val outputType = context.typeMap.getKotlinType(method.outputType)
                 val responseListItemType = getResponseListElementType(context, method, methodOptions.pagedResponse)
+                val pageType = GrpcTypes.Support.PageWithMetadata(responseListItemType)
 
                 // getters and setters for setting the page sizes, etc.
                 val pageTokenSetter = getSetterName(methodOptions.pagedResponse.requestPageToken)
@@ -248,51 +257,47 @@ internal class FunctionsImpl(
                 val responseListGetter = getAccessorRepeatedName(methodOptions.pagedResponse.responseList)
 
                 // build method body using a pager
-                m.returns(
-                    GrpcTypes.Support.Pager(
-                        inputType,
-                        GrpcTypes.Support.CallResult(outputType), responseListItemType
-                    )
-                )
+                m.returns(ReceiveChannel::class.asClassName().parameterizedBy(pageType))
                 m.addCode(
                     """
-                    |return pager {
-                    |    method = { request ->
-                    |        %N.%N.executeFuture(%S) {
+                    |return pager(
+                    |    method·=·{·request·->
+                    |        %N.%N.execute(%S)·{
                     |            it.%L(request)
-                    |        }.get()
-                    |    }
-                    |    initialRequest = {
+                    |        }
+                    |    },
+                    |    initialRequest·=·{
                     |        %L
-                    |    }
-                    |    nextRequest = { request, token ->
+                    |    },
+                    |    nextRequest·=·{·request,·token·->
                     |        request.toBuilder().%L(token).build()
-                    |    }
-                    |    nextPage = { response ->
+                    |    },
+                    |    nextPage·=·{·response:·%T·->
                     |        %T(
                     |            response.body.%L,
                     |            response.body.%L,
                     |            response.metadata
                     |        )
                     |    }
-                    |}
+                    |)
                     |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name,
                     name,
                     requestObject.indent(2),
                     pageTokenSetter,
-                    GrpcTypes.Support.PageResult(responseListItemType),
+                    GrpcTypes.Support.CallResult(outputType),
+                    pageType,
                     responseListGetter, nextPageTokenGetter
                 )
             }
             else -> {
                 val originalReturnType = context.typeMap.getKotlinType(method.outputType)
+                m.returns(GrpcTypes.Support.CallResult(originalReturnType))
 
-                m.returns(GrpcTypes.Support.FutureCall(originalReturnType))
                 if (flattenedMethod?.parameters?.size ?: 0 > 1) {
                     m.addCode(
                         """
-                        |return %N.%N.executeFuture(%S) {
+                        |return %N.%N.execute(%S)·{
                         |    it.%L(
                         |        %L
                         |    )
@@ -304,7 +309,7 @@ internal class FunctionsImpl(
                 } else {
                     m.addCode(
                         """
-                        |return %N.%N.executeFuture(%S) {
+                        |return %N.%N.execute(%S)·{
                         |    it.%L(%L)
                         |}
                         |""".trimMargin(),
@@ -352,6 +357,7 @@ internal class FunctionsImpl(
             val (parameters, request) = getFlattenedParameters(context, method, flattenedMethod)
 
             val flattened = FunSpec.builder(name)
+                .addModifiers(KModifier.SUSPEND)
             if (method.hasClientStreaming() && method.hasServerStreaming()) {
                 flattened.addKdoc(
                     documentation.generateMethodKDoc(
@@ -370,11 +376,11 @@ internal class FunctionsImpl(
                 )
                 flattened.addCode(
                     """
-                    |return %N.%N.prepare {
+                    |return %N.%N.prepare·{
                     |    withInitialRequest(
                     |        %L
                     |    )
-                    |}.executeStreaming(%S) { it::%N }
+                    |}.executeStreaming(%S)·{ it::%N }
                     |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
                     request.indent(2),
@@ -396,7 +402,7 @@ internal class FunctionsImpl(
                     )
                 )
                 flattened.addCode(
-                    "return %N.%N.executeClientStreaming(%S) { it::%N }",
+                    "return %N.%N.executeClientStreaming(%S)·{ it::%N }\n",
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name, name
                 )
             } else if (method.hasServerStreaming()) { // server only
@@ -413,7 +419,7 @@ internal class FunctionsImpl(
                 flattened.returns(GrpcTypes.Support.ServerStreamingCall(normalOutputType))
                 flattened.addCode(
                     """
-                    |return %N.%N.executeServerStreaming(%S) { stub, observer ->
+                    |return %N.%N.executeServerStreaming(%S)·{·stub,·observer·->
                     |    stub.%N(
                     |        %L,
                     |        observer
@@ -438,6 +444,7 @@ internal class FunctionsImpl(
         // unchanged method
         if (methodOptions.keepOriginalMethod) {
             val normal = FunSpec.builder(name)
+                .addModifiers(KModifier.SUSPEND)
                 .addKdoc(documentation.generateMethodKDoc(context, method, methodOptions))
             val parameters = mutableListOf<ParameterInfo>()
 
@@ -448,7 +455,7 @@ internal class FunctionsImpl(
                     )
                 )
                 normal.addCode(
-                    "return %N.%N.executeStreaming(%S) { it::%N }",
+                    "return %N.%N.executeStreaming(%S)·{ it::%N }\n",
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name, name
                 )
             } else if (method.hasClientStreaming()) { // client only
@@ -458,7 +465,7 @@ internal class FunctionsImpl(
                     )
                 )
                 normal.addCode(
-                    "return %N.%N.executeClientStreaming(%S) { it::%N }",
+                    "return %N.%N.executeClientStreaming(%S)·{ it::%N }\n",
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name, name
                 )
             } else if (method.hasServerStreaming()) { // server only
@@ -468,7 +475,7 @@ internal class FunctionsImpl(
                 normal.returns(GrpcTypes.Support.ServerStreamingCall(normalOutputType))
                 normal.addCode(
                     """
-                    |return %N.%N.executeServerStreaming(%S) { stub, observer ->
+                    |return %N.%N.executeServerStreaming(%S)·{·stub,·observer·->
                     |    stub.%N(%N, observer)
                     |}
                     |""".trimMargin(),

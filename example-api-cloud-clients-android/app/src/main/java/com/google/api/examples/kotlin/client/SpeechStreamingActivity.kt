@@ -22,25 +22,35 @@ import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import android.widget.TextView
 import com.google.api.examples.kotlin.util.AudioEmitter
-import com.google.api.examples.kotlin.util.MainThread
 import com.google.cloud.speech.v1.RecognitionConfig
 import com.google.cloud.speech.v1.SpeechClient
 import com.google.cloud.speech.v1.StreamingRecognitionConfig
 import com.google.cloud.speech.v1.StreamingRecognizeRequest
+import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 
 private const val TAG = "Demo"
 
 /**
  * Kotlin example showcasing duplex streaming using the Speech client library.
  */
-class SpeechStreamingActivity : AppCompatActivity() {
+@ExperimentalCoroutinesApi
+class SpeechStreamingActivity : AppCompatActivity(), CoroutineScope {
 
     companion object {
         private val PERMISSIONS = arrayOf(Manifest.permission.RECORD_AUDIO)
         private const val REQUEST_RECORD_AUDIO_PERMISSION = 200
     }
+
+    private lateinit var job: Job
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main + job
 
     private var permissionToRecord = false
     private var audioEmitter: AudioEmitter? = null
@@ -59,61 +69,74 @@ class SpeechStreamingActivity : AppCompatActivity() {
 
         // get permissions
         ActivityCompat.requestPermissions(
-                this, PERMISSIONS, REQUEST_RECORD_AUDIO_PERMISSION)
+            this, PERMISSIONS, REQUEST_RECORD_AUDIO_PERMISSION
+        )
     }
 
     override fun onResume() {
         super.onResume()
 
-        val textView: TextView = findViewById(R.id.text_view)
+        job = Job()
 
         // kick-off recording process, if we're allowed
         if (permissionToRecord) {
             audioEmitter = AudioEmitter()
 
-            // start streaming the data to the server and collect responses
-            val stream = client.streamingRecognize(
-                    StreamingRecognitionConfig {
-                        config = RecognitionConfig {
-                            languageCode = "en-US"
-                            encoding = RecognitionConfig.AudioEncoding.LINEAR16
-                            sampleRateHertz = 16000
-                        }
-                        interimResults = false
-                        singleUtterance = false
-                    })
-
-            // monitor the input stream and send requests as audio data becomes available
-            audioEmitter!!.start { bytes ->
-                stream.requests.send(StreamingRecognizeRequest {
-                    audioContent = bytes
-                })
-            }
-
-            // handle incoming responses
-            stream.start {
-                executor = MainThread
-                onNext = { textView.text = it.toString() }
-                onError = { Log.e(TAG, "uh oh", it) }
-                onCompleted = { Log.i(TAG, "All done!") }
-            }
+            launch { transcribe() }
         } else {
             Log.e(TAG, "No permission to record! Please allow and then relaunch the app!")
         }
+    }
+
+    private suspend fun transcribe() {
+        Log.i(TAG, "Starting talking!")
+
+        // start streaming the data to the server and collect responses
+        val streams = client.streamingRecognize(
+            StreamingRecognitionConfig {
+                config = RecognitionConfig {
+                    languageCode = "en-US"
+                    encoding = RecognitionConfig.AudioEncoding.LINEAR16
+                    sampleRateHertz = 16000
+                }
+                interimResults = false
+                singleUtterance = false
+            })
+
+        // monitor the input stream and send requests as audio data becomes available
+        launch(Dispatchers.IO) {
+            for (bytes in audioEmitter!!.start(this)) {
+                streams.requests.send(StreamingRecognizeRequest {
+                    audioContent = bytes
+                })
+            }
+        }
+
+        // handle incoming responses
+        for (response in streams.responses) {
+            textView.text = response.toString()
+        }
+
+        Log.i(TAG, "All done - stop talking!")
     }
 
     override fun onPause() {
         super.onPause()
 
         // ensure mic data stops
-        audioEmitter?.stop()
-        audioEmitter = null
+        launch {
+            audioEmitter?.stop()
+            audioEmitter = null
+        }
+
+        // stop streams
+        job.cancel()
     }
 
     override fun onDestroy() {
         super.onDestroy()
 
-        // cleanup
+        // release all resources
         client.shutdownChannel()
     }
 

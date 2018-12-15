@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-rootProject.name = 'generator'
+rootProject.name = "example-server"

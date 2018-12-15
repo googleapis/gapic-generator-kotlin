@@ -22,8 +22,8 @@ import com.google.cloud.vision.v1.Image
 import com.google.cloud.vision.v1.ImageAnnotatorClient
 import com.google.cloud.vision.v1.features
 import com.google.common.io.ByteStreams
-import com.google.api.kgax.grpc.on
 import com.google.protobuf.ByteString
+import kotlinx.coroutines.runBlocking
 
 /**
  * Simple example of calling the Logging API with a generated Kotlin gRPC client.
@@ -34,7 +34,7 @@ import com.google.protobuf.ByteString
  * $ GOOGLE_APPLICATION_CREDENTIALS=<path_to_your_service_account.json> ./gradlew run --args vision
  * ```
  */
-fun visionExample() {
+fun visionExample() = runBlocking {
     // create a client
     val client = ImageAnnotatorClient.fromEnvironment()
 
@@ -44,7 +44,7 @@ fun visionExample() {
     }
 
     // call the API
-    val future = client.batchAnnotateImages(listOf(
+    val result = client.batchAnnotateImages(listOf(
         AnnotateImageRequest {
             image = Image { content = imageData }
             features = listOf(
@@ -54,15 +54,7 @@ fun visionExample() {
         }
     ))
 
-    // get the result
-    // Note: you may use future.get() here (blocking) instead of .on (non-blocking)
-    // .on is used here since the other examples use .get()
-    future.on {
-        success = { println("The response is: ${it.body}") }
-    }
-
-    // block since the async .on method was used
-    Thread.sleep(5_000)
+    println("The response is: ${result.body}")
 
     // shutdown
     client.shutdownChannel()

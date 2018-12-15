@@ -79,10 +79,10 @@ internal class GRPCGenerator(
         clientType.addType(stubs.generateHolderType(context))
 
         // add statics
-        clientImports += listOf("pager")
-            .map { ClassName(GrpcTypes.Support.SUPPORT_LIB_PACKAGE, it) }
-        clientImports += listOf("prepare")
+        clientImports += listOf("prepare", "pager")
             .map { ClassName(GrpcTypes.Support.SUPPORT_LIB_GRPC_PACKAGE, it) }
+        clientImports += listOf("coroutineScope", "async")
+            .map { ClassName("kotlinx.coroutines", it) }
 
         // add client type
         artifacts.add(

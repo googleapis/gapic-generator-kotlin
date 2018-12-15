@@ -14,32 +14,4 @@
  * limitations under the License.
  */
 
-buildscript {
-    ext.kotlin_version = '1.3.0'
-
-    repositories {
-        mavenLocal()
-        mavenCentral()
-    }
-    dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-    }
-}
-
-group 'com.google.api'
-version '0.1.0-SNAPSHOT'
-
-apply plugin: 'kotlin'
-apply plugin: 'maven-publish'
-
-repositories {
-    mavenLocal()
-    google()
-    mavenCentral()
-}
-
-dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-
-    compile project(':generator')
-}
+rootProject.name = "showcase"

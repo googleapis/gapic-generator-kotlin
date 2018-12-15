@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-rootProject.name = 'example-server'
+rootProject.name = "example-client"

@@ -92,7 +92,7 @@ internal class PropertiesImpl(val stubs: Stubs) : Properties {
             .addParameter(
                 ParameterSpec.builder(
                     Properties.PARAM_FACTORY,
-                    ClassName("", Stubs.CLASS_STUBS, "Factory").asNullable()
+                    ClassName("", Stubs.CLASS_STUBS, "Factory").copy(nullable = true)
                 ).defaultValue("null").build()
             ).build()
     }
