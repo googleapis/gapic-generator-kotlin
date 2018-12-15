@@ -41,7 +41,7 @@ class LanguageInterceptorActivityTest {
     fun returnsIdentifiedEntity() {
         awaitApiCall()
 
-        onView(withId(R.id.text_view))
+        onView(withId(R.id.textView))
                 .check(matches(withText(containsString("type: PERSON"))))
     }
 }

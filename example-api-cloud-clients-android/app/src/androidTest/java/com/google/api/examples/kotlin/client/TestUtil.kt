@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit
 // waits until the loading text goes away, useful for simple tests
 fun awaitApiCall() {
     Awaitility.await().atMost(20, TimeUnit.SECONDS).untilAsserted {
-        Espresso.onView(ViewMatchers.withId(R.id.text_view))
+        Espresso.onView(ViewMatchers.withId(R.id.textView))
                 .check(ViewAssertions.matches(not(withText(R.string.loading))))
     }
 }

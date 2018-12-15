@@ -41,7 +41,7 @@ class SpeechActivityTest {
     fun returnsRecognizedResult() {
         awaitApiCall()
 
-        onView(withId(R.id.text_view))
+        onView(withId(R.id.textView))
                 .check(matches(withText(containsString("Brooklyn Bridge"))))
     }
 }
