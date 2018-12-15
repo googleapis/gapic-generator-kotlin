@@ -24,9 +24,12 @@ import com.google.pubsub.v1.ReceivedMessage
 import com.google.pubsub.v1.SubscriberClient
 import com.google.pubsub.v1.Topic
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.util.Date
@@ -53,12 +56,16 @@ fun pubSubExample() = runBlocking {
 
     // start receiving messages
     val subscriber = Subscriber(projectId, subscriptionName, topic)
-    subscriber.start()
+    launch { subscriber.start() }
 
     // wait for all the events to be published
     publisher.await()
 
-    // shutdown the subscriber
+    // give the subscriber some time to work
+    delay(5_000)
+
+    // shutdown
+    publisher.stop()
     subscriber.stop()
 }
 
@@ -67,7 +74,7 @@ private class Publisher(
     projectId: String,
     topicName: String,
     val messagesToSend: Int = 20,
-    val delayBetweenMessages: Long = 500
+    val delayBetweenMessages: Long = 250
 ) {
     private val client by lazy {
         PublisherClient.fromEnvironment()
@@ -76,25 +83,27 @@ private class Publisher(
     private val topic = "projects/$projectId/topics/$topicName"
     private lateinit var job: Job
 
-    /** Start sending periodic messgages */
+    /** Start sending periodic messages` */
     suspend fun start(): Topic = coroutineScope {
         // create the topic to send on
         val topic = client.createTopic(topic).body
+        println("Created topic: ${topic.name}")
 
         // send messages
-        job = launch(Dispatchers.IO) {
+        job = GlobalScope.launch(Dispatchers.IO) {
             repeat(messagesToSend) {
                 println("Sending a message...")
 
                 // send a new message
                 client.publish(topic.name, listOf(
                     PubsubMessage {
-                        data = "it's now: ${Date().time}".asByteString()
+                        data = "This is random: ${Math.random()}".asByteString()
                     }
                 ))
 
                 delay(delayBetweenMessages)
             }
+            println("done sending!")
         }
 
         topic
@@ -103,6 +112,10 @@ private class Publisher(
     /** Stop sending new messages */
     suspend fun await() {
         job.join()
+    }
+
+    suspend fun stop() {
+        await()
 
         // clean up resources
         println("Removing topic...")
@@ -117,7 +130,7 @@ private class Subscriber(
     projectId: String,
     subscriptionName: String,
     val topic: Topic,
-    val delayBetweenPulls: Long = 500
+    val delayBetweenPulls: Long = 100
 ) {
     private val client by lazy {
         SubscriberClient.fromEnvironment()
@@ -125,24 +138,28 @@ private class Subscriber(
 
     private val subscription = "projects/$projectId/subscriptions/$subscriptionName"
     private lateinit var job: Job
-    private var running = false
 
     /** Start listening and print incoming messages */
     suspend fun start() = coroutineScope {
         val sub = client.createSubscription(subscription, topic.name, PushConfig {}, 10).body
+        println("Created subscription: ${sub.name}")
 
         // pool for new messages
-        running = true
         job = launch(Dispatchers.IO) {
-            while (running) {
-                // get a new message
-                val result = client.pull(sub.name, false, 5).body
-                for (received in result.receivedMessagesList) {
-                    println("Received message: ${received.asString()}")
-                }
+            while (isActive) {
+                // get new messages
+                println("pulling new messages...")
+                val result = client.pull(sub.name, true, 5).body
+                if (result.receivedMessagesCount > 0) {
+                    for (received in result.receivedMessagesList) {
+                        println("Received message: ${received.asString()}")
+                    }
 
-                // ack all of the messages
-                client.acknowledge(subscription, result.receivedMessagesList.map { it.ackId })
+                    // ack all of the messages
+                    client.acknowledge(subscription, result.receivedMessagesList.map { it.ackId })
+                } else {
+                    println("no new messages!")
+                }
 
                 delay(delayBetweenPulls)
             }
@@ -151,8 +168,7 @@ private class Subscriber(
 
     /** Stop listening for new messages */
     suspend fun stop() {
-        running = false
-        job.join()
+        job.cancelAndJoin()
 
         // clean up resources
         println("Removing subscription...")
