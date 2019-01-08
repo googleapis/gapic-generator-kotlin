@@ -29,6 +29,9 @@ plugins {
     id("com.google.protobuf") version "0.8.7"
 }
 
+group = "com.google.api"
+version = "0.2.0-SNAPSHOT"
+
 buildscript {
     repositories {
         google()
@@ -73,11 +76,6 @@ dependencies {
     ktlintImplementation("com.github.shyiko:ktlint:0.29.0")
 }
 
-base {
-    group = "com.google.api"
-    version = "0.2.0-SNAPSHOT"
-}
-
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
@@ -85,6 +83,10 @@ java {
     sourceSets {
         getByName("main").proto.srcDir("api-common-protos")
     }
+}
+
+jacoco {
+    toolVersion = "0.8.2"
 }
 
 // compile proto and generate gRPC stubs
@@ -97,22 +99,15 @@ protobuf {
 publishing {
     publications {
         create<MavenPublication>("bootJava") {
+            artifactId = "gapic-generator-kotlin"
             artifact(tasks.getByName("bootJar"))
         }
     }
 }
 
-jacoco {
-    toolVersion = "0.8.2"
-}
-
 tasks {
     val test = getByName("test")
     val check = getByName("check")
-
-    withType<Jar> {
-        enabled = true
-    }
 
     withType<BootJar> {
         enabled = true
@@ -152,9 +147,5 @@ tasks {
         main = "com.github.shyiko.ktlint.Main"
         classpath = ktlintImplementation
         args = listOf("-F", "src/**/*.kt", "test/**/*.kt")
-    }
-
-    "install" {
-        dependsOn("bootJar")
     }
 }
