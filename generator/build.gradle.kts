@@ -22,7 +22,7 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 plugins {
     idea
     java
-    application
+    maven
     `maven-publish`
     jacoco
     kotlin("jvm") version "1.3.11"
@@ -79,10 +79,6 @@ base {
     version = "0.1.0-SNAPSHOT"
 }
 
-application {
-    mainClassName = "com.google.api.kotlin.ClientPluginKt"
-}
-
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
@@ -114,6 +110,10 @@ jacoco {
 tasks {
     val test = getByName("test")
     val check = getByName("check")
+
+    withType<Jar> {
+        enabled = true
+    }
 
     withType<BootJar> {
         enabled = true
@@ -152,5 +152,9 @@ tasks {
         main = "com.github.shyiko.ktlint.Main"
         classpath = ktlintImplementation
         args = listOf("-F", "src/**/*.kt", "test/**/*.kt")
+    }
+
+    "install" {
+        dependsOn("bootJar")
     }
 }
