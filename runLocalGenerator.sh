@@ -1,3 +1,3 @@
 #!/bin/bash
 
-java -jar ../generator/build/libs/generator-*-core.jar
+java -jar ../generator/build/libs/gapic-generator-kotlin-*-core.jar
