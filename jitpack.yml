@@ -1,0 +1,3 @@
+install:
+   - pushd generator
+   - ./gradlew clean publishToMavenLocal -DskipTests
