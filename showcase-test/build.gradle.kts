@@ -56,7 +56,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.0")
 
     // temporary
-    implementation("com.github.googleapis.gax-kotlin:kgax-grpc:0a3362f")
+    implementation("com.github.googleapis.gax-kotlin:kgax-grpc:9112423")
     // implementation("com.google.kgax:kgax-grpc:0.1.0-SNAPSHOT")
 
     testImplementation(kotlin("test"))

@@ -39,12 +39,13 @@ internal class AudioEmitter {
 
     private var audioRecorder: AudioRecord? = null
     private var buffer: ByteArray? = null
-    private lateinit var job: Job
+    private var job: Job? = null
 
     /** Start streaming  */
     suspend fun start(scope: CoroutineScope): ReceiveChannel<ByteString> {
         job = Job()
-        return scope.produce(job + Dispatchers.IO) {
+
+        return scope.produce(job!! + Dispatchers.IO) {
             // TODO: in a real app you may not want to fix these
             val encoding = AudioFormat.ENCODING_PCM_16BIT
             val channel = AudioFormat.CHANNEL_IN_MONO
@@ -84,7 +85,7 @@ internal class AudioEmitter {
     /** Stop Streaming  */
     suspend fun stop() {
         // stop reading audio data
-        job.cancelAndJoin()
+        job?.cancelAndJoin()
 
         // stop recording
         audioRecorder?.stop()
