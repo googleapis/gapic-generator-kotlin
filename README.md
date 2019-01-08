@@ -6,6 +6,8 @@ It supports full-stack Kotlin development on the server and in Android applicati
 
 [![CircleCI](https://circleci.com/gh/googleapis/gapic-generator-kotlin/tree/master.svg?style=svg)](https://circleci.com/gh/googleapis/gapic-generator-kotlin/tree/master)
 [![codecov](https://codecov.io/gh/googleapis/gapic-generator-kotlin/branch/master/graph/badge.svg)](https://codecov.io/gh/googleapis/gapic-generator-kotlin)
+[![Release](https://jitpack.io/v/User/Repo.svg)]
+(https://jitpack.io/#User/Repo)
 
 *Note* This project is a preview. Please try it out and let us know what you think, but there 
 are currently no guarantees of any form of stability or support.
