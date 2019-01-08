@@ -36,8 +36,3 @@ repositories {
 dependencies {
     compile(project(":generator"))
 }
-
-base {
-    group = "com.google.api"
-    version = "0.1.0-SNAPSHOT"
-}

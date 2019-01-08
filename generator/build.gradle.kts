@@ -22,7 +22,6 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 plugins {
     idea
     java
-    maven
     `maven-publish`
     jacoco
     kotlin("jvm") version "1.3.11"
@@ -76,7 +75,7 @@ dependencies {
 
 base {
     group = "com.google.api"
-    version = "0.1.0-SNAPSHOT"
+    version = "0.2.0-SNAPSHOT"
 }
 
 java {
@@ -117,6 +116,7 @@ tasks {
 
     withType<BootJar> {
         enabled = true
+        baseName = "gapic-generator-kotlin"
         classifier = "core"
         mainClassName = "com.google.api.kotlin.ClientPluginKt"
         launchScript()

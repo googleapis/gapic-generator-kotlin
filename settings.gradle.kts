@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 
-rootProject.name = "gapic-generator-kotlin"
+rootProject.name = "wrapper"
 
 include("generator")
