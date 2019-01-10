@@ -33,7 +33,7 @@ internal object ProtobufExtensionRegistry {
 
 internal fun <T> DescriptorProtos.FileOptions.getExtensionOrNull(
     extension: GeneratedMessage.GeneratedExtension<DescriptorProtos.FileOptions, T>
-) = if (this.hasExtension(extension)) {
+) = if (extension.isRepeated || this.hasExtension(extension)) {
     this.getExtension(extension)
 } else {
     null
@@ -41,7 +41,7 @@ internal fun <T> DescriptorProtos.FileOptions.getExtensionOrNull(
 
 internal fun <T> DescriptorProtos.ServiceOptions.getExtensionOrNull(
     extension: GeneratedMessage.GeneratedExtension<DescriptorProtos.ServiceOptions, T>
-) = if (this.hasExtension(extension)) {
+) = if (extension.isRepeated || this.hasExtension(extension)) {
     this.getExtension(extension)
 } else {
     null
@@ -49,7 +49,7 @@ internal fun <T> DescriptorProtos.ServiceOptions.getExtensionOrNull(
 
 internal fun <T> DescriptorProtos.MethodOptions.getExtensionOrNull(
     extension: GeneratedMessage.GeneratedExtension<DescriptorProtos.MethodOptions, T>
-) = if (this.hasExtension(extension)) {
+) = if (extension.isRepeated || this.hasExtension(extension)) {
     this.getExtension(extension)
 } else {
     null

@@ -117,16 +117,16 @@ internal class ConfigurationTest : BaseGeneratorTest(GRPCGenerator()) {
         assertThat(signatures).isEmpty()
     }
 
-    @Test
-    fun `can detect retry settings`() {
-        val factory = AnnotationConfigurationFactory(AuthOptions(), getMockedTypeMap())
-        val config = factory.fromProto(testAnnotationsProto)
-
-        val method = config["google.example.AnnotationService"].methods.first { it.name == "AnnotationRetryTest" }
-
-        assertThat(method.retry).isNotNull()
-        assertThat(method.retry!!.codes).containsExactly(Code.UNKNOWN, Code.NOT_FOUND).inOrder()
-    }
+//    @Test
+//    fun `can detect retry settings`() {
+//        val factory = AnnotationConfigurationFactory(AuthOptions(), getMockedTypeMap())
+//        val config = factory.fromProto(testAnnotationsProto)
+//
+//        val method = config["google.example.AnnotationService"].methods.first { it.name == "AnnotationRetryTest" }
+//
+//        assertThat(method.retry).isNotNull()
+//        assertThat(method.retry!!.codes).containsExactly(Code.UNKNOWN, Code.NOT_FOUND).inOrder()
+//    }
 
     @Test
     fun `can detect default retry settings`() {

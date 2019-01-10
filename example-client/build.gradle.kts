@@ -54,7 +54,7 @@ dependencies {
 
     // get the KGax library via jitpack
     // (this library is in preview and not yet published to maven)
-    implementation("com.github.googleapis.gax-kotlin:kgax-grpc:9112423")
+    implementation("com.github.googleapis.gax-kotlin:kgax-grpc:v0.2.0")
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))

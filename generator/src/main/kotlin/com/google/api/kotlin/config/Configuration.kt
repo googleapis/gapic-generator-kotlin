@@ -131,11 +131,14 @@ internal class AnnotationConfigurationFactory(
         service: DescriptorProtos.ServiceDescriptorProto,
         method: DescriptorProtos.MethodDescriptorProto
     ): MethodOptions {
-        val signature = method.options.getExtensionOrNull(AnnotationsProto.methodSignature)
+        val signatures = method.options.getExtensionOrNull(AnnotationsProto.methodSignature) ?: listOf()
         val httpBindings = method.options.getExtensionOrNull(AnnotationsProto.http)
-        val retry = method.options.getExtensionOrNull(AnnotationsProto.retry)
 
-        var retryOptions = if (retry != null) ClientRetry(retry.codesList) else null
+        // TODO: retry was removed from the spec - will it return?
+        // val retry = method.options.getExtensionOrNull(AnnotationsProto.retry)
+        // var retryOptions = if (retry != null) ClientRetry(retry.codesList) else null
+
+        var retryOptions: ClientRetry? = null
 
         // TODO: headers?
         if (httpBindings != null) {
@@ -152,7 +155,7 @@ internal class AnnotationConfigurationFactory(
         val pagedResponse = getMethodPagedResponse(method)
         return MethodOptions(
             name = method.name,
-            flattenedMethods = getMethodsFrom(signature, pagedResponse),
+            flattenedMethods = signatures.map { getMethodFrom(it, pagedResponse) },
             keepOriginalMethod = true,
             pagedResponse = pagedResponse,
             longRunningResponse = getLongRunningResponse(proto, method),
@@ -162,11 +165,7 @@ internal class AnnotationConfigurationFactory(
     }
 
     // parse method signatures
-    private fun getMethodsFrom(signature: MethodSignature?, paging: PagedResponse?): List<FlattenedMethod> {
-        if (signature == null) {
-            return listOf()
-        }
-
+    private fun getMethodFrom(signature: MethodSignature, paging: PagedResponse?): FlattenedMethod {
         // add all paths
         var paths = signature.fieldsList.map { it.asPropertyPath() }
 
@@ -176,8 +175,7 @@ internal class AnnotationConfigurationFactory(
         }
 
         // add this method and any nested signature
-        val method = FlattenedMethod(paths)
-        return listOf(method) + signature.additionalSignaturesList.flatMap { getMethodsFrom(it, paging) }
+        return FlattenedMethod(paths)
     }
 
     // determine if a method can be paged

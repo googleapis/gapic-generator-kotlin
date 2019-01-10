@@ -29,6 +29,8 @@ plugins {
     id("com.google.protobuf") version "0.8.7"
 }
 
+group = "com.google.api"
+
 buildscript {
     repositories {
         google()
@@ -44,11 +46,6 @@ repositories {
     maven(url = "https://jitpack.io")
 }
 
-base {
-    group = "com.google.api"
-    version = "0.1.0-SNAPSHOT"
-}
-
 val ktlintImplementation by configurations.creating
 
 dependencies {
@@ -56,7 +53,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.0")
 
     // temporary
-    implementation("com.github.googleapis.gax-kotlin:kgax-grpc:9112423")
+    implementation("com.github.googleapis.gax-kotlin:kgax-grpc:v0.2.0")
     // implementation("com.google.kgax:kgax-grpc:0.1.0-SNAPSHOT")
 
     testImplementation(kotlin("test"))

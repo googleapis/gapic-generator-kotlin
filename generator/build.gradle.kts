@@ -22,6 +22,7 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 plugins {
     idea
     java
+    application
     `maven-publish`
     jacoco
     kotlin("jvm") version "1.3.11"
@@ -30,7 +31,7 @@ plugins {
 }
 
 group = "com.google.api"
-version = "0.2.0-SNAPSHOT"
+version = "0.2.0"
 
 buildscript {
     repositories {
@@ -74,6 +75,10 @@ dependencies {
     testImplementation("com.google.truth:truth:0.41")
 
     ktlintImplementation("com.github.shyiko:ktlint:0.29.0")
+}
+
+application {
+    mainClassName = "com.google.api.kotlin.ClientPluginKt"
 }
 
 java {
