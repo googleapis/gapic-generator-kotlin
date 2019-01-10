@@ -73,7 +73,7 @@ dependencies {
 
     // get the KGax library via jitpack
     // (this library is in preview and not yet published to maven)
-    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc-android:9112423'
+    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc-android:v0.2.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.1.0'
 
     // Dependency for Google Sign-In
