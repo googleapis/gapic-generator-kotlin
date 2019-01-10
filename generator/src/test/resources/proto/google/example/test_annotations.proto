@@ -55,11 +55,11 @@ service AnnotationService {
         };
     }
 
-    rpc AnnotationRetryTest (FooRequest) returns (BarResponse) {
-        option (google.api.retry) = {
-            codes: [UNKNOWN, NOT_FOUND]
-        };
-    }
+//    rpc AnnotationRetryTest (FooRequest) returns (BarResponse) {
+//        option (google.api.retry) = {
+//            codes: [UNKNOWN, NOT_FOUND]
+//        };
+//    }
 
     rpc AnnotationRetryDefaultTest (FooRequest) returns (BarResponse) {
         option (google.api.http) = {
