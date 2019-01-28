@@ -140,9 +140,9 @@ if [ -z ${SKIP_FORMAT+x} ]; then
   echo
   echo "Formatting Kotlin code..."
   if [ -z ${IS_ANDROID+x} ]; then
-    /usr/local/bin/ktlint --format /generated/**/*.kt 
+    /usr/local/bin/ktlint --format /generated/**/*.kt || true
   else
-    /usr/local/bin/ktlint --format --android /generated/**/*.kt 
+    /usr/local/bin/ktlint --format --android /generated/**/*.kt || true
   fi
 fi
 
