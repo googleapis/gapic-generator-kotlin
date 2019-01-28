@@ -25,9 +25,9 @@ plugins {
     application
     `maven-publish`
     jacoco
-    kotlin("jvm") version "1.3.11"
+    kotlin("jvm") version "1.3.20"
     id("org.springframework.boot") version "2.1.1.RELEASE"
-    id("com.google.protobuf") version "0.8.7"
+    id("com.google.protobuf") version "0.8.8"
 }
 
 group = "com.google.api"
@@ -58,7 +58,7 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.11.0")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
 
-    implementation("com.squareup:kotlinpoet:1.0.0")
+    implementation("com.squareup:kotlinpoet:1.0.1")
 
     implementation("org.yaml:snakeyaml:1.20")
     implementation("org.apache.commons:commons-io:1.3.2")

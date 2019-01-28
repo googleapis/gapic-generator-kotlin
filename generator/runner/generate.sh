@@ -2,6 +2,27 @@
 
 set -e
 
+# usage
+show_help() {
+    echo "Usage: $0 [options]" >&2
+    echo
+    echo "  Options:"
+    echo "    --android             Generate code for the Android platform"
+    echo "    --auth-google-cloud   Generate additional code for Google Cloud Platform APIs"
+    echo "    --no-builders         Skip generating Kotlin builders for Java proto message types"
+    echo "    --no-compile          Skip compiling the generated code"
+    echo "    --no-format           Skip formatting the generated code"
+    echo "    --overwrite           Overwrite everything in the output directory"
+    echo
+    echo "  Example:"
+    echo "    $ mkdir my-output "
+    echo "    $ docker run --rm -it \\"
+    echo "         --mount type=bind,source=\"$(pwd)\"/example-server/src/main/proto,target=/proto \\"
+    echo "         --mount type=bind,source=\"$(pwd)\"/my-output,target=/generated \\"
+    echo "       gcr.io/kotlin-gapic/kgen --android"
+    echo
+}
+
 # parse command line options
 PARAMS=""
 while (( "$#" )); do
@@ -10,6 +31,14 @@ while (( "$#" )); do
     #   FARG=$2
     #   shift 2
     #   ;;
+    -h|--help)
+      show_help
+      exit 0
+      ;;
+    --android)
+      IS_ANDROID=1
+      shift
+      ;;
     --auth-google-cloud)
       IS_AUTH_GCLOUD=1
       shift
@@ -18,25 +47,13 @@ while (( "$#" )); do
       IS_NO_BUILDERS=1
       shift
       ;;
-    --android)
-      IS_ANDROID=1
+    --no-compile)
+      SKIP_COMPILE=1
       shift
       ;;
     --no-format)
       SKIP_FORMAT=1
       shift
-      ;;
-    --no-lint)
-      SKIP_LINT=1
-      shift
-      ;;
-    --no-compile)
-      SKIP_COMPILE=1
-      shift
-      ;;
-    --format-custom)
-      FORMAT_CUSTOM_ARGS=$2
-      shift 2
       ;;
     --overwrite)
       DO_OVERWRITE=1
@@ -57,6 +74,14 @@ while (( "$#" )); do
   esac
 done
 eval set -- "$PARAMS"
+
+# check input directory
+if [ -z "$(ls -A /proto)" ]; then
+   echo "No input .proto files were given. Aborting!"
+   echo
+   show_help
+   exit 1
+fi
 
 # check output directory
 if [ ! -z "$(ls -A /generated)" ]; then
@@ -114,25 +139,11 @@ if [ -z ${SKIP_FORMAT+x} ]; then
 
   echo
   echo "Formatting Kotlin code..."
-  /usr/ide/intellij/bin/format.sh -s /usr/ide/format.xml -r /generated -m *.kt
-fi
-
-# custom format
-if [ -z ${FORMAT_CUSTOM_ARGS+x} ]; then
-  :
-else
-  echo
-  echo "Formatting with custom format.xml rule set..."
-  /usr/ide/intellij/bin/format.sh -s /usr/ide/format.xml -r /generated -m $FORMAT_CUSTOM_ARGS
-fi
-
-# lint
-if [ -z ${SKIP_LINT+x} ]; then
-  echo
-  echo "Linting Kotlin code..."
-  echo "  Why? Imports are generated conservatively, and include default imports, to avoid potential name collisions."
-  echo "  You may choose to remove them if it is safe to do so."
-  /usr/local/bin/ktlint --color /generated/**/*.kt || true
+  if [ -z ${IS_ANDROID+x} ]; then
+    /usr/local/bin/ktlint --format /generated/**/*.kt 
+  else
+    /usr/local/bin/ktlint --format --android /generated/**/*.kt 
+  fi
 fi
 
 echo

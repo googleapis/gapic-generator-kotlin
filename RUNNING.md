@@ -31,7 +31,7 @@ output directory at `/generated`. For example:
 ```bash
 $ mkdir example-output
 $ docker run -it --rm \
-         --mount type=bind,source="$(pwd)"/generator/example-server/src/main/proto,target=/proto \
+         --mount type=bind,source="$(pwd)"/example-server/src/main/proto,target=/proto \
          --mount type=bind,source="$(pwd)"/example-output,target=/generated \
          kgen
 ```
@@ -66,7 +66,7 @@ identical for a standalone Kotlin application.
 
 ```groovy
 plugins {
-    id "com.google.protobuf" version "0.8.7"
+    id "com.google.protobuf" version "0.8.8"
 }
 
 // if you are not making an Android app use the vanilla java or kotlin plugin(s)
@@ -165,16 +165,13 @@ dependencies {
 
 ## Code Formatters
 
-This project uses dockerized versions of Intellij CE's code formatter,
-[Google Java Format](https://github.com/google/google-java-format) and [ktlint](https://ktlint.github.io/). 
-They can be customized for the generator and they can be used standalone.
+This project uses [ktlint](https://ktlint.github.io/) and [Google Java Format](https://github.com/google/google-java-format). 
 
 ### Building
 
 Create standalone dockerized formatters using the `--target` flag:
 
 ```
-  $ docker build --target formatter . -t formatter
   $ docker build --target javaformatter . -t javaformatter
   $ docker build --target ktlint . -t ktlint
 ```
@@ -182,25 +179,9 @@ Create standalone dockerized formatters using the `--target` flag:
 ### Usage
 
 Run the container and mount the directory that contains the source files that you want to 
-format to `/src` inside the container. It will format all files recursively using the rules defined 
-in `format.xml`. For example, to format the files in the current directory use:
+format to `/src` inside the container. For example, to format the files in the current directory use:
 
 ```
-  $ docker run --rm -it -v $PWD:/src formatter
   $ docker run --rm -it -v $PWD:/src javaformatter
   $ docker run --rm -it -v $PWD:/src ktlint
 ```
-
-### Customizing
-
-You can replace `/usr/ide/format.xml` with your own formatter configuration to customize
-the settings for the intelliJ formatter. See the official [documentation](https://www.jetbrains.com/help/idea/settings-code-style.html)
-for more details.
-
-Alternatively, you may override the defaults for any of the formatters by passing arguments to the commands. 
-See the `Dockerfile` for the default set of arguments.
-
-### Why So Many Formatters
-
-ktlint does not currently fix long lines so the Intellij formatter is used for most things, and it
-gives us options. Alright, perhaps we just like formatters...

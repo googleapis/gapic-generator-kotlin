@@ -13,3 +13,5 @@
 /build
 /captures
 .externalNativeBuild
+
+/example-output
