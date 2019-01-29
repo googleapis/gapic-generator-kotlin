@@ -74,7 +74,7 @@ internal interface UnitTest {
         const val MOCK_API_STUB = "apiStub"
         const val MOCK_OPS_STUB = "operationsStub"
         const val MOCK_CHANNEL = "channel"
-        const val MOCK_CALL_OPTS = "options"
+        const val MOCK_CALL_OPTS = "commandLineOptions"
     }
 }
 
@@ -123,9 +123,9 @@ internal class UnitTestImpl(
                     """
                     |return %T.create(
                     |    channel = ${UnitTest.MOCK_CHANNEL},
-                    |    options = ${UnitTest.MOCK_CALL_OPTS},
+                    |    commandLineOptions = ${UnitTest.MOCK_CALL_OPTS},
                     |    factory = object:·%T.%L.Factory·{
-                    |    override fun create(channel: %T, options: %T)·=
+                    |    override fun create(channel: %T, commandLineOptions: %T)·=
                     |        %T.%L(%N, %N)
                     |})
                     |""".trimMargin(),
@@ -377,11 +377,11 @@ internal class UnitTestImpl(
             thenBlock.code.add(
                 """
                 |verify(%N).prepare(check<%T.()·->·Unit>·{
-                |    val options = %T().apply(it).build()
-                |    options.initialRequests.map·{ it as %T }.first().let·{
+                |    val commandLineOptions = %T().apply(it).build()
+                |    commandLineOptions.initialRequests.map·{ it as %T }.first().let·{
                 |${checks.joinToString("\n") { "        %L" }}
                 |    }
-                |    assertEquals(options.initialRequests.size, 1)
+                |    assertEquals(commandLineOptions.initialRequests.size, 1)
                 |})
                 |""".trimMargin(),
                 UnitTest.MOCK_API_STUB,

@@ -127,7 +127,7 @@ internal class KotlinClientGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
         }
         val service: DescriptorProtos.ServiceDescriptorProto = mock()
 
-        val context = GeneratorContext(mock(), service, metadata, mock(), mock())
+        val context = GeneratorContext(mock(), service, metadata, mock(), mock(), ClientPluginOptions())
 
         assertThat(context.serviceOptions).isEqualTo(options)
         verify(metadata).get(eq(service))

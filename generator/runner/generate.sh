@@ -8,6 +8,7 @@ show_help() {
     echo
     echo "  Options:"
     echo "    --android             Generate code for the Android platform"
+    echo "    --lite                Generate code for the Android platform (same as --android)"
     echo "    --auth-google-cloud   Generate additional code for Google Cloud Platform APIs"
     echo "    --no-builders         Skip generating Kotlin builders for Java proto message types"
     echo "    --no-compile          Skip compiling the generated code"
@@ -35,7 +36,7 @@ while (( "$#" )); do
       show_help
       exit 0
       ;;
-    --android)
+    --android|--lite)
       IS_ANDROID=1
       shift
       ;;

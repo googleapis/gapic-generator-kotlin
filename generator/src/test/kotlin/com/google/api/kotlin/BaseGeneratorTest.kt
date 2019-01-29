@@ -43,7 +43,10 @@ private val TEST_CLASSNAME = ClassName(TEST_NAMESPACE, "TheTest")
  *
  * Not all tests should inherit from this class (only tests that use the test protos).
  */
-internal abstract class BaseGeneratorTest(private val generator: ClientGenerator) {
+internal abstract class BaseGeneratorTest(
+    private val generator: ClientGenerator,
+    private val invocationOptions: ClientPluginOptions = ClientPluginOptions()
+) {
 
     // accessors for the test protos
     protected val generatorRequest = PluginProtos.CodeGeneratorRequest.parseFrom(
@@ -139,6 +142,7 @@ internal abstract class BaseGeneratorTest(private val generator: ClientGenerator
             on { metadata } doReturn config
             on { className } doReturn TEST_CLASSNAME
             on { typeMap } doReturn map
+            on { this.commandLineOptions } doReturn invocationOptions
         }
     }
 
@@ -186,6 +190,9 @@ internal fun List<GeneratedArtifact>.unitTests() = this
 
 internal fun List<GeneratedArtifact>.testServiceClient() =
     this.sources().first { it.name == "TheTest" }.types.first()
+
+internal fun List<GeneratedArtifact>.testServiceClientStub() =
+    this.sources().first { it.name == "TheTestStub" }.types.first()
 
 // misc. proto helpers
 

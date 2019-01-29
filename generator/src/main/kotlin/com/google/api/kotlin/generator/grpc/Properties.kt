@@ -34,7 +34,7 @@ internal interface Properties {
 
     companion object {
         const val PROP_CHANNEL = "channel"
-        const val PROP_CALL_OPTS = "options"
+        const val PROP_CALL_OPTS = "commandLineOptions"
         const val PROP_STUBS = "stubs"
 
         const val PARAM_FACTORY = "factory"

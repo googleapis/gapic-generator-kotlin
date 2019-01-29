@@ -18,7 +18,7 @@ package com.google.api.kotlin.config
 
 import com.google.api.AnnotationsProto
 import com.google.api.MethodSignature
-import com.google.api.kotlin.CLIOptions
+import com.google.api.kotlin.ClientPluginOptions
 import com.google.api.kotlin.ConfigurationFactory
 import com.google.api.kotlin.util.isIntOrLong
 import com.google.api.kotlin.util.isRepeated
@@ -50,16 +50,16 @@ internal class Configuration constructor(
     private val serviceOptions: Map<String, ServiceOptions>
 ) {
 
-    /** Get the options for the given service */
+    /** Get the commandLineOptions for the given service */
     operator fun get(serviceName: String): ServiceOptions {
         val opt = serviceOptions[serviceName]
         if (opt == null) {
-            log.warn { "No service defined with name: $serviceName (using default options)" }
+            log.warn { "No service defined with name: $serviceName (using default commandLineOptions)" }
         }
         return opt ?: ServiceOptions()
     }
 
-    /** Get the options for the given service */
+    /** Get the commandLineOptions for the given service */
     operator fun get(service: DescriptorProtos.ServiceDescriptorProto) =
         get("$packageName.${service.name}")
 }
@@ -135,7 +135,7 @@ internal class AnnotationConfigurationFactory(
         val httpBindings = method.options.getExtensionOrNull(AnnotationsProto.http)
 
         // TODO: retry was removed from the spec - will it return?
-        // val retry = method.options.getExtensionOrNull(AnnotationsProto.retry)
+        // val retry = method.commandLineOptions.getExtensionOrNull(AnnotationsProto.retry)
         // var retryOptions = if (retry != null) ClientRetry(retry.codesList) else null
 
         var retryOptions: ClientRetry? = null
@@ -273,7 +273,7 @@ internal class SwappableConfigurationFactory(
 }
 
 /** Create a config factory from a set of [CLIOptions]. */
-internal fun CLIOptions.asSwappableConfiguration(typeMap: ProtobufTypeMapper): SwappableConfigurationFactory {
+internal fun ClientPluginOptions.asSwappableConfiguration(typeMap: ProtobufTypeMapper): SwappableConfigurationFactory {
     val auth = mutableListOf<AuthTypes>()
     if (this.authGoogleCloud) {
         auth += AuthTypes.GOOGLE_CLOUD
@@ -381,7 +381,7 @@ internal class LegacyConfigurationFactory(
             }
         }
 
-        // parse API config options
+        // parse API config commandLineOptions
         val apiConfig = if (clientFile != null) {
             log.debug { "parsing config file: ${clientFile.absolutePath}" }
             parseClient(clientFile, host, scopes)
@@ -459,14 +459,14 @@ internal class LegacyConfigurationFactory(
     }
 }
 
-/** Branding options for product [name], [url], etc. */
+/** Branding commandLineOptions for product [name], [url], etc. */
 internal data class BrandingOptions(
     val name: String = "",
     val summary: String = "",
     val url: String = "http://www.google.com"
 )
 
-/** Authentication options */
+/** Authentication commandLineOptions */
 internal data class AuthOptions(
     val types: List<AuthTypes> = listOf()
 ) {
@@ -480,14 +480,14 @@ internal enum class AuthTypes {
     GOOGLE_CLOUD
 }
 
-/** Code generator options for a set of APIs methods within a protobuf service */
+/** Code generator commandLineOptions for a set of APIs methods within a protobuf service */
 internal data class ServiceOptions(
     val host: String = "",
     val scopes: List<String> = listOf(),
     val methods: List<MethodOptions> = listOf()
 )
 
-/** Code generation options for an API method */
+/** Code generation commandLineOptions for an API method */
 internal data class MethodOptions(
     val name: String,
     val flattenedMethods: List<FlattenedMethod> = listOf(),
