@@ -117,7 +117,7 @@ internal class UnitTestImplTest {
         assertThat(prepareFun.function.toString().asNormalizedString()).isEqualTo(
             """
             |/**
-            | * Prepare for an API call by setting any desired commandLineOptions. For example:
+            | * Prepare for an API call by setting any desired options. For example:
             | *
             | *
             | ```
@@ -131,9 +131,9 @@ internal class UnitTestImplTest {
             | * plan to make multiple requests with the same settings.
             | */
             |fun prepare(init: com.google.api.kgax.grpc.ClientCallOptions.Builder.() -> kotlin.Unit): foo.bar.ZaTest {
-            |    val commandLineOptions = com.google.api.kgax.grpc.ClientCallOptions.Builder(commandLineOptions)
-            |    commandLineOptions.init()
-            |    return foo.bar.ZaTest(channel, commandLineOptions.build())
+            |    val optionsBuilder = com.google.api.kgax.grpc.ClientCallOptions.Builder(options)
+            |    optionsBuilder.init()
+            |    return foo.bar.ZaTest(channel, optionsBuilder.build())
             |}
             |""".asNormalizedString()
         )

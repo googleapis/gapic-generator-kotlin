@@ -63,13 +63,13 @@ internal class PropertiesImplTest {
             "val channel: io.grpc.ManagedChannel = channel"
         )
         assertThat(result[1].toString().asNormalizedString()).isEqualTo(
-            "val commandLineOptions: com.google.api.kgax.grpc.ClientCallOptions = commandLineOptions"
+            "val options: com.google.api.kgax.grpc.ClientCallOptions = options"
         )
         assertThat(result[2].toString().asNormalizedString()).isEqualTo(
             """
-            |private val stubs: Stubs = factory?.create(channel, commandLineOptions) ?: Stubs(
-            |    foo.bar.DaStub(channel).prepare(commandLineOptions),
-            |    com.google.longrunning.OperationsClientStub(channel).prepare(commandLineOptions)
+            |private val stubs: Stubs = factory?.create(channel, options) ?: Stubs(
+            |    foo.bar.DaStub(channel).prepare(options),
+            |    com.google.longrunning.OperationsClientStub(channel).prepare(options)
             |)
             |""".asNormalizedString()
         )
@@ -83,7 +83,7 @@ internal class PropertiesImplTest {
             """
             |private constructor(
             |    channel: io.grpc.ManagedChannel,
-            |    commandLineOptions: com.google.api.kgax.grpc.ClientCallOptions,
+            |    options: com.google.api.kgax.grpc.ClientCallOptions,
             |    factory: Stubs.Factory? = null
             |)
             |""".asNormalizedString()

@@ -51,7 +51,7 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
         assertThat(method.toString().asNormalizedString()).isEqualTo(
             """
             |/**
-            |* Prepare for an API call by setting any desired commandLineOptions. For example:
+            |* Prepare for an API call by setting any desired options. For example:
             |*
             |* ```
             |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
@@ -66,9 +66,9 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
             |fun prepare(
             |    init: com.google.api.kgax.grpc.ClientCallOptions.Builder.() -> kotlin.Unit
             |): google.example.TheTest {
-            |    val commandLineOptions = com.google.api.kgax.grpc.ClientCallOptions.Builder(commandLineOptions)
-            |    commandLineOptions.init()
-            |    return google.example.TheTest(channel, commandLineOptions.build())
+            |    val optionsBuilder = com.google.api.kgax.grpc.ClientCallOptions.Builder(options)
+            |    optionsBuilder.init()
+            |    return google.example.TheTest(channel, optionsBuilder.build())
             |}
             |""".asNormalizedString()
         )

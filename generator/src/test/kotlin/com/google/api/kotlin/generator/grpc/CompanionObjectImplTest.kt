@@ -260,7 +260,7 @@ internal class CompanionObjectImplTest {
         assertThat(method.toString().asNormalizedString()).isEqualTo(
             """
             |/**
-            |* Create a Clazz with the provided [channel], [commandLineOptions], or stub [factory].
+            |* Create a Clazz with the provided [channel], [options], or stub [factory].
             |*
             |* This is an advanced method. Prefer using [fromAccessToken], [fromServiceAccount], or [fromCredentials].
             |*/
@@ -268,11 +268,11 @@ internal class CompanionObjectImplTest {
             |@kotlin.jvm.JvmOverloads
             |fun create(
             |    channel: io.grpc.ManagedChannel? = null,
-            |    commandLineOptions: com.google.api.kgax.grpc.ClientCallOptions? = null,
+            |    options: com.google.api.kgax.grpc.ClientCallOptions? = null,
             |    factory: Stubs.Factory? = null
             |): r.r.r.Clazz = r.r.r.Clazz(
             |    channel ?: createChannel(),
-            |    commandLineOptions ?: com.google.api.kgax.grpc.ClientCallOptions(),
+            |    options ?: com.google.api.kgax.grpc.ClientCallOptions(),
             |    factory
             |)
             |""".asNormalizedString()

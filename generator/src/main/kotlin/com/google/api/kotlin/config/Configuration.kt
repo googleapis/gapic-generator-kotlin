@@ -40,8 +40,6 @@ private val log = KotlinLogging.logger {}
 
 /**
  * Configuration metadata for customizing the API surface for a set of RPC services.
- *
- * @author jbolinger
  */
 internal class Configuration constructor(
     val packageName: String,
@@ -50,16 +48,16 @@ internal class Configuration constructor(
     private val serviceOptions: Map<String, ServiceOptions>
 ) {
 
-    /** Get the commandLineOptions for the given service */
+    /** Get the options for the given service */
     operator fun get(serviceName: String): ServiceOptions {
         val opt = serviceOptions[serviceName]
         if (opt == null) {
-            log.warn { "No service defined with name: $serviceName (using default commandLineOptions)" }
+            log.warn { "No service defined with name: $serviceName (using default options)" }
         }
         return opt ?: ServiceOptions()
     }
 
-    /** Get the commandLineOptions for the given service */
+    /** Get the options for the given service */
     operator fun get(service: DescriptorProtos.ServiceDescriptorProto) =
         get("$packageName.${service.name}")
 }
@@ -112,7 +110,7 @@ internal class AnnotationConfigurationFactory(
     ): ServiceOptions {
         val host = service.options.getExtensionOrNull(AnnotationsProto.defaultHost)
         val scopes = service.options.getExtensionOrNull(AnnotationsProto.oauth)
-        val methods = service.methodList.map { getOptionsForServiceMethod(proto, service, it) }
+        val methods = service.methodList.map { getOptionsForServiceMethod(proto, it) }
 
         val options = ServiceOptions(
             host = host ?: "localhost",
@@ -128,14 +126,13 @@ internal class AnnotationConfigurationFactory(
     // parse method level metadata
     private fun getOptionsForServiceMethod(
         proto: DescriptorProtos.FileDescriptorProto,
-        service: DescriptorProtos.ServiceDescriptorProto,
         method: DescriptorProtos.MethodDescriptorProto
     ): MethodOptions {
         val signatures = method.options.getExtensionOrNull(AnnotationsProto.methodSignature) ?: listOf()
         val httpBindings = method.options.getExtensionOrNull(AnnotationsProto.http)
 
         // TODO: retry was removed from the spec - will it return?
-        // val retry = method.commandLineOptions.getExtensionOrNull(AnnotationsProto.retry)
+        // val retry = method.options.getExtensionOrNull(AnnotationsProto.retry)
         // var retryOptions = if (retry != null) ClientRetry(retry.codesList) else null
 
         var retryOptions: ClientRetry? = null
@@ -272,7 +269,7 @@ internal class SwappableConfigurationFactory(
     }
 }
 
-/** Create a config factory from a set of [CLIOptions]. */
+/** Create a config factory from a set of [ClientPluginOptions]. */
 internal fun ClientPluginOptions.asSwappableConfiguration(typeMap: ProtobufTypeMapper): SwappableConfigurationFactory {
     val auth = mutableListOf<AuthTypes>()
     if (this.authGoogleCloud) {
@@ -381,7 +378,7 @@ internal class LegacyConfigurationFactory(
             }
         }
 
-        // parse API config commandLineOptions
+        // parse API config options
         val apiConfig = if (clientFile != null) {
             log.debug { "parsing config file: ${clientFile.absolutePath}" }
             parseClient(clientFile, host, scopes)
@@ -459,14 +456,14 @@ internal class LegacyConfigurationFactory(
     }
 }
 
-/** Branding commandLineOptions for product [name], [url], etc. */
+/** Branding options for product [name], [url], etc. */
 internal data class BrandingOptions(
     val name: String = "",
     val summary: String = "",
     val url: String = "http://www.google.com"
 )
 
-/** Authentication commandLineOptions */
+/** Authentication options */
 internal data class AuthOptions(
     val types: List<AuthTypes> = listOf()
 ) {
@@ -480,14 +477,14 @@ internal enum class AuthTypes {
     GOOGLE_CLOUD
 }
 
-/** Code generator commandLineOptions for a set of APIs methods within a protobuf service */
+/** Code generator options for a set of APIs methods within a protobuf service */
 internal data class ServiceOptions(
     val host: String = "",
     val scopes: List<String> = listOf(),
     val methods: List<MethodOptions> = listOf()
 )
 
-/** Code generation commandLineOptions for an API method */
+/** Code generation options for an API method */
 internal data class MethodOptions(
     val name: String,
     val flattenedMethods: List<FlattenedMethod> = listOf(),

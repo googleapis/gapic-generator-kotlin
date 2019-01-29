@@ -72,7 +72,7 @@ internal class StubsImplTest {
                |    val operation: com.google.api.kgax.grpc.GrpcClientStub<com.google.longrunning.OperationsClientStub>
                |) {
                |    interface Factory {
-               |        fun create(channel: io.grpc.ManagedChannel, commandLineOptions: com.google.api.kgax.grpc.ClientCallOptions): Stubs
+               |        fun create(channel: io.grpc.ManagedChannel, options: com.google.api.kgax.grpc.ClientCallOptions): Stubs
                |    }
                |}""".asNormalizedString()
         )

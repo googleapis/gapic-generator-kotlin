@@ -77,7 +77,7 @@ internal class CompanionObjectImpl : CompanionObject {
         val create = FunSpec.builder("create")
             .addKdoc(
                 """
-                |Create a %N with the provided [channel], [commandLineOptions], or stub [factory].%L
+                |Create a %N with the provided [channel], [options], or stub [factory].%L
                 |""".trimMargin(),
                 context.className.simpleName,
                 preferredMethodText
@@ -93,7 +93,7 @@ internal class CompanionObjectImpl : CompanionObject {
             )
             .addParameter(
                 ParameterSpec.builder(
-                    "commandLineOptions", GrpcTypes.Support.ClientCallOptions.copy(nullable = true)
+                    "options", GrpcTypes.Support.ClientCallOptions.copy(nullable = true)
                 )
                     .defaultValue("null")
                     .build()
@@ -110,7 +110,7 @@ internal class CompanionObjectImpl : CompanionObject {
                 """
                 |return %T(
                 |    channel ?: createChannel(),
-                |    commandLineOptions ?: %T(),
+                |    options ?: %T(),
                 |    factory
                 |)
                 |""".trimMargin(),
@@ -350,7 +350,7 @@ internal class CompanionObjectImpl : CompanionObject {
         )
     }
 
-    // creates a set of default commandLineOptions
+    // creates a set of default options
     private fun createDefaultRetries(context: GeneratorContext): PropertySpec {
         val prop = PropertySpec.builder(
             CompanionObject.VAL_RETRY, GrpcTypes.Support.Retry

@@ -72,7 +72,7 @@ internal class FunctionsImpl(
             FunSpec.builder(Functions.FUN_PREPARE)
                 .addKdoc(
                     """
-                    |Prepare for an API call by setting any desired commandLineOptions. For example:
+                    |Prepare for an API call by setting any desired options. For example:
                     |
                     |```
                     |val client = %T.fromServiceAccount(YOUR_KEY_FILE)
@@ -99,13 +99,13 @@ internal class FunctionsImpl(
                     ).build()
                 )
                 .addStatement(
-                    "val commandLineOptions = %T(%N)",
+                    "val optionsBuilder = %T(%N)",
                     GrpcTypes.Support.ClientCallOptionsBuilder,
                     Properties.PROP_CALL_OPTS
                 )
-                .addStatement("commandLineOptions.init()")
+                .addStatement("optionsBuilder.init()")
                 .addStatement(
-                    "return %T(%N, commandLineOptions.build())",
+                    "return %T(%N, optionsBuilder.build())",
                     context.className, Properties.PROP_CHANNEL
                 )
                 .build()
