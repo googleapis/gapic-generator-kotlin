@@ -130,6 +130,9 @@ protobuf {
 
                     // this options should be added for Google APIs
                     option "auth-google-cloud"
+
+                    // this option should be added for Android
+                    option "lite"
                 }
             }
             // add something like this to have the generated clients formatted with your project settings

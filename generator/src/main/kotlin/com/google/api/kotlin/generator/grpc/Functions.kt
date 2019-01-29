@@ -99,13 +99,13 @@ internal class FunctionsImpl(
                     ).build()
                 )
                 .addStatement(
-                    "val options = %T(%N)",
+                    "val optionsBuilder = %T(%N)",
                     GrpcTypes.Support.ClientCallOptionsBuilder,
                     Properties.PROP_CALL_OPTS
                 )
-                .addStatement("options.init()")
+                .addStatement("optionsBuilder.init()")
                 .addStatement(
-                    "return %T(%N, options.build())",
+                    "return %T(%N, optionsBuilder.build())",
                     context.className, Properties.PROP_CHANNEL
                 )
                 .build()

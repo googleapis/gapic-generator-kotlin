@@ -18,7 +18,7 @@ package com.google.api.kotlin.config
 
 import com.google.api.AnnotationsProto
 import com.google.api.MethodSignature
-import com.google.api.kotlin.CLIOptions
+import com.google.api.kotlin.ClientPluginOptions
 import com.google.api.kotlin.ConfigurationFactory
 import com.google.api.kotlin.util.isIntOrLong
 import com.google.api.kotlin.util.isRepeated
@@ -40,8 +40,6 @@ private val log = KotlinLogging.logger {}
 
 /**
  * Configuration metadata for customizing the API surface for a set of RPC services.
- *
- * @author jbolinger
  */
 internal class Configuration constructor(
     val packageName: String,
@@ -112,7 +110,7 @@ internal class AnnotationConfigurationFactory(
     ): ServiceOptions {
         val host = service.options.getExtensionOrNull(AnnotationsProto.defaultHost)
         val scopes = service.options.getExtensionOrNull(AnnotationsProto.oauth)
-        val methods = service.methodList.map { getOptionsForServiceMethod(proto, service, it) }
+        val methods = service.methodList.map { getOptionsForServiceMethod(proto, it) }
 
         val options = ServiceOptions(
             host = host ?: "localhost",
@@ -128,7 +126,6 @@ internal class AnnotationConfigurationFactory(
     // parse method level metadata
     private fun getOptionsForServiceMethod(
         proto: DescriptorProtos.FileDescriptorProto,
-        service: DescriptorProtos.ServiceDescriptorProto,
         method: DescriptorProtos.MethodDescriptorProto
     ): MethodOptions {
         val signatures = method.options.getExtensionOrNull(AnnotationsProto.methodSignature) ?: listOf()
@@ -272,8 +269,8 @@ internal class SwappableConfigurationFactory(
     }
 }
 
-/** Create a config factory from a set of [CLIOptions]. */
-internal fun CLIOptions.asSwappableConfiguration(typeMap: ProtobufTypeMapper): SwappableConfigurationFactory {
+/** Create a config factory from a set of [ClientPluginOptions]. */
+internal fun ClientPluginOptions.asSwappableConfiguration(typeMap: ProtobufTypeMapper): SwappableConfigurationFactory {
     val auth = mutableListOf<AuthTypes>()
     if (this.authGoogleCloud) {
         auth += AuthTypes.GOOGLE_CLOUD

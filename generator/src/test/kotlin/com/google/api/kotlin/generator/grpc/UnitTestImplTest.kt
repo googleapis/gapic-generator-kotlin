@@ -131,9 +131,9 @@ internal class UnitTestImplTest {
             | * plan to make multiple requests with the same settings.
             | */
             |fun prepare(init: com.google.api.kgax.grpc.ClientCallOptions.Builder.() -> kotlin.Unit): foo.bar.ZaTest {
-            |    val options = com.google.api.kgax.grpc.ClientCallOptions.Builder(options)
-            |    options.init()
-            |    return foo.bar.ZaTest(channel, options.build())
+            |    val optionsBuilder = com.google.api.kgax.grpc.ClientCallOptions.Builder(options)
+            |    optionsBuilder.init()
+            |    return foo.bar.ZaTest(channel, optionsBuilder.build())
             |}
             |""".asNormalizedString()
         )

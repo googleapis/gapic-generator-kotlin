@@ -66,9 +66,9 @@ internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
             |fun prepare(
             |    init: com.google.api.kgax.grpc.ClientCallOptions.Builder.() -> kotlin.Unit
             |): google.example.TheTest {
-            |    val options = com.google.api.kgax.grpc.ClientCallOptions.Builder(options)
-            |    options.init()
-            |    return google.example.TheTest(channel, options.build())
+            |    val optionsBuilder = com.google.api.kgax.grpc.ClientCallOptions.Builder(options)
+            |    optionsBuilder.init()
+            |    return google.example.TheTest(channel, optionsBuilder.build())
             |}
             |""".asNormalizedString()
         )

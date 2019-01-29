@@ -26,6 +26,7 @@ import com.google.protobuf.DescriptorProtos
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.check
 import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.doThrow
 import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.verify
@@ -127,9 +128,28 @@ internal class KotlinClientGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
         }
         val service: DescriptorProtos.ServiceDescriptorProto = mock()
 
-        val context = GeneratorContext(mock(), service, metadata, mock(), mock())
+        val context = GeneratorContext(mock(), service, metadata, mock(), mock(), ClientPluginOptions())
 
         assertThat(context.serviceOptions).isEqualTo(options)
         verify(metadata).get(eq(service))
     }
+
+    @Test
+    fun `can handle exceptions`() {
+        val clientGenerator: ClientGenerator = mock {
+            on { generateServiceClient(any()) } doThrow SomeException()
+        }
+        val config = getMockedConfig(ServiceOptions())
+        val clientConfigFactory: LegacyConfigurationFactory = mock {
+            on { fromProto(any()) }.doReturn(config)
+        }
+
+        val generator = KotlinClientGenerator(clientGenerator, clientConfigFactory)
+        val result = generator.generate(generatorRequest, getMockedTypeMap())
+
+        assertThat(result.sourceCode.fileCount).isEqualTo(0)
+        assertThat(result.testCode.fileCount).isEqualTo(0)
+    }
 }
+
+private class SomeException : RuntimeException()

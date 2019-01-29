@@ -147,11 +147,19 @@ internal class StubsImpl : Stubs {
         val prop = PropertySpec.builder(descriptorPropertyName(method), type)
             .addModifiers(KModifier.PRIVATE)
 
+        // determine method type
         val methodType = when {
             method.hasServerStreaming() && method.hasClientStreaming() -> "BIDI_STREAMING"
             method.hasClientStreaming() -> "CLIENT_STREAMING"
             method.hasServerStreaming() -> "SERVER_STREAMING"
             else -> "UNARY"
+        }
+
+        // determine marshaller to use (lite or normal)
+        val marshallerType = if (context.commandLineOptions.lite) {
+            GrpcTypes.ProtoLiteUtils
+        } else {
+            GrpcTypes.ProtoUtils
         }
 
         // create the initializer
@@ -170,9 +178,9 @@ internal class StubsImpl : Stubs {
             type.rawType, inputType, outputType,
             GrpcTypes.MethodDescriptorType, methodType,
             "${context.proto.`package`}.${context.service.name}", method.name,
-            GrpcTypes.ProtoLiteUtils,
+            marshallerType,
             inputType,
-            GrpcTypes.ProtoLiteUtils,
+            marshallerType,
             outputType
         )
 

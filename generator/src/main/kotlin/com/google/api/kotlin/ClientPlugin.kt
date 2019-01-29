@@ -22,8 +22,6 @@ import com.google.api.kotlin.config.asSwappableConfiguration
 import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.api.kotlin.types.isNotWellKnown
-import com.google.devtools.common.options.Option
-import com.google.devtools.common.options.OptionsBase
 import com.google.devtools.common.options.OptionsParser
 import com.google.protobuf.compiler.PluginProtos
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest
@@ -38,10 +36,10 @@ private val log = KotlinLogging.logger {}
  */
 fun main(args: Array<String>) {
     // parse arguments
-    val optionParser = OptionsParser.newOptionsParser(CLIOptions::class.java)
+    val optionParser = OptionsParser.newOptionsParser(ClientPluginOptions::class.java)
     optionParser.parse(*args)
-    var options = optionParser.getOptions(CLIOptions::class.java)
-        ?: throw IllegalStateException("Unable to parse options")
+    var options = optionParser.getOptions(ClientPluginOptions::class.java)
+        ?: throw IllegalStateException("Unable to parse command line options")
 
     // usage
     if (options.help) {
@@ -66,14 +64,14 @@ fun main(args: Array<String>) {
 
     // parse plugin opts and override
     if (runAsPlugin) {
-        log.debug { "parsing plugins options: '${request.parameter}'" }
+        log.debug { "parsing plugin options: '${request.parameter}'" }
 
         // override
         val pluginsOpts = request.parameter.split(",").map { "--$it" }
-        val parser = OptionsParser.newOptionsParser(CLIOptions::class.java)
+        val parser = OptionsParser.newOptionsParser(ClientPluginOptions::class.java)
         parser.parse(pluginsOpts)
-        options = parser.getOptions(CLIOptions::class.java)
-            ?: throw IllegalStateException("Unable to parse options")
+        options = parser.getOptions(ClientPluginOptions::class.java)
+            ?: throw IllegalStateException("Unable to parse plugins options")
     }
     log.info { "Using source directory: ${options.sourceDirectory}" }
 
@@ -90,7 +88,7 @@ fun main(args: Array<String>) {
         options.asSwappableConfiguration(typeMap),
         if (options.noBuilders) null else BuilderGenerator()
     )
-    val (sourceCode, testCode) = generator.generate(request, typeMap) { proto ->
+    val (sourceCode, testCode) = generator.generate(request, typeMap, options) { proto ->
         if (options.includeGoogleCommon) true else proto.isNotWellKnown()
     }
 
@@ -131,87 +129,4 @@ fun main(args: Array<String>) {
     } catch (e: Exception) {
         log.error(e) { "Unable to write result" }
     }
-}
-
-// CLI options
-class CLIOptions : OptionsBase() {
-
-    @JvmField
-    @Option(
-        name = "help",
-        abbrev = 'h',
-        help = "Prints usage info.",
-        defaultValue = "false"
-    )
-    var help = false
-
-    @JvmField
-    @Option(
-        name = "input",
-        abbrev = 'i',
-        help = "A serialized code generation request proto (if not set it is read from stdin).",
-        category = "io",
-        defaultValue = ""
-    )
-    var inputFile: String = ""
-
-    @JvmField
-    @Option(
-        name = "output",
-        abbrev = 'o',
-        help = "Output directory for generated source code (if not set will be written to stdout).",
-        category = "io",
-        defaultValue = ""
-    )
-    var outputDirectory: String = ""
-
-    @JvmField
-    @Option(
-        name = "test-output",
-        help = "Output directory for generated test code (if not set test code will be omitted).",
-        category = "io",
-        defaultValue = ""
-    )
-    var testOutputDirectory: String = ""
-
-    @JvmField
-    @Option(
-        name = "source",
-        help = "Source directory (proto files). This option is deprecated and will be removed once the configuration process is migrated to use proto annotations.",
-        category = "io",
-        defaultValue = ""
-    )
-    var sourceDirectory: String = ""
-
-    @JvmField
-    @Option(
-        name = "fallback",
-        help = "Use gRPC fallback. This option is not yet implemented.",
-        defaultValue = "false"
-    )
-    var fallback: Boolean = false
-
-    @JvmField
-    @Option(
-        name = "no-builders",
-        help = "Do not generate DSL style builders for message types.",
-        defaultValue = "false"
-    )
-    var noBuilders: Boolean = false
-
-    @JvmField
-    @Option(
-        name = "auth-google-cloud",
-        help = "Add additional methods to support authentication on Google Cloud.",
-        defaultValue = "false"
-    )
-    var authGoogleCloud: Boolean = false
-
-    @JvmField
-    @Option(
-        name = "include-google-common",
-        help = "Well known Google types will be ignored if they are found in the input. This is normally useful to prevent well known types from being generated multiples times, but it can be disabled with this flag.",
-        defaultValue = "false"
-    )
-    var includeGoogleCommon: Boolean = false
 }

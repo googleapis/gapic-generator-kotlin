@@ -81,6 +81,7 @@ protobuf {
                 client {
                     option "source=${projectDir}/src/main/proto"
                     option "test-output=${project.buildDir}/generated/source/protoTest/clientTest"
+                    option "lite"
                     // EXTRA-PLUGIN-OPTIONS
                 }
             }

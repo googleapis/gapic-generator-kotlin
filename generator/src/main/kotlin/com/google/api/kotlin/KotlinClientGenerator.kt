@@ -59,6 +59,7 @@ internal class KotlinClientGenerator(
     fun generate(
         request: CodeGeneratorRequest,
         typeMap: ProtobufTypeMapper,
+        options: ClientPluginOptions = ClientPluginOptions(),
         filter: (DescriptorProtos.FileDescriptorProto) -> Boolean = { true }
     ): Artifacts {
         // generate code for the services
@@ -70,7 +71,7 @@ internal class KotlinClientGenerator(
                 file.serviceList.mapNotNull { service ->
                     try {
                         processProtoService(
-                            file, service, clientConfigFactory.fromProto(file), typeMap
+                            file, service, clientConfigFactory.fromProto(file), typeMap, options
                         )
                     } catch (e: Throwable) {
                         log.error(e) { "Failed to generate client for: ${file.name}" }
@@ -119,7 +120,8 @@ internal class KotlinClientGenerator(
         proto: DescriptorProtos.FileDescriptorProto,
         service: DescriptorProtos.ServiceDescriptorProto,
         metadata: Configuration,
-        typeMap: ProtobufTypeMapper
+        typeMap: ProtobufTypeMapper,
+        options: ClientPluginOptions
     ): List<GeneratedArtifact> {
         log.debug { "processing proto: ${proto.name} -> service: ${service.name}" }
 
@@ -132,7 +134,7 @@ internal class KotlinClientGenerator(
 
         // create context
         val className = ClassName(packageName, "${service.name}Client")
-        val context = GeneratorContext(proto, service, metadata, className, typeMap)
+        val context = GeneratorContext(proto, service, metadata, className, typeMap, options)
 
         // generate
         return clientGenerator.generateServiceClient(context)
@@ -201,7 +203,8 @@ internal class GeneratorContext(
     val service: DescriptorProtos.ServiceDescriptorProto,
     val metadata: Configuration,
     val className: ClassName,
-    val typeMap: ProtobufTypeMapper
+    val typeMap: ProtobufTypeMapper,
+    val commandLineOptions: ClientPluginOptions
 ) {
     val serviceOptions: ServiceOptions
         get() = metadata[service]
