@@ -176,12 +176,10 @@ jobs:
           key: showcase-v0-{{ checksum "build.gradle.kts" }}
       - run:
           name: Download showcase
-          command: |
-            sudo sh -c "curl -sSL https://github.com/googleapis/gapic-showcase/releases/download/v0.0.5/gapic-showcase-v1alpha2-0.0.5-linux-amd64 > /usr/local/bin/showcase"
-            sudo sh -c "chmod +x /usr/local/bin/showcase"
+          command: sudo sh -c "curl -sSL https://github.com/googleapis/gapic-showcase/releases/download/v0.0.10/gapic-showcase-0.0.10-linux-amd64.tar.gz | tar -zx --no-same-owner -C /usr/local/bin/"
       - run:
           name: Run showcase
-          command: /usr/local/bin/showcase start
+          command: /usr/local/bin/gapic-showcase run
           background: true
       - run:
           name: Test showcase

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google LLC
+ * Copyright 2019 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,12 @@ import com.google.common.truth.Truth.assertThat
 import com.google.protobuf.Duration
 import com.google.rpc.Code
 import com.google.rpc.Status
-import com.google.showcase.v1alpha2.EchoClient
-import com.google.showcase.v1alpha2.EchoRequest
-import com.google.showcase.v1alpha2.ExpandRequest
-import com.google.showcase.v1alpha2.PaginationRequest
-import com.google.showcase.v1alpha2.PaginationResponse
-import com.google.showcase.v1alpha2.WaitRequest
+import com.google.showcase.v1alpha3.EchoClient
+import com.google.showcase.v1alpha3.EchoRequest
+import com.google.showcase.v1alpha3.ExpandRequest
+import com.google.showcase.v1alpha3.PagedExpandRequest
+import com.google.showcase.v1alpha3.PagedExpandResponse
+import com.google.showcase.v1alpha3.WaitRequest
 import io.grpc.ManagedChannelBuilder
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,7 +45,7 @@ import kotlin.test.fail
  * https://github.com/googleapis/gapic-showcase
  */
 @ExperimentalCoroutinesApi
-class ShowcaseTest {
+class EchoTest {
 
     // client / connection to server
     companion object {
@@ -174,22 +174,22 @@ class ShowcaseTest {
 
     @Test
     fun `pages chucks of responses`() = runBlocking<Unit> {
-        val numbers = mutableListOf<Int>()
+        val numbers = mutableListOf<String>()
         var pageCount = 0
 
-        val pager = client.pagination(PaginationRequest {
+        val pager = client.pagedExpand(PagedExpandRequest {
+            content = (0 until 40).joinToString(" ") { "num-$it" }
             pageSize = 10
             pageToken = "0"
-            maxResponse = 39
         })
 
         for (page in pager) {
-            numbers.addAll(page.elements)
+            numbers.addAll(page.elements.map { it.content })
             pageCount++
         }
 
         assertThat(pageCount).isEqualTo(4)
-        assertThat(numbers).containsExactlyElementsIn((0 until 39).map { it })
+        assertThat(numbers).containsExactlyElementsIn((0 until 40).map { "num-$it" }).inOrder()
         assertThat(pager.isClosedForReceive).isTrue()
     }
 
@@ -199,23 +199,23 @@ class ShowcaseTest {
         val pager = client
             .prepare {
                 withInterceptor(BasicInterceptor(onMessage = {
-                    count += (it as PaginationResponse).responsesCount
+                    count += (it as PagedExpandResponse).responsesCount
                 }))
             }
-            .pagination(PaginationRequest {
-            pageSize = 20
-            pageToken = "0"
-            maxResponse = 100
-        })
+            .pagedExpand(PagedExpandRequest {
+                content = (0 until 59).joinToString(" ") { "x-$it" }
+                pageSize = 5
+                pageToken = "0"
+            })
         assertThat(count).isIn(0..20)
 
         val page = pager.receive()
 
-        assertThat(page.elements).containsExactlyElementsIn((0 until 20).map { it })
+        assertThat(page.elements.map { it.content }).containsExactlyElementsIn((0 until 5).map { "x-$it" })
         assertThat(page.token).isNotEmpty()
-        assertThat(count).isIn(20..40)
+        assertThat(count).isEqualTo(5)
         assertThat(pager.receive()).isNotNull()
-        assertThat(count).isIn(40..60)
+        assertThat(count).isEqualTo(10)
         assertThat(pager.isClosedForReceive).isFalse()
     }
 
@@ -233,18 +233,23 @@ class ShowcaseTest {
             client.prepare {
                 withRetry(retry)
             }.wait(WaitRequest {
-                responseDelay = Duration { seconds = 1 }
+                ttl = Duration { seconds = 1 }
                 error = Status {
                     code = Code.UNAVAILABLE_VALUE
                     message = "go away"
                 }
-            })
+            }).await()
 
             fail("expected to throw")
-        } catch (error: StatusRuntimeException) {
-            assertThat(error.status.description).isEqualTo("go away")
+        } catch (error: Throwable) {
+            assertThat(error.message?.trim()?.replace("\\s+".toRegex(), " ")).isEqualTo(
+                """
+                |Operation completed with error: 14 details: go away
+                """.trimMargin()
+            )
         }
 
-        assertThat(retry.count).isEqualTo(6)
+        // TODO: https://github.com/googleapis/gapic-showcase/issues/66
+        assertThat(retry.count).isEqualTo(0)
     }
 }

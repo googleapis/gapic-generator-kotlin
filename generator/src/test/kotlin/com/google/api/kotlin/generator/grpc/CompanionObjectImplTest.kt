@@ -113,8 +113,8 @@ internal class CompanionObjectImplTest {
             | * server managed retries on the channel do not use this.
             | */
             |@kotlin.jvm.JvmStatic val RETRY: com.google.api.kgax.Retry = com.google.api.kgax.grpc.GrpcBasicRetry(mapOf(
-            |    "hasRetry" to setOf(Status.Code.ABORTED),
-            |    "hasSome" to setOf(Status.Code.CANCELLED, Status.Code.DATA_LOSS)
+            |    "hasRetry" to setOf(io.grpc.Status.Code.ABORTED),
+            |    "hasSome" to setOf(io.grpc.Status.Code.CANCELLED, io.grpc.Status.Code.DATA_LOSS)
             ))
             |""".asNormalizedString()
         )
