@@ -33,13 +33,13 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
 
+private val SKIP = listOf("Any", "Empty")
+
 /**
  * Generates an alternative builder for message types to replace the
  * Java builder pattern.
  */
 internal class BuilderGenerator {
-
-    private val SKIP = listOf("Any", "Empty")
 
     fun generate(types: ProtobufTypeMapper): List<GeneratedSource> {
         // package name -> builder functions
@@ -64,10 +64,16 @@ internal class BuilderGenerator {
                     parentTypes.add(parentType.simpleName)
                     parentType = parentType.enclosingClassName()
                 }
+                val name = if (parentTypes.isEmpty()) {
+                    type.className.simpleName
+                } else {
+                    // TODO: better way to name w/o collisions?
+                    "${parentTypes.reversed().joinToString("_")}_${type.className.simpleName}"
+                }
 
                 // create builder function body
-                val builder = FunSpec.builder(type.className.simpleName)
-                    .returns(type.className)
+                val builder = FunSpec.builder(name)
+                .returns(type.className)
                     .addParameter(
                         "init",
                         LambdaTypeName.get(
@@ -77,14 +83,6 @@ internal class BuilderGenerator {
                         )
                     )
                     .addStatement("return %T.newBuilder().apply(init).build()", type.className)
-                if (parentTypes.isNotEmpty()) {
-                    builder.receiver(
-                        ClassName(
-                            type.className.packageName,
-                            parentTypes.reversed().joinToString(".")
-                        )
-                    )
-                }
 
                 // if this type has any repeated fields create another function for them
                 val repeatedSetters = type.proto.fieldList
@@ -113,7 +111,7 @@ internal class BuilderGenerator {
                     }
 
                 // get list of builder functions in this package and append to it
-                var (funBuilders, propBuilders) = packagesToBuilders[type.className.packageName]
+                val (funBuilders, propBuilders) = packagesToBuilders[type.className.packageName]
                 funBuilders.add(builder.build())
                 propBuilders.addAll(repeatedSetters)
             }

@@ -100,7 +100,7 @@ internal class BuilderGeneratorTest {
 
         fun methodBody(type: String) =
             """
-            |fun com.google.api.$type(
+            |fun ${type.replace(".", "_")}(
             |    init: (@com.google.api.kgax.ProtoBuilder com.google.api.$type.Builder).() -> kotlin.Unit
             |): com.google.api.$type =
             |    com.google.api.$type.newBuilder().apply(init).build()
@@ -114,8 +114,7 @@ internal class BuilderGeneratorTest {
             "Bar.Z"
         ).forEach { qualifiedName ->
             val path = qualifiedName.split(".")
-            val f = funs.find { it.name == path.last() }
-                ?: throw Exception("fun not found $qualifiedName")
+            val f = funs.first { it.name == path.joinToString("_") }
             assertThat(f.toString().asNormalizedString()).isEqualTo(methodBody(qualifiedName))
         }
     }

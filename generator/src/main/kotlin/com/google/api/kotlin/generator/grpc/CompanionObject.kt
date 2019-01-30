@@ -369,8 +369,12 @@ internal class CompanionObjectImpl : CompanionObject {
         val retryEntries = context.serviceOptions.methods
             .filter { it.retry != null && it.retry.codes.isNotEmpty() }
             .map { method ->
-                val codes = method.retry!!.codes.joinToString(", ") { "Status.Code.${it.name}" }
-                CodeBlock.of("%S to setOf(%L)", method.name.decapitalize(), codes)
+                val codes = method.retry!!.codes
+                CodeBlock.of(
+                    "%S to setOf(${codes.joinToString(", ") { "%T.${it.name}" }})",
+                    method.name.decapitalize(),
+                    *codes.map { GrpcTypes.StatusCode }.toTypedArray()
+                )
             }
             .toTypedArray()
 
