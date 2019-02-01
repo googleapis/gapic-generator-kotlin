@@ -122,7 +122,7 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
     }
 
     @Test
-    fun `generates repeated setters`() {
+    fun `generates repeated helpers`() {
         val types = listOf(
             "com.google.api.Foo"
         )
@@ -154,18 +154,18 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
         assertThat(file.packageName).isEqualTo("com.google.api")
         assertThat(file.name).isEqualTo("KotlinBuilders")
 
-        val funs = file.functions
-        assertThat(funs).hasSize(1)
+        val builderFuns = file.functions.filterNot { it.name == "responses" }
+        assertThat(builderFuns).hasSize(1)
 
-        val props = file.properties
-        assertThat(props).hasSize(1)
+        val repeatedFuns = file.functions.filter { it.name == "responses" }
+        assertThat(repeatedFuns).hasSize(1)
 
-        val repeatedSetter = props.first()
+        val repeatedSetter = repeatedFuns.first()
         assertThat(repeatedSetter.toString().asNormalizedString()).isEqualTo(
             """
-            |var com.google.api.Foo.Builder.responses: kotlin.collections.List<com.google.api.Response>
-            |    get() = this.responsesList
-            |    set(values) { this.addAllResponses(values) }
+            |fun com.google.api.Foo.Builder.responses(vararg values: com.google.api.Response) {
+            |    this.addAllResponses(values.toList())
+            |}
             """.asNormalizedString()
         )
     }
@@ -198,18 +198,18 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
         assertThat(file.packageName).isEqualTo("com.google.api")
         assertThat(file.name).isEqualTo("KotlinBuilders")
 
-        val funs = file.functions
-        assertThat(funs).hasSize(1)
+        val builderFuns = file.functions.filterNot { it.name == "theStrings" }
+        assertThat(builderFuns).hasSize(1)
 
-        val props = file.properties
-        assertThat(props).hasSize(1)
+        val repeatedFuns = file.functions.filter { it.name == "theStrings" }
+        assertThat(repeatedFuns).hasSize(1)
 
-        val repeatedSetter = props.first()
+        val repeatedSetter = repeatedFuns.first()
         assertThat(repeatedSetter.toString().asNormalizedString()).isEqualTo(
             """
-            |var com.google.api.Foo.Builder.theStrings: kotlin.collections.List<kotlin.String>
-            |    get() = this.theStringsList
-            |    set(values) { this.addAllTheStrings(values) }
+            |fun com.google.api.Foo.Builder.theStrings(vararg values: kotlin.String) {
+            |    this.addAllTheStrings(values.toList())
+            |}
             """.asNormalizedString()
         )
     }
@@ -263,57 +263,59 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
     @Test
     fun `generates repeated getters and setters`() {
         val builders = generate().kotlinBuilders()
-        var props = builders.properties.filter { it.name == "lotsMore" }
+        var props = builders.functions.filter { it.name == "lotsMore" }
         assertThat(props).hasSize(1)
 
         var prop = props.first()
         assertThat(prop.toString().asNormalizedString()).isEqualTo(
             """
-            |var google.example.Detail.Builder.lotsMore: kotlin.collections.List<google.example.MoreDetail>
-            |    get() = this.lotsMoreList
-            |    set(values) { this.addAllLotsMore(values) }
+            |fun google.example.Detail.Builder.lotsMore(vararg values: google.example.MoreDetail) {
+            |    this.addAllLotsMore(values.toList())
+            |}
             """.asNormalizedString()
         )
 
-        props = builders.properties.filter { it.name == "moreDetails" }
+        props = builders.functions.filter { it.name == "moreDetails" }
         assertThat(props).hasSize(1)
 
         prop = props.first()
         assertThat(prop.toString().asNormalizedString()).isEqualTo(
             """
-            |var google.example.TestRequest.Builder.moreDetails: kotlin.collections.List<google.example.Detail>
-            |    get() = this.moreDetailsList
-            |    set(values) { this.addAllMoreDetails(values) }
+            |fun google.example.TestRequest.Builder.moreDetails(vararg values: google.example.Detail) {
+            |    this.addAllMoreDetails(values.toList())
+            |}
             """.asNormalizedString()
         )
 
-        props = builders.properties.filter { it.name == "responses" }
+        props = builders.functions.filter { it.name == "responses" }
         assertThat(props).hasSize(2)
         assertThat(props.map { it.toString().asNormalizedString() }).containsExactly(
             """
-            |var google.example.PagedResponse.Builder.responses: kotlin.collections.List<kotlin.Int>
-            |    get() = this.responsesList
-            |    set(values) { this.addAllResponses(values) }
+            |fun google.example.PagedResponse.Builder.responses(vararg values: kotlin.Int) {
+            |    this.addAllResponses(values.toList())
+            |}
             """.asNormalizedString(),
             """
-            |var google.example.StillNotPagedResponse.Builder.responses: kotlin.collections.List<kotlin.String>
-            |    get() = this.responsesList
-            |    set(values) { this.addAllResponses(values) }
+            |fun google.example.StillNotPagedResponse.Builder.responses(vararg values: kotlin.String) {
+            |    this.addAllResponses(values.toList())
+            |}
             """.asNormalizedString())
     }
 
     @Test
     fun `generates map getters and setters`() {
         val builders = generate().kotlinBuilders()
-        val props = builders.properties.filter { it.name == "tonsMore" }
+        val props = builders.functions.filter { it.name == "tonsMore" }
         assertThat(props).hasSize(1)
 
         val prop = props.first()
         assertThat(prop.toString().asNormalizedString()).isEqualTo(
             """
-            |var google.example.Detail.Builder.tonsMore: kotlin.collections.List<kotlin.Pair<kotlin.String, google.example.MoreDetail>>
-            |    get() = this.tonsMoreMap.map { kotlin.Pair(it.key, it.value) }
-            |    set(values) { this.putAllTonsMore(values.toMap()) }
+            |fun google.example.Detail.Builder.tonsMore(
+            |    vararg values: kotlin.Pair<kotlin.String, google.example.MoreDetail>
+            |) {
+            |    this.putAllTonsMore(values.toMap())
+            |}
             """.asNormalizedString()
         )
     }
@@ -323,7 +325,7 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
         val builders = generate().kotlinBuilders()
         val funs = builders.functions
 
-        assertThat(funs).hasSize(16)
+        assertThat(funs).hasSize(21)
 
         // verify one of them
         val b = funs.filter { it.name == "Result" }

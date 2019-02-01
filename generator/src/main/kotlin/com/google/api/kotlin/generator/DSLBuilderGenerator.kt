@@ -29,7 +29,9 @@ import com.google.protobuf.DescriptorProtos
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.asClassName
@@ -92,23 +94,15 @@ internal class DSLBuilderGenerator : BuilderGenerator {
                     .filter { it.isRepeated() && !it.isMap(types) }
                     .map {
                         val fieldType = it.asClassName(types)
-                        val listType = List::class.asClassName().parameterizedBy(fieldType)
                         val propertyName = FieldNamer.getFieldName(it.name)
 
-                        PropertySpec.builder(propertyName, listType)
+                        FunSpec.builder(propertyName)
                             .receiver(builderType)
-                            .mutable(true)
-                            .getter(
-                                FunSpec.getterBuilder()
-                                    .addStatement("return this.%L", FieldNamer.getAccessorRepeatedName(it.name))
+                            .addParameter(
+                                ParameterSpec.builder("values", fieldType, KModifier.VARARG)
                                     .build()
                             )
-                            .setter(
-                                FunSpec.setterBuilder()
-                                    .addParameter("values", listType)
-                                    .addStatement("this.%L(values)", FieldNamer.getSetterRepeatedName(it.name))
-                                    .build()
-                            )
+                            .addStatement("this.%L(values.toList())", FieldNamer.getSetterRepeatedName(it.name))
                             .build()
                     }
 
@@ -118,34 +112,27 @@ internal class DSLBuilderGenerator : BuilderGenerator {
                     .filter { it.isRepeated() && it.isMap(types) }
                     .map {
                         val (keyType, valueType) = it.describeMap(types)
-                        val listType = List::class.asClassName().parameterizedBy(
-                            Pair::class.asClassName().parameterizedBy(keyType.asClassName(types), valueType.asClassName(types))
+                        val pairType = Pair::class.asClassName().parameterizedBy(
+                            keyType.asClassName(types),
+                            valueType.asClassName(types)
                         )
                         val propertyName = FieldNamer.getFieldName(it.name)
 
-                        PropertySpec.builder(propertyName, listType)
+                        FunSpec.builder(propertyName)
                             .receiver(builderType)
-                            .mutable(true)
-                            .getter(
-                                FunSpec.getterBuilder()
-                                    .addStatement("return this.%L.map { %T(it.key, it.value) }",
-                                        FieldNamer.getAccessorMapName(it.name), Pair::class.asTypeName())
+                            .addParameter(
+                                ParameterSpec.builder("values", pairType, KModifier.VARARG)
                                     .build()
                             )
-                            .setter(
-                                FunSpec.setterBuilder()
-                                    .addParameter("values", listType)
-                                    .addStatement("this.%L(values.toMap())", FieldNamer.getSetterMapName(it.name))
-                                    .build()
-                            )
+                            .addStatement("this.%L(values.toMap())", FieldNamer.getSetterMapName(it.name))
                             .build()
                     }
 
                 // get list of builder functions in this package and append to it
-                val (funBuilders, propBuilders) = packagesToBuilders[type.className.packageName]
+                val (funBuilders, _) = packagesToBuilders[type.className.packageName]
                 funBuilders.add(builder.build())
-                propBuilders.addAll(repeatedSetters)
-                propBuilders.addAll(mapSetters)
+                funBuilders.addAll(repeatedSetters)
+                funBuilders.addAll(mapSetters)
             }
 
         // collect the builder functions into types

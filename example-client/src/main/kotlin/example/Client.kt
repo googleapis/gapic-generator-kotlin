@@ -18,6 +18,8 @@ package example
 
 import google.example.HelloServiceClient
 import google.example.HiRequest
+import google.example.tags
+import google.example.flags
 import io.grpc.ManagedChannelBuilder
 import kotlinx.coroutines.runBlocking
 
@@ -47,7 +49,17 @@ class Client {
 
         // call the API
         val result = client.hiThere(HiRequest {
+            // set a normal field
             query = "Hello!"
+
+            // set a repeated field
+            tags("greeting", "salutation")
+
+            // set a map field
+            flags(
+                "hello" to "hi",
+                "later" to "bye"
+            )
         })
 
         // print the result

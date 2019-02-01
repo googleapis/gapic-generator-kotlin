@@ -76,7 +76,12 @@ class ExampleServer(private val port: Int = 8080) {
 
         override fun hiThere(request: HiRequest, responseObserver: StreamObserver<HiResponse>) {
             val reply = HiResponse.newBuilder().apply {
-                result = "Hi there! You said: ${request.query}"
+                result = """
+                |Hi there! You queried: '${request.query}'
+                |
+                |  with tags: '${request.tagsList.joinToString(", ")}'
+                |  and flags: '${request.flagsMap.map { "${it.key} = ${it.value}" }.joinToString(", ")}'
+                """.trimMargin()
             }.build()
             responseObserver.onNext(reply)
             responseObserver.onCompleted()

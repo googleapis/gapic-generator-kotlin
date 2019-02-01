@@ -47,7 +47,7 @@ fun visionExample() = runBlocking {
     val result = client.batchAnnotateImages(listOf(
         AnnotateImageRequest {
             image = Image { content = imageData }
-            features = listOf(
+            features(
                 Feature { type = Feature.Type.FACE_DETECTION },
                 Feature { type = Feature.Type.LANDMARK_DETECTION }
             )

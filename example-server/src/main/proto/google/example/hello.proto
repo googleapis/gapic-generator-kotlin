@@ -26,6 +26,11 @@ service HelloService {
 
 message HiRequest {
     string query = 1;
+
+    // extra properties to demonstrate how the code generator
+    // works for repeated and map field types
+    repeated string tags = 2;
+    map<string, string> flags = 3;
 }
 
 message HiResponse {
