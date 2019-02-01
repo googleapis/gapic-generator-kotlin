@@ -16,11 +16,13 @@
 
 package com.google.api.kotlin.generator
 
+import com.google.api.kotlin.BuilderGenerator
 import com.google.api.kotlin.GeneratedSource
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.api.kotlin.util.FieldNamer
 import com.google.api.kotlin.util.asClassName
+import com.google.api.kotlin.util.describeMap
 import com.google.api.kotlin.util.isMap
 import com.google.api.kotlin.util.isRepeated
 import com.google.protobuf.DescriptorProtos
@@ -39,9 +41,9 @@ private val SKIP = listOf("Any", "Empty")
  * Generates an alternative builder for message types to replace the
  * Java builder pattern.
  */
-internal class BuilderGenerator {
+internal class DSLBuilderGenerator : BuilderGenerator {
 
-    fun generate(types: ProtobufTypeMapper): List<GeneratedSource> {
+    override fun generate(types: ProtobufTypeMapper): List<GeneratedSource> {
         // package name -> builder functions
         val packagesToBuilders = PackagesToBuilders()
 
@@ -84,7 +86,7 @@ internal class BuilderGenerator {
                     )
                     .addStatement("return %T.newBuilder().apply(init).build()", type.className)
 
-                // if this type has any repeated fields create another function for them
+                // create an extensions property for repeated fields
                 val repeatedSetters = type.proto.fieldList
                     .asSequence()
                     .filter { it.isRepeated() && !it.isMap(types) }
@@ -110,10 +112,40 @@ internal class BuilderGenerator {
                             .build()
                     }
 
+                // create an extensions property for map fields
+                val mapSetters = type.proto.fieldList
+                    .asSequence()
+                    .filter { it.isRepeated() && it.isMap(types) }
+                    .map {
+                        val (keyType, valueType) = it.describeMap(types)
+                        val listType = List::class.asClassName().parameterizedBy(
+                            Pair::class.asClassName().parameterizedBy(keyType.asClassName(types), valueType.asClassName(types))
+                        )
+                        val propertyName = FieldNamer.getFieldName(it.name)
+
+                        PropertySpec.builder(propertyName, listType)
+                            .receiver(builderType)
+                            .mutable(true)
+                            .getter(
+                                FunSpec.getterBuilder()
+                                    .addStatement("return this.%L.map { %T(it.key, it.value) }",
+                                        FieldNamer.getAccessorMapName(it.name), Pair::class.asTypeName())
+                                    .build()
+                            )
+                            .setter(
+                                FunSpec.setterBuilder()
+                                    .addParameter("values", listType)
+                                    .addStatement("this.%L(values.toMap())", FieldNamer.getSetterMapName(it.name))
+                                    .build()
+                            )
+                            .build()
+                    }
+
                 // get list of builder functions in this package and append to it
                 val (funBuilders, propBuilders) = packagesToBuilders[type.className.packageName]
                 funBuilders.add(builder.build())
                 propBuilders.addAll(repeatedSetters)
+                propBuilders.addAll(mapSetters)
             }
 
         // collect the builder functions into types

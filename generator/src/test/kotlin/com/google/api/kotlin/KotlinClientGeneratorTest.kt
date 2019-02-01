@@ -19,7 +19,6 @@ package com.google.api.kotlin
 import com.google.api.kotlin.config.Configuration
 import com.google.api.kotlin.config.LegacyConfigurationFactory
 import com.google.api.kotlin.config.ServiceOptions
-import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.common.truth.Truth.assertThat
 import com.google.protobuf.DescriptorProtos
@@ -34,7 +33,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeSpec
 import kotlin.test.Test
 
-internal class KotlinClientGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
+internal class KotlinClientGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `generates a class with context and a license`() {
@@ -55,7 +54,7 @@ internal class KotlinClientGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
         }
 
         val generator = KotlinClientGenerator(clientGenerator, clientConfigFactory)
-        val result = generator.generate(generatorRequest, getMockedTypeMap())
+        val result = generator.generate(generatorRequest, typeMap)
 
         assertThat(result.sourceCode.fileCount).isEqualTo(1)
         val testClient = result.sourceCode.fileList.first { it.name == "google/example/TestServiceClient.kt" }
@@ -65,8 +64,8 @@ internal class KotlinClientGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
         verify(clientGenerator).generateServiceClient(check {
             assertThat(it.className).isEqualTo(ClassName("google.example", "TestServiceClient"))
             assertThat(it.metadata).isEqualTo(config)
-            assertThat(it.proto).isEqualTo(testProto)
-            assertThat(it.service).isEqualTo(testProto.serviceList.find { s -> s.name == "TestService" })
+            assertThat(it.proto).isEqualTo(proto)
+            assertThat(it.service).isEqualTo(proto.serviceList.find { s -> s.name == "TestService" })
         })
     }
 
@@ -101,7 +100,7 @@ internal class KotlinClientGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
 
         val generator =
             KotlinClientGenerator(clientGenerator, clientConfigFactory, builderGenerator)
-        val result = generator.generate(generatorRequest, getMockedTypeMap())
+        val result = generator.generate(generatorRequest, typeMap)
 
         assertThat(result.sourceCode.fileCount).isEqualTo(2)
         assertThat(result.sourceCode.fileList.map { it.name }).containsExactly(
@@ -145,7 +144,7 @@ internal class KotlinClientGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
         }
 
         val generator = KotlinClientGenerator(clientGenerator, clientConfigFactory)
-        val result = generator.generate(generatorRequest, getMockedTypeMap())
+        val result = generator.generate(generatorRequest, typeMap)
 
         assertThat(result.sourceCode.fileCount).isEqualTo(0)
         assertThat(result.testCode.fileCount).isEqualTo(0)

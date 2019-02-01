@@ -16,9 +16,11 @@
 
 package com.google.api.kotlin.generator
 
+import com.google.api.kotlin.BaseBuilderGeneratorTest
 import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.TypeNamePair
+import com.google.api.kotlin.kotlinBuilders
 import com.google.common.truth.Truth.assertThat
 import com.google.protobuf.DescriptorProtos
 import com.nhaarman.mockito_kotlin.any
@@ -27,7 +29,7 @@ import com.nhaarman.mockito_kotlin.mock
 import com.squareup.kotlinpoet.ClassName
 import kotlin.test.Test
 
-internal class BuilderGeneratorTest {
+internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerator()) {
 
     @Test
     fun `generates builders`() {
@@ -43,7 +45,7 @@ internal class BuilderGeneratorTest {
         }
 
         // build types
-        val files = BuilderGenerator().generate(typeMap)
+        val files = DSLBuilderGenerator().generate(typeMap)
 
         assertThat(files).hasSize(1)
         val file = files.first()
@@ -88,7 +90,7 @@ internal class BuilderGeneratorTest {
         }
 
         // build types
-        val files = BuilderGenerator().generate(typeMap)
+        val files = DSLBuilderGenerator().generate(typeMap)
 
         assertThat(files).hasSize(1)
         val file = files.first()
@@ -145,7 +147,7 @@ internal class BuilderGeneratorTest {
         }
 
         // build types
-        val files = BuilderGenerator().generate(typeMap)
+        val files = DSLBuilderGenerator().generate(typeMap)
 
         assertThat(files).hasSize(1)
         val file = files.first()
@@ -169,7 +171,7 @@ internal class BuilderGeneratorTest {
     }
 
     @Test
-    fun `generates repeated setters with primities`() {
+    fun `generates repeated setters with primitives`() {
         val types = listOf(
             "com.google.api.Foo"
         )
@@ -189,7 +191,7 @@ internal class BuilderGeneratorTest {
         }
 
         // build types
-        val files = BuilderGenerator().generate(typeMap)
+        val files = DSLBuilderGenerator().generate(typeMap)
 
         assertThat(files).hasSize(1)
         val file = files.first()
@@ -226,7 +228,7 @@ internal class BuilderGeneratorTest {
         }
 
         // build types
-        val files = BuilderGenerator().generate(typeMap)
+        val files = DSLBuilderGenerator().generate(typeMap)
 
         assertThat(files).isEmpty()
     }
@@ -246,7 +248,7 @@ internal class BuilderGeneratorTest {
         }
 
         // build types
-        val files = BuilderGenerator().generate(typeMap)
+        val files = DSLBuilderGenerator().generate(typeMap)
 
         assertThat(files).hasSize(1)
         val file = files.first()
@@ -256,5 +258,83 @@ internal class BuilderGeneratorTest {
         val funs = file.functions
         assertThat(funs).hasSize(1)
         assertThat(funs.first().name).isEqualTo("Surprise")
+    }
+
+    @Test
+    fun `generates repeated getters and setters`() {
+        val builders = generate().kotlinBuilders()
+        var props = builders.properties.filter { it.name == "lotsMore" }
+        assertThat(props).hasSize(1)
+
+        var prop = props.first()
+        assertThat(prop.toString().asNormalizedString()).isEqualTo(
+            """
+            |var google.example.Detail.Builder.lotsMore: kotlin.collections.List<google.example.MoreDetail>
+            |    get() = this.lotsMoreList
+            |    set(values) { this.addAllLotsMore(values) }
+            """.asNormalizedString()
+        )
+
+        props = builders.properties.filter { it.name == "moreDetails" }
+        assertThat(props).hasSize(1)
+
+        prop = props.first()
+        assertThat(prop.toString().asNormalizedString()).isEqualTo(
+            """
+            |var google.example.TestRequest.Builder.moreDetails: kotlin.collections.List<google.example.Detail>
+            |    get() = this.moreDetailsList
+            |    set(values) { this.addAllMoreDetails(values) }
+            """.asNormalizedString()
+        )
+
+        props = builders.properties.filter { it.name == "responses" }
+        assertThat(props).hasSize(2)
+        assertThat(props.map { it.toString().asNormalizedString() }).containsExactly(
+            """
+            |var google.example.PagedResponse.Builder.responses: kotlin.collections.List<kotlin.Int>
+            |    get() = this.responsesList
+            |    set(values) { this.addAllResponses(values) }
+            """.asNormalizedString(),
+            """
+            |var google.example.StillNotPagedResponse.Builder.responses: kotlin.collections.List<kotlin.String>
+            |    get() = this.responsesList
+            |    set(values) { this.addAllResponses(values) }
+            """.asNormalizedString())
+    }
+
+    @Test
+    fun `generates map getters and setters`() {
+        val builders = generate().kotlinBuilders()
+        val props = builders.properties.filter { it.name == "tonsMore" }
+        assertThat(props).hasSize(1)
+
+        val prop = props.first()
+        assertThat(prop.toString().asNormalizedString()).isEqualTo(
+            """
+            |var google.example.Detail.Builder.tonsMore: kotlin.collections.List<kotlin.Pair<kotlin.String, google.example.MoreDetail>>
+            |    get() = this.tonsMoreMap.map { kotlin.Pair(it.key, it.value) }
+            |    set(values) { this.putAllTonsMore(values.toMap()) }
+            """.asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `generates builder functions`() {
+        val builders = generate().kotlinBuilders()
+        val funs = builders.functions
+
+        assertThat(funs).hasSize(16)
+
+        // verify one of them
+        val b = funs.filter { it.name == "Result" }
+        assertThat(b).hasSize(1)
+        assertThat(b.first().toString().asNormalizedString()).isEqualTo(
+            """
+            |fun Result(
+            |    init: (@com.google.api.kgax.ProtoBuilder google.example.Result.Builder).() -> kotlin.Unit
+            |): google.example.Result =
+            |    google.example.Result.newBuilder().apply(init).build()
+            """.asNormalizedString()
+        )
     }
 }
