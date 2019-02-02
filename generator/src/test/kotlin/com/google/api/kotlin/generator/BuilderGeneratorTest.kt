@@ -16,9 +16,11 @@
 
 package com.google.api.kotlin.generator
 
+import com.google.api.kotlin.BaseBuilderGeneratorTest
 import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.TypeNamePair
+import com.google.api.kotlin.kotlinBuilders
 import com.google.common.truth.Truth.assertThat
 import com.google.protobuf.DescriptorProtos
 import com.nhaarman.mockito_kotlin.any
@@ -27,7 +29,7 @@ import com.nhaarman.mockito_kotlin.mock
 import com.squareup.kotlinpoet.ClassName
 import kotlin.test.Test
 
-internal class BuilderGeneratorTest {
+internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerator()) {
 
     @Test
     fun `generates builders`() {
@@ -43,7 +45,7 @@ internal class BuilderGeneratorTest {
         }
 
         // build types
-        val files = BuilderGenerator().generate(typeMap)
+        val files = DSLBuilderGenerator().generate(typeMap)
 
         assertThat(files).hasSize(1)
         val file = files.first()
@@ -88,7 +90,7 @@ internal class BuilderGeneratorTest {
         }
 
         // build types
-        val files = BuilderGenerator().generate(typeMap)
+        val files = DSLBuilderGenerator().generate(typeMap)
 
         assertThat(files).hasSize(1)
         val file = files.first()
@@ -120,7 +122,7 @@ internal class BuilderGeneratorTest {
     }
 
     @Test
-    fun `generates repeated setters`() {
+    fun `generates repeated helpers`() {
         val types = listOf(
             "com.google.api.Foo"
         )
@@ -145,31 +147,31 @@ internal class BuilderGeneratorTest {
         }
 
         // build types
-        val files = BuilderGenerator().generate(typeMap)
+        val files = DSLBuilderGenerator().generate(typeMap)
 
         assertThat(files).hasSize(1)
         val file = files.first()
         assertThat(file.packageName).isEqualTo("com.google.api")
         assertThat(file.name).isEqualTo("KotlinBuilders")
 
-        val funs = file.functions
-        assertThat(funs).hasSize(1)
+        val builderFuns = file.functions.filterNot { it.name == "responses" }
+        assertThat(builderFuns).hasSize(1)
 
-        val props = file.properties
-        assertThat(props).hasSize(1)
+        val repeatedFuns = file.functions.filter { it.name == "responses" }
+        assertThat(repeatedFuns).hasSize(1)
 
-        val repeatedSetter = props.first()
+        val repeatedSetter = repeatedFuns.first()
         assertThat(repeatedSetter.toString().asNormalizedString()).isEqualTo(
             """
-            |var com.google.api.Foo.Builder.responses: kotlin.collections.List<com.google.api.Response>
-            |    get() = this.responsesList
-            |    set(values) { this.addAllResponses(values) }
+            |fun com.google.api.Foo.Builder.responses(vararg values: com.google.api.Response) {
+            |    this.addAllResponses(values.toList())
+            |}
             """.asNormalizedString()
         )
     }
 
     @Test
-    fun `generates repeated setters with primities`() {
+    fun `generates repeated setters with primitives`() {
         val types = listOf(
             "com.google.api.Foo"
         )
@@ -189,25 +191,25 @@ internal class BuilderGeneratorTest {
         }
 
         // build types
-        val files = BuilderGenerator().generate(typeMap)
+        val files = DSLBuilderGenerator().generate(typeMap)
 
         assertThat(files).hasSize(1)
         val file = files.first()
         assertThat(file.packageName).isEqualTo("com.google.api")
         assertThat(file.name).isEqualTo("KotlinBuilders")
 
-        val funs = file.functions
-        assertThat(funs).hasSize(1)
+        val builderFuns = file.functions.filterNot { it.name == "theStrings" }
+        assertThat(builderFuns).hasSize(1)
 
-        val props = file.properties
-        assertThat(props).hasSize(1)
+        val repeatedFuns = file.functions.filter { it.name == "theStrings" }
+        assertThat(repeatedFuns).hasSize(1)
 
-        val repeatedSetter = props.first()
+        val repeatedSetter = repeatedFuns.first()
         assertThat(repeatedSetter.toString().asNormalizedString()).isEqualTo(
             """
-            |var com.google.api.Foo.Builder.theStrings: kotlin.collections.List<kotlin.String>
-            |    get() = this.theStringsList
-            |    set(values) { this.addAllTheStrings(values) }
+            |fun com.google.api.Foo.Builder.theStrings(vararg values: kotlin.String) {
+            |    this.addAllTheStrings(values.toList())
+            |}
             """.asNormalizedString()
         )
     }
@@ -226,7 +228,7 @@ internal class BuilderGeneratorTest {
         }
 
         // build types
-        val files = BuilderGenerator().generate(typeMap)
+        val files = DSLBuilderGenerator().generate(typeMap)
 
         assertThat(files).isEmpty()
     }
@@ -246,7 +248,7 @@ internal class BuilderGeneratorTest {
         }
 
         // build types
-        val files = BuilderGenerator().generate(typeMap)
+        val files = DSLBuilderGenerator().generate(typeMap)
 
         assertThat(files).hasSize(1)
         val file = files.first()
@@ -256,5 +258,85 @@ internal class BuilderGeneratorTest {
         val funs = file.functions
         assertThat(funs).hasSize(1)
         assertThat(funs.first().name).isEqualTo("Surprise")
+    }
+
+    @Test
+    fun `generates repeated getters and setters`() {
+        val builders = generate().kotlinBuilders()
+        var props = builders.functions.filter { it.name == "lotsMore" }
+        assertThat(props).hasSize(1)
+
+        var prop = props.first()
+        assertThat(prop.toString().asNormalizedString()).isEqualTo(
+            """
+            |fun google.example.Detail.Builder.lotsMore(vararg values: google.example.MoreDetail) {
+            |    this.addAllLotsMore(values.toList())
+            |}
+            """.asNormalizedString()
+        )
+
+        props = builders.functions.filter { it.name == "moreDetails" }
+        assertThat(props).hasSize(1)
+
+        prop = props.first()
+        assertThat(prop.toString().asNormalizedString()).isEqualTo(
+            """
+            |fun google.example.TestRequest.Builder.moreDetails(vararg values: google.example.Detail) {
+            |    this.addAllMoreDetails(values.toList())
+            |}
+            """.asNormalizedString()
+        )
+
+        props = builders.functions.filter { it.name == "responses" }
+        assertThat(props).hasSize(2)
+        assertThat(props.map { it.toString().asNormalizedString() }).containsExactly(
+            """
+            |fun google.example.PagedResponse.Builder.responses(vararg values: kotlin.Int) {
+            |    this.addAllResponses(values.toList())
+            |}
+            """.asNormalizedString(),
+            """
+            |fun google.example.StillNotPagedResponse.Builder.responses(vararg values: kotlin.String) {
+            |    this.addAllResponses(values.toList())
+            |}
+            """.asNormalizedString())
+    }
+
+    @Test
+    fun `generates map getters and setters`() {
+        val builders = generate().kotlinBuilders()
+        val props = builders.functions.filter { it.name == "tonsMore" }
+        assertThat(props).hasSize(1)
+
+        val prop = props.first()
+        assertThat(prop.toString().asNormalizedString()).isEqualTo(
+            """
+            |fun google.example.Detail.Builder.tonsMore(
+            |    vararg values: kotlin.Pair<kotlin.String, google.example.MoreDetail>
+            |) {
+            |    this.putAllTonsMore(values.toMap())
+            |}
+            """.asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `generates builder functions`() {
+        val builders = generate().kotlinBuilders()
+        val funs = builders.functions
+
+        assertThat(funs).hasSize(21)
+
+        // verify one of them
+        val b = funs.filter { it.name == "Result" }
+        assertThat(b).hasSize(1)
+        assertThat(b.first().toString().asNormalizedString()).isEqualTo(
+            """
+            |fun Result(
+            |    init: (@com.google.api.kgax.ProtoBuilder google.example.Result.Builder).() -> kotlin.Unit
+            |): google.example.Result =
+            |    google.example.Result.newBuilder().apply(init).build()
+            """.asNormalizedString()
+        )
     }
 }

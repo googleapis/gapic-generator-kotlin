@@ -30,6 +30,7 @@ message Detail {
     bool useful = 1;
     MoreDetail even_more = 2;
     repeated MoreDetail lots_more = 3;
+    map<string, MoreDetail> tons_more = 4;
 }
 
 message MoreDetail {

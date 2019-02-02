@@ -16,7 +16,7 @@
 
 package com.google.api.kotlin.generator
 
-import com.google.api.kotlin.BaseGeneratorTest
+import com.google.api.kotlin.BaseClientGeneratorTest
 import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.LongRunningResponse
@@ -32,7 +32,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.kotlinpoet.ClassName
 import kotlin.test.Test
 
-internal class GRPCGeneratorTest : BaseGeneratorTest(GRPCGenerator()) {
+internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `Generates with class documentation`() {

@@ -19,7 +19,6 @@ package com.google.api.kotlin
 import com.google.api.kotlin.config.Configuration
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.ServiceOptions
-import com.google.api.kotlin.generator.BuilderGenerator
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.compiler.PluginProtos
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest
@@ -188,6 +187,13 @@ internal interface ClientGenerator {
 
     /** Generate the client. */
     fun generateServiceClient(context: GeneratorContext): List<GeneratedArtifact>
+}
+
+/** Generator for message builders */
+internal interface BuilderGenerator {
+
+    /** Generator the builders */
+    fun generate(types: ProtobufTypeMapper): List<GeneratedSource>
 }
 
 /** Generate a configuration from a protocol buffer file. */

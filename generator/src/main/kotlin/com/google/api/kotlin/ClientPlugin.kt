@@ -19,7 +19,7 @@ package com.google.api.kotlin
 import com.google.api.kotlin.config.ProtobufExtensionRegistry
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.asSwappableConfiguration
-import com.google.api.kotlin.generator.BuilderGenerator
+import com.google.api.kotlin.generator.DSLBuilderGenerator
 import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.api.kotlin.types.isNotWellKnown
 import com.google.devtools.common.options.OptionsParser
@@ -86,7 +86,7 @@ fun main(args: Array<String>) {
             else -> GRPCGenerator()
         },
         options.asSwappableConfiguration(typeMap),
-        if (options.noBuilders) null else BuilderGenerator()
+        if (options.noBuilders) null else DSLBuilderGenerator()
     )
     val (sourceCode, testCode) = generator.generate(request, typeMap, options) { proto ->
         if (options.includeGoogleCommon) true else proto.isNotWellKnown()

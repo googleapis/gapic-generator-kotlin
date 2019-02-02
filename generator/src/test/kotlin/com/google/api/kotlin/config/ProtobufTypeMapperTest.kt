@@ -16,7 +16,7 @@
 
 package com.google.api.kotlin.config
 
-import com.google.api.kotlin.BaseGeneratorTest
+import com.google.api.kotlin.BaseClientGeneratorTest
 import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.common.truth.Truth.assertThat
 import com.google.protobuf.DescriptorProtos
@@ -24,12 +24,10 @@ import com.squareup.kotlinpoet.ClassName
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
-internal class ProtobufTypeMapperTest : BaseGeneratorTest(GRPCGenerator()) {
+internal class ProtobufTypeMapperTest : BaseClientGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `maps all Kotlin types`() {
-        val mapper = ProtobufTypeMapper.fromProtos(listOf(testProto, testTypesProto))
-
         val kotlinTypes = listOf(
             "google.example.TestRequest",
             "google.example.TestResponse",
@@ -42,74 +40,71 @@ internal class ProtobufTypeMapperTest : BaseGeneratorTest(GRPCGenerator()) {
             "google.example.NotPagedResponse",
             "google.example.StillNotPagedResponse",
             "google.example.SomeResponse",
-            "google.example.SomeMetadata"
+            "google.example.SomeMetadata",
+            "google.example.FooRequest",
+            "google.example.BarResponse",
+            "google.example.TheLongRunningResponse",
+            "google.example.TheLongRunningMetadata"
         )
+        val kotlinMapTypes = listOf("google.example.Detail.TonsMoreEntry")
 
-        assertThat(mapper.getAllKotlinTypes()).containsExactlyElementsIn(kotlinTypes)
-        assertThat(mapper.getAllTypes()).containsExactlyElementsIn(
-            kotlinTypes.map { TypeNamePair(".$it", it) }
+        // filter out the normal google types
+        val kTypes = typeMap.getAllKotlinTypes().filterNot { it.startsWith("com.google.") }
+        assertThat(kTypes).containsExactlyElementsIn(kotlinTypes)
+
+        val aTypes = typeMap.getAllTypes().filterNot { it.kotlinName.startsWith("com.google.") }
+        assertThat(aTypes).containsExactlyElementsIn(
+            (kotlinTypes + kotlinMapTypes).map { TypeNamePair(".$it", it) }
         )
     }
 
     @Test
     fun `maps all enums`() {
-        val mapper = ProtobufTypeMapper.fromProtos(listOf(testProto, testTypesProto))
-
-        assertThat(mapper.hasProtoEnumDescriptor(".google.example.MoreDetail.HowMuchMore")).isTrue()
-        assertThat(mapper.getProtoEnumDescriptor(".google.example.MoreDetail.HowMuchMore").name)
+        assertThat(typeMap.hasProtoEnumDescriptor(".google.example.MoreDetail.HowMuchMore")).isTrue()
+        assertThat(typeMap.getProtoEnumDescriptor(".google.example.MoreDetail.HowMuchMore").name)
             .isEqualTo("HowMuchMore")
-        assertThat(mapper.hasProtoEnumDescriptor(".google.example.AnEnum")).isTrue()
-        assertThat(mapper.getProtoEnumDescriptor(".google.example.AnEnum").name)
+        assertThat(typeMap.hasProtoEnumDescriptor(".google.example.AnEnum")).isTrue()
+        assertThat(typeMap.getProtoEnumDescriptor(".google.example.AnEnum").name)
             .isEqualTo("AnEnum")
     }
 
     @Test
     fun `maps type descriptors`() {
-        val mapper = ProtobufTypeMapper.fromProtos(listOf(testProto, testTypesProto))
-
-        assertThat(mapper.hasProtoTypeDescriptor(".google.example.Result")).isTrue()
-        assertThat(mapper.getProtoTypeDescriptor(".google.example.Result").name)
+        assertThat(typeMap.hasProtoTypeDescriptor(".google.example.Result")).isTrue()
+        assertThat(typeMap.getProtoTypeDescriptor(".google.example.Result").name)
             .isEqualTo("Result")
     }
 
     @Test
     fun `throws on non enum`() {
-        val mapper = ProtobufTypeMapper.fromProtos(listOf(testProto, testTypesProto))
-
-        assertThat(mapper.hasProtoEnumDescriptor(".google.example.Result")).isFalse()
+        assertThat(typeMap.hasProtoEnumDescriptor(".google.example.Result")).isFalse()
         assertFailsWith(IllegalArgumentException::class) {
-            mapper.getProtoEnumDescriptor(".google.example.Result")
+            typeMap.getProtoEnumDescriptor(".google.example.Result")
         }
     }
 
     @Test
     fun `throws on non type`() {
-        val mapper = ProtobufTypeMapper.fromProtos(listOf(testProto, testTypesProto))
-
-        assertThat(mapper.hasProtoTypeDescriptor(".google.example.AnEnum")).isFalse()
+        assertThat(typeMap.hasProtoTypeDescriptor(".google.example.AnEnum")).isFalse()
         assertFailsWith(IllegalArgumentException::class) {
-            mapper.getProtoTypeDescriptor(".google.example.AnEnum")
+            typeMap.getProtoTypeDescriptor(".google.example.AnEnum")
         }
     }
 
     @Test
     fun `gets Kotlin types`() {
-        val mapper = ProtobufTypeMapper.fromProtos(listOf(testProto, testTypesProto))
-
-        assertThat(mapper.getKotlinType(".google.example.MoreDetail"))
+        assertThat(typeMap.getKotlinType(".google.example.MoreDetail"))
             .isEqualTo(ClassName("google.example", "MoreDetail"))
-        assertThat(mapper.getKotlinType(".google.example.AnEnum"))
+        assertThat(typeMap.getKotlinType(".google.example.AnEnum"))
             .isEqualTo(ClassName("google.example", "AnEnum"))
-        assertThat(mapper.getKotlinType(".google.example.MoreDetail.HowMuchMore"))
+        assertThat(typeMap.getKotlinType(".google.example.MoreDetail.HowMuchMore"))
             .isEqualTo(ClassName("google.example", "MoreDetail.HowMuchMore"))
     }
 
     @Test
     fun `throws on invalid Kotlin types`() {
-        val mapper = ProtobufTypeMapper.fromProtos(listOf(testProto, testTypesProto))
-
         assertFailsWith(IllegalArgumentException::class) {
-            mapper.getKotlinType(".google.foo.Bar")
+            typeMap.getKotlinType(".google.foo.Bar")
         }
     }
 
@@ -121,9 +116,11 @@ internal class ProtobufTypeMapperTest : BaseGeneratorTest(GRPCGenerator()) {
         val proto = DescriptorProtos.FileDescriptorProto.newBuilder()
             .setPackage("my.package")
             .setName("great_proto.proto")
-            .setOptions(DescriptorProtos.FileOptions.newBuilder()
-                .setJavaMultipleFiles(true)
-                .build())
+            .setOptions(
+                DescriptorProtos.FileOptions.newBuilder()
+                    .setJavaMultipleFiles(true)
+                    .build()
+            )
             .addMessageType(message)
             .build()
 
@@ -142,10 +139,12 @@ internal class ProtobufTypeMapperTest : BaseGeneratorTest(GRPCGenerator()) {
         val proto = DescriptorProtos.FileDescriptorProto.newBuilder()
             .setPackage("my.package")
             .setName("great_proto.proto")
-            .setOptions(DescriptorProtos.FileOptions.newBuilder()
-                .setJavaMultipleFiles(false)
-                .setJavaOuterClassname("OutAndAbout")
-                .build())
+            .setOptions(
+                DescriptorProtos.FileOptions.newBuilder()
+                    .setJavaMultipleFiles(false)
+                    .setJavaOuterClassname("OutAndAbout")
+                    .build()
+            )
             .addMessageType(message)
             .build()
 
@@ -164,10 +163,12 @@ internal class ProtobufTypeMapperTest : BaseGeneratorTest(GRPCGenerator()) {
         val proto = DescriptorProtos.FileDescriptorProto.newBuilder()
             .setPackage("my.package")
             .setName("/one/two/great_proto.proto")
-            .setOptions(DescriptorProtos.FileOptions.newBuilder()
-                .setJavaMultipleFiles(false)
-                .setJavaOuterClassname("OutAndAbout")
-                .build())
+            .setOptions(
+                DescriptorProtos.FileOptions.newBuilder()
+                    .setJavaMultipleFiles(false)
+                    .setJavaOuterClassname("OutAndAbout")
+                    .build()
+            )
             .addMessageType(message)
             .build()
 
@@ -186,9 +187,11 @@ internal class ProtobufTypeMapperTest : BaseGeneratorTest(GRPCGenerator()) {
         val proto = DescriptorProtos.FileDescriptorProto.newBuilder()
             .setPackage("my.package")
             .setName("/one/two/great_proto.proto")
-            .setOptions(DescriptorProtos.FileOptions.newBuilder()
-                .setJavaMultipleFiles(false)
-                .build())
+            .setOptions(
+                DescriptorProtos.FileOptions.newBuilder()
+                    .setJavaMultipleFiles(false)
+                    .build()
+            )
             .addMessageType(message)
             .build()
 

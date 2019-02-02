@@ -16,7 +16,7 @@
 
 package com.google.api.kotlin.generator.grpc
 
-import com.google.api.kotlin.BaseGeneratorTest
+import com.google.api.kotlin.BaseClientGeneratorTest
 import com.google.api.kotlin.ClientPluginOptions
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.asNormalizedString
@@ -118,7 +118,7 @@ internal class StubsImplTest {
 internal abstract class StubsImplTestContent(
     invocationOptions: ClientPluginOptions,
     private val marshallerClassName: String
-) : BaseGeneratorTest(GRPCGenerator(), invocationOptions) {
+) : BaseClientGeneratorTest(GRPCGenerator(), invocationOptions) {
     private val opts = ServiceOptions(methods = listOf(MethodOptions(name = "Test")))
 
     @Test

@@ -16,7 +16,7 @@
 
 package com.google.api.kotlin.generator
 
-import com.google.api.kotlin.BaseGeneratorTest
+import com.google.api.kotlin.BaseClientGeneratorTest
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.config.PropertyPath
 import com.google.api.kotlin.config.ProtobufTypeMapper
@@ -41,26 +41,26 @@ import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
 import kotlin.test.Test
 
-internal class ProtoFieldInfoTest : BaseGeneratorTest(GRPCGenerator()) {
+internal class ProtoFieldInfoTest : BaseClientGeneratorTest(GRPCGenerator()) {
 
     @Test
     fun `can find service level comments`() {
-        val service = testProto.serviceList.find { it.name == "TestService" }!!
+        val service = services.find { it.name == "TestService" }!!
         val method = service.methodList.find { it.name == "Test" }!!
 
-        val comments = testProto.getMethodComments(service, method)
+        val comments = proto.getMethodComments(service, method)
 
         assertThat(comments?.trim()).isEqualTo("This is the test method")
     }
 
     @Test
     fun `can find parameter comments`() {
-        val message = testProto.messageTypeList.find { it.name == "TestRequest" }!!
+        val message = proto.messageTypeList.find { it.name == "TestRequest" }!!
         val field = message.fieldList.find { it.name == "query" }!!
         val kotlinType = ClassName("a", "Foo")
 
         val fieldInfo =
-            ProtoFieldInfo(testProto, message, field, -1, kotlinType)
+            ProtoFieldInfo(proto, message, field, -1, kotlinType)
         val comment = fieldInfo.file.getParameterComments(fieldInfo)
 
         assertThat(comment?.trim()).isEqualTo("the query")
