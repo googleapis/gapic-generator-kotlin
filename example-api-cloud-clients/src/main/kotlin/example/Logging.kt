@@ -16,9 +16,9 @@
 
 package example
 
-import com.google.api.MonitoredResource
-import com.google.logging.v2.LogEntry
+import com.google.api.monitoredResource
 import com.google.logging.v2.LoggingServiceV2Client
+import com.google.logging.v2.logEntry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import java.util.Date
@@ -43,11 +43,11 @@ fun loggingExample() = runBlocking {
     // resources to use
     val project = "projects/$projectId"
     val log = "$project/logs/testLog-${Date().time}"
-    val globalResource = MonitoredResource { type = "global" }
+    val globalResource = monitoredResource { type = "global" }
 
     // ensure we have some logs to read
     val entries = List(40) {
-        LogEntry {
+        logEntry {
             resource = globalResource
             logName = log
             textPayload = "log number: ${it + 1}"

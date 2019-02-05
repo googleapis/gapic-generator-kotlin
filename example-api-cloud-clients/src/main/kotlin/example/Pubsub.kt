@@ -18,11 +18,11 @@ package example
 
 import com.google.protobuf.ByteString
 import com.google.pubsub.v1.PublisherClient
-import com.google.pubsub.v1.PubsubMessage
-import com.google.pubsub.v1.PushConfig
 import com.google.pubsub.v1.ReceivedMessage
 import com.google.pubsub.v1.SubscriberClient
 import com.google.pubsub.v1.Topic
+import com.google.pubsub.v1.pubsubMessage
+import com.google.pubsub.v1.pushConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
@@ -96,7 +96,7 @@ private class Publisher(
 
                 // send a new message
                 client.publish(topic.name, listOf(
-                    PubsubMessage {
+                    pubsubMessage {
                         data = "This is random: ${Math.random()}".asByteString()
                     }
                 ))
@@ -141,7 +141,7 @@ private class Subscriber(
 
     /** Start listening and print incoming messages */
     suspend fun start() = coroutineScope {
-        val sub = client.createSubscription(subscription, topic.name, PushConfig {}, 10).body
+        val sub = client.createSubscription(subscription, topic.name, pushConfig {}, 10).body
         println("Created subscription: ${sub.name}")
 
         // pool for new messages

@@ -8,11 +8,11 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import com.google.api.examples.kotlin.util.AudioEmitter
 import com.google.cloud.dialogflow.v2.AudioEncoding
-import com.google.cloud.dialogflow.v2.InputAudioConfig
-import com.google.cloud.dialogflow.v2.QueryInput
 import com.google.cloud.dialogflow.v2.SessionsClient
-import com.google.cloud.dialogflow.v2.StreamingDetectIntentRequest
 import com.google.cloud.dialogflow.v2.StreamingDetectIntentResponse
+import com.google.cloud.dialogflow.v2.inputAudioConfig
+import com.google.cloud.dialogflow.v2.queryInput
+import com.google.cloud.dialogflow.v2.streamingDetectIntentRequest
 import com.google.gson.Gson
 import kotlinx.android.synthetic.main.activity_dialogflow.*
 import kotlinx.coroutines.CoroutineScope
@@ -145,8 +145,8 @@ class DialogflowActivity : AppCompatActivity(), CoroutineScope {
     private suspend fun captureAudio(sessionId: String, duration: Long = 50_000) = produce {
         val streams = client.streamingDetectIntent(
             "projects/$projectId/agent/sessions/$sessionId",
-            QueryInput {
-                audioConfig = InputAudioConfig {
+            queryInput {
+                audioConfig = inputAudioConfig {
                     languageCode = "en-US"
                     audioEncoding = AudioEncoding.AUDIO_ENCODING_LINEAR_16
                     sampleRateHertz = 16000
@@ -156,7 +156,7 @@ class DialogflowActivity : AppCompatActivity(), CoroutineScope {
         // pipe audio to the server
         launch(Dispatchers.IO) {
             for (bytes in audioEmitter.start(this)) {
-                streams.requests.send(StreamingDetectIntentRequest {
+                streams.requests.send(streamingDetectIntentRequest {
                     inputAudio = bytes
                 })
             }

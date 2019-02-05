@@ -151,8 +151,10 @@ internal class ClientPluginTest {
 
         assertThat(client).contains("class SimpleServiceClient")
         assertThat(clientStub).contains("class SimpleServiceClientStub")
-        assertThat(builders).contains("fun SimpleRequest")
-        assertThat(builders).contains("fun SimpleResponse")
+        assertThat(builders).contains("inline class SimpleRequestDsl")
+        assertThat(builders).contains("inline class SimpleResponseDsl")
+        assertThat(builders).contains("fun simpleRequest(init: SimpleRequestDsl.() -> Unit): SimpleRequest")
+        assertThat(builders).contains("fun simpleResponse(init: SimpleResponseDsl.() -> Unit): SimpleResponse")
     }
 
     private fun verifyTests(directory: File) {
