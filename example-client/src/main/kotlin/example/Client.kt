@@ -17,7 +17,6 @@
 package example
 
 import google.example.HelloServiceClient
-import google.example.HiRequest
 import google.example.hiRequest
 import io.grpc.ManagedChannelBuilder
 import kotlinx.coroutines.runBlocking
