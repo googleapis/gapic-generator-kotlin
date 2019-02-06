@@ -18,6 +18,7 @@ package com.google.api.kotlin.generator
 
 import com.google.api.kotlin.BaseBuilderGeneratorTest
 import com.google.api.kotlin.GeneratedSource
+import com.google.api.kotlin.MockedProtoUtil
 import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.TypeNamePair
@@ -34,50 +35,49 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
 
     @Test
     fun `generates builders`() {
-        val types = listOf(
-            "com.google.api.Foo",
-            "com.google.api.Bar"
-        )
-        val typeMap: ProtobufTypeMapper = mock {
-            on { getAllTypes() }.thenReturn(types.map { TypeNamePair(".$it", it) })
-            on { getProtoTypeDescriptor(any()) }.thenReturn(
-                DescriptorProtos.DescriptorProto.newBuilder().build()
-            )
-        }
+        val mocked = MockedProtoUtil.getBasicMockedProto()
 
         // build types
-        val files = DSLBuilderGenerator().generate(typeMap)
+        val files = DSLBuilderGenerator().generate(mocked.typeMap)
 
-        assertThat(files).hasSize(1)
-        val file = files.first()
-        assertThat(file.packageName).isEqualTo("com.google.api")
-        assertThat(file.name).isEqualTo("KotlinBuilders")
+        assertThat(files.map { it.packageName }).containsExactly("test", "test.the")
+        assertThat(files.map { it.name }).containsExactlyElementsIn(Array(2) { "KotlinBuilders" })
 
-        assertThat(file.types).hasSize(2)
-        assertThat(file.types.map { it.toString().asNormalizedString() }).containsExactly(
+        assertThat(files.flatMap { f -> f.types.map { it.toString().asNormalizedString() } }).containsExactly(
             """
             |@com.google.api.kgax.ProtoBuilder
-            |inline class FooDsl(val builder: com.google.api.Foo.Builder)
+            |inline class InputDsl(val builder: test.the.Input.Builder) {
+            |    inline var str: kotlin.String
+            |        get() = builder.str
+            |        set(value) { builder.str = value }
+            |
+            |    inline var foo: test.Bar
+            |        get() = builder.foo
+            |        set(value) { builder.foo = value }
+            |}
             """.asNormalizedString(),
             """
             |@com.google.api.kgax.ProtoBuilder
-            |inline class BarDsl(val builder: com.google.api.Bar.Builder)
+            |inline class BarDsl(val builder: test.Bar.Builder) {
+            |    inline var bar: kotlin.Boolean
+            |        get() = builder.bar
+            |        set(value) { builder.bar = value }
+            |}
             """.asNormalizedString()
         )
 
-        assertThat(file.functions).hasSize(2)
-        assertThat(file.functions.map { it.toString().asNormalizedString() }).containsExactly(
+        assertThat(files.flatMap { f -> f.functions.map { it.toString().asNormalizedString() } }).containsExactly(
             """
-            |fun foo(init: com.google.api.FooDsl.() -> kotlin.Unit): com.google.api.Foo {
-            |    val builder = com.google.api.Foo.newBuilder()
-            |    com.google.api.FooDsl(builder).apply(init)
+            |fun input(init: test.the.InputDsl.() -> kotlin.Unit): test.the.Input {
+            |    val builder = test.the.Input.newBuilder()
+            |    test.the.InputDsl(builder).apply(init)
             |    return builder.build()
             |}
             """.asNormalizedString(),
             """
-            |fun bar(init: com.google.api.BarDsl.() -> kotlin.Unit): com.google.api.Bar {
-            |    val builder = com.google.api.Bar.newBuilder()
-            |    com.google.api.BarDsl(builder).apply(init)
+            |fun bar(init: test.BarDsl.() -> kotlin.Unit): test.Bar {
+            |    val builder = test.Bar.newBuilder()
+            |    test.BarDsl(builder).apply(init)
             |    return builder.build()
             |}
             """.asNormalizedString()
@@ -112,43 +112,108 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
         assertThat(file.packageName).isEqualTo("com.google.api")
         assertThat(file.name).isEqualTo("KotlinBuilders")
 
-        assertThat(file.types).hasSize(9)
-        assertThat(file.functions).hasSize(9)
+        // verify a few of the types
+        assertThat(file.types.map { it.toString().asNormalizedString() }).containsExactly(
+            """
+            |@com.google.api.kgax.ProtoBuilder
+            |inline class FooDsl(val builder: com.google.api.Foo.Builder)
+            """.asNormalizedString(),
+            """
+            |@com.google.api.kgax.ProtoBuilder
+            |inline class Foo_ADsl(val builder: com.google.api.Foo.A.Builder)
+            """.asNormalizedString(),
+            """
+            |@com.google.api.kgax.ProtoBuilder
+            |inline class Foo_A_BDsl(val builder: com.google.api.Foo.A.B.Builder)
+            """.asNormalizedString(),
+            """
+            |@com.google.api.kgax.ProtoBuilder
+            |inline class Foo_A_B_CDsl(val builder: com.google.api.Foo.A.B.C.Builder)
+            """.asNormalizedString(),
+            """
+            |@com.google.api.kgax.ProtoBuilder
+            |inline class BarDsl(val builder: com.google.api.Bar.Builder)
+            """.asNormalizedString(),
+            """
+            |@com.google.api.kgax.ProtoBuilder
+            |inline class Bar_XDsl(val builder: com.google.api.Bar.X.Builder)
+            """.asNormalizedString(),
+            """
+            |@com.google.api.kgax.ProtoBuilder
+            |inline class Bar_YDsl(val builder: com.google.api.Bar.Y.Builder)
+            """.asNormalizedString(),
+            """
+            |@com.google.api.kgax.ProtoBuilder
+            |inline class Bar_ZDsl(val builder: com.google.api.Bar.Z.Builder)
+            """.asNormalizedString(),
+            """
+            |@com.google.api.kgax.ProtoBuilder
+            |inline class BazDsl(val builder: com.google.api.Baz.Builder)
+            """.asNormalizedString()
+        )
 
-        // verify a few of them
-        val funs = (file.functions.map { it.toString().asNormalizedString() })
-        assertThat(funs).contains(
+        // verify a few of the functions
+        assertThat(file.functions.map { it.toString().asNormalizedString() }).containsExactly(
             """
             |fun foo(init: com.google.api.FooDsl.() -> kotlin.Unit): com.google.api.Foo {
             |    val builder = com.google.api.Foo.newBuilder()
             |    com.google.api.FooDsl(builder).apply(init)
             |    return builder.build()
             |}
-            """.asNormalizedString()
-        )
-        assertThat(funs).contains(
+            """.asNormalizedString(),
             """
-            |fun foo_A(init: com.google.api.Foo.ADsl.() -> kotlin.Unit): com.google.api.Foo.A {
+            |fun foo_A(init: com.google.api.Foo_ADsl.() -> kotlin.Unit): com.google.api.Foo.A {
             |    val builder = com.google.api.Foo.A.newBuilder()
-            |    com.google.api.Foo.ADsl(builder).apply(init)
+            |    com.google.api.Foo_ADsl(builder).apply(init)
             |    return builder.build()
             |}
-            """.asNormalizedString()
-        )
-        assertThat(funs).contains(
+            """.asNormalizedString(),
             """
-            |fun foo_A_B(init: com.google.api.Foo.A.BDsl.() -> kotlin.Unit): com.google.api.Foo.A.B {
+            |fun foo_A_B(init: com.google.api.Foo_A_BDsl.() -> kotlin.Unit): com.google.api.Foo.A.B {
             |    val builder = com.google.api.Foo.A.B.newBuilder()
-            |    com.google.api.Foo.A.BDsl(builder).apply(init)
+            |    com.google.api.Foo_A_BDsl(builder).apply(init)
             |    return builder.build()
             |}
-            """.asNormalizedString()
-        )
-        assertThat(funs).contains(
+            """.asNormalizedString(),
             """
-            |fun foo_A_B_C(init: com.google.api.Foo.A.B.CDsl.() -> kotlin.Unit): com.google.api.Foo.A.B.C {
+            |fun foo_A_B_C(init: com.google.api.Foo_A_B_CDsl.() -> kotlin.Unit): com.google.api.Foo.A.B.C {
             |    val builder = com.google.api.Foo.A.B.C.newBuilder()
-            |    com.google.api.Foo.A.B.CDsl(builder).apply(init)
+            |    com.google.api.Foo_A_B_CDsl(builder).apply(init)
+            |    return builder.build()
+            |}
+            """.asNormalizedString(),
+            """
+            |fun bar(init: com.google.api.BarDsl.() -> kotlin.Unit): com.google.api.Bar {
+            |    val builder = com.google.api.Bar.newBuilder()
+            |    com.google.api.BarDsl(builder).apply(init)
+            |    return builder.build()
+            |}
+            """.asNormalizedString(),
+            """
+            |fun bar_X(init: com.google.api.Bar_XDsl.() -> kotlin.Unit): com.google.api.Bar.X {
+            |    val builder = com.google.api.Bar.X.newBuilder()
+            |    com.google.api.Bar_XDsl(builder).apply(init)
+            |    return builder.build()
+            |}
+            """.asNormalizedString(),
+            """
+            |fun bar_Y(init: com.google.api.Bar_YDsl.() -> kotlin.Unit): com.google.api.Bar.Y {
+            |    val builder = com.google.api.Bar.Y.newBuilder()
+            |    com.google.api.Bar_YDsl(builder).apply(init)
+            |    return builder.build()
+            |}
+            """.asNormalizedString(),
+            """
+            |fun bar_Z(init: com.google.api.Bar_ZDsl.() -> kotlin.Unit): com.google.api.Bar.Z {
+            |    val builder = com.google.api.Bar.Z.newBuilder()
+            |    com.google.api.Bar_ZDsl(builder).apply(init)
+            |    return builder.build()
+            |}
+            """.asNormalizedString(),
+            """
+            |fun baz(init: com.google.api.BazDsl.() -> kotlin.Unit): com.google.api.Baz {
+            |    val builder = com.google.api.Baz.newBuilder()
+            |    com.google.api.BazDsl(builder).apply(init)
             |    return builder.build()
             |}
             """.asNormalizedString()

@@ -19,6 +19,9 @@ package com.google.api.kotlin.util
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.common.base.CaseFormat
 import com.squareup.kotlinpoet.CodeBlock
+import mu.KotlinLogging
+
+private val log = KotlinLogging.logger {}
 
 /**
  * Utilities for creating field names, getters, setters, and accessors.
@@ -27,113 +30,100 @@ internal object FieldNamer {
 
     /*
      * Create setter code based on type of field (map vs. repeated, vs. single object) using
-     * the Java builder for the type.
+     * the DSL builder for the type.
      */
-    fun getSetterCode(
+    fun getDslSetterCode(
         typeMap: ProtobufTypeMapper,
         fieldInfo: ProtoFieldInfo,
-        value: CodeBlock,
-        useDSLBuilder: Boolean
-    ): CodeBlock {
-        // use implicit this in dsl builders
-        val qualifier = if (useDSLBuilder) {
-            ""
-        } else {
-            "."
-        }
-
-        // map and repeated fields
-        if (fieldInfo.field.isMap(typeMap)) {
-            return CodeBlock.of(
-                "$qualifier${getSetterMapName(fieldInfo.field.name)}(%L)",
+        value: CodeBlock
+    ): CodeBlock = when {
+        fieldInfo.field.isMap(typeMap) -> {
+            val qualifier = getQualifier(fieldInfo.field.name, value)
+            val name = getDslSetterMapName(fieldInfo.field.name)
+            CodeBlock.of(
+                "$qualifier$name = %L",
                 value
             )
-        } else if (fieldInfo.field.isRepeated()) {
-            return if (fieldInfo.index >= 0) {
+        }
+        fieldInfo.field.isRepeated() -> {
+            val qualifier = getQualifier(fieldInfo.field.name, value)
+            if (fieldInfo.index >= 0) {
+                log.warn { "Indexed setter operations currently ignore the specified index! (${fieldInfo.message.name}.${fieldInfo.field.name})" }
                 CodeBlock.of(
-                    "$qualifier${getSetterRepeatedAtIndexName(fieldInfo.field.name)}(${fieldInfo.index}, %L)",
+                    "$qualifier${getDslSetterRepeatedNameAtIndex(fieldInfo.field.name)}(%L)",
                     value
                 )
             } else {
+                val name = getDslSetterRepeatedName(fieldInfo.field.name)
                 CodeBlock.of(
-                    "$qualifier${getSetterRepeatedName(fieldInfo.field.name)}(%L)",
+                    "$qualifier$name = %L",
                     value
                 )
             }
         }
-
-        // normal fields
-        return if (useDSLBuilder) {
-            CodeBlock.of("${getAccessorName(fieldInfo.field.name, value)} = %L", value)
-        } else {
-            CodeBlock.of("$qualifier${getSetterName(fieldInfo.field.name)}(%L)", value)
+        else -> { // normal fields
+            val qualifier = getQualifier(fieldInfo.field.name, value)
+            val name = getFieldName(fieldInfo.field.name)
+            CodeBlock.of("$qualifier$name = %L", value)
         }
     }
 
-    fun getSetterCode(
+    fun getDslSetterCode(
         typeMap: ProtobufTypeMapper,
         fieldInfo: ProtoFieldInfo,
-        value: String,
-        useDSLBuilder: Boolean
-    ) =
-        getSetterCode(typeMap, fieldInfo, CodeBlock.of("%L", value), useDSLBuilder)
+        value: String
+    ) = getDslSetterCode(typeMap, fieldInfo, CodeBlock.of("%L", value))
 
-    fun getAccessorName(typeMap: ProtobufTypeMapper, fieldInfo: ProtoFieldInfo): String {
+    /**
+     * Get the accessor field name for a Java proto message type.
+     */
+    fun getJavaAccessorName(typeMap: ProtobufTypeMapper, fieldInfo: ProtoFieldInfo): String {
         if (fieldInfo.field.isMap(typeMap)) {
-            return getAccessorMapName(fieldInfo.field.name)
+            return getJavaBuilderAccessorMapName(fieldInfo.field.name)
         } else if (fieldInfo.field.isRepeated()) {
             return if (fieldInfo.index >= 0) {
-                "${getAccessorRepeatedAtIndexName(fieldInfo.field.name)}[${fieldInfo.index}]"
+                "${getJavaBuilderAccessorRepeatedName(fieldInfo.field.name)}[${fieldInfo.index}]"
             } else {
-                getAccessorRepeatedName(fieldInfo.field.name)
+                getJavaBuilderAccessorRepeatedName(fieldInfo.field.name)
             }
         }
-        return getAccessorName(fieldInfo.field.name)
+        return getJavaBuilderAccessorName(fieldInfo.field.name)
     }
 
-    fun getFieldName(protoFieldName: String) =
+    fun getFieldName(protoFieldName: String): String =
         CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
 
-    fun getSetterMapName(protoFieldName: String) =
+    private fun getDslSetterMapName(protoFieldName: String): String =
+        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
+
+    private fun getDslSetterRepeatedName(protoFieldName: String): String =
+        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
+
+    private fun getDslSetterRepeatedNameAtIndex(protoFieldName: String): String =
+        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
+
+    fun getJavaBuilderSetterMapName(protoFieldName: String): String =
         "putAll" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)
 
-    fun getSetterRepeatedName(protoFieldName: String) =
+    fun getJavaBuilderSetterRepeatedName(protoFieldName: String): String =
         "addAll" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)
 
-    fun getSetterRepeatedAtIndexName(protoFieldName: String) =
-        "add" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)
-
-    fun getSetterName(protoFieldName: String) =
+    fun getJavaBuilderRawSetterName(protoFieldName: String): String =
         "set" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)
 
-    fun getAccessorMapName(protoFieldName: String) =
+    fun getJavaBuilderSyntheticSetterName(protoFieldName: String): String =
+        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
+
+    fun getJavaBuilderAccessorMapName(protoFieldName: String): String =
         CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName) + "Map"
 
-    fun getAccessorName(protoFieldName: String, value: CodeBlock? = null) =
-        getQualifier(protoFieldName, value) + CaseFormat.LOWER_UNDERSCORE.to(
-            CaseFormat.LOWER_CAMEL,
-            protoFieldName
-        ) + ""
+    fun getJavaBuilderAccessorRepeatedName(protoFieldName: String): String =
+        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName) + "List"
 
-    fun getAccessorRepeatedAtIndexName(protoFieldName: String, value: CodeBlock? = null) =
-        getQualifier(protoFieldName, value) + CaseFormat.LOWER_UNDERSCORE.to(
-            CaseFormat.LOWER_CAMEL,
-            protoFieldName
-        ) + ""
+    fun getJavaBuilderAccessorName(protoFieldName: String): String =
+        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
 
-    fun getAccessorRepeatedName(protoFieldName: String, value: CodeBlock? = null) =
-        getQualifier(protoFieldName, value) + CaseFormat.LOWER_UNDERSCORE.to(
-            CaseFormat.LOWER_CAMEL,
-            protoFieldName
-        ) + "List"
-
-    fun getParameterName(protoFieldName: String, value: CodeBlock? = null) =
-        getQualifier(protoFieldName, value) + CaseFormat.LOWER_UNDERSCORE.to(
-            CaseFormat.LOWER_CAMEL,
-            protoFieldName
-        ) + ""
-
-    fun getQualifier(protoFieldName: String, value: CodeBlock? = null): String {
+    private fun getQualifier(protoFieldName: String, value: CodeBlock? = null): String {
         val name = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
         return if (name == value.toString()) {
             "this."

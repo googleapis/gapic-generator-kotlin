@@ -84,7 +84,7 @@ internal object Flattening {
                 else -> rawType
             }
             val spec =
-                ParameterSpec.builder(FieldNamer.getParameterName(path.lastSegment), typeName)
+                ParameterSpec.builder(FieldNamer.getFieldName(path.lastSegment), typeName)
                     .build()
             ParameterInfo(spec, path, fieldInfo)
         }

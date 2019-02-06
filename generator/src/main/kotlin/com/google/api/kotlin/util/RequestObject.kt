@@ -22,8 +22,8 @@ import com.google.api.kotlin.config.SampleMethod
 import com.google.api.kotlin.config.asPropertyPath
 import com.google.api.kotlin.config.merge
 import com.google.protobuf.DescriptorProtos
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.TypeName
 
 /**
  * Utility to build a request object for an API method call.
@@ -50,7 +50,7 @@ internal object RequestObject {
     fun getBuilder(
         context: GeneratorContext,
         messageType: DescriptorProtos.DescriptorProto,
-        kotlinType: TypeName,
+        kotlinType: ClassName,
         propertyPaths: List<PropertyPath>,
         sample: SampleMethod? = null
     ): BuilderCodeBlock {
@@ -62,7 +62,7 @@ internal object RequestObject {
 
         // add outermost builder
         val code = CodeBlock.builder()
-            .add("%T {\n", kotlinType)
+            .add("%T {\n", builderName(kotlinType))
             .indent()
 
         Flattening.visitType(
@@ -81,11 +81,11 @@ internal object RequestObject {
                         it.parameterPath == currentPath.toString()
                     }
                     val value =
-                        explicitValue?.value ?: FieldNamer.getParameterName(fieldInfo.field.name)
+                        explicitValue?.value ?: FieldNamer.getFieldName(fieldInfo.field.name)
 
                     // set value or add to appropriate builder
                     val setterCode =
-                        FieldNamer.getSetterCode(context.typeMap, fieldInfo, value, true)
+                        FieldNamer.getDslSetterCode(context.typeMap, fieldInfo, value)
                     if (currentPath.size == 1) {
                         code.addStatement("%L", setterCode)
                     } else {
@@ -101,7 +101,7 @@ internal object RequestObject {
                         val nestedBuilder = CodeBlock.builder()
                             .add(
                                 "%T {\n",
-                                context.typeMap.getKotlinType(fieldInfo.field.typeName)
+                                builderName(context.typeMap.getKotlinType(fieldInfo.field.typeName))
                             )
                             .indent()
                         builders[key] = CodeBlockBuilder(nestedBuilder, fieldInfo)
@@ -122,8 +122,8 @@ internal object RequestObject {
                         .forEach { currentPath ->
                             val builder = builders[currentPath.toString()]!!
                             code.add(
-                                FieldNamer.getSetterCode(
-                                    context.typeMap, builder.fieldInfo, builder.code.build(), true
+                                FieldNamer.getDslSetterCode(
+                                    context.typeMap, builder.fieldInfo, builder.code.build()
                                 )
                             )
                         }
@@ -135,6 +135,8 @@ internal object RequestObject {
 
         return BuilderCodeBlock(parameters, code.build())
     }
+
+    private fun builderName(className: ClassName) = className.peerClass(className.simpleName.decapitalize())
 
     private class CodeBlockBuilder(
         val code: CodeBlock.Builder,

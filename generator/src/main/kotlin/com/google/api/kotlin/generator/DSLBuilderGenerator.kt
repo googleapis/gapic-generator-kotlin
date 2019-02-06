@@ -67,7 +67,7 @@ internal class DSLBuilderGenerator : BuilderGenerator {
         val builderType = ClassName.bestGuess("${type.className}.Builder")
 
         // Create the wrapper type
-        val wrapperClass = type.className.peerClass("${type.className.simpleName}Dsl")
+        val wrapperClass = ClassName(type.className.packageName, getBuilderTypeName(type))
         val wrapperBuilder = TypeSpec.classBuilder(wrapperClass)
             .addModifiers(KModifier.INLINE)
             .addAnnotation(GrpcTypes.Support.ProtoBuilder)
@@ -86,21 +86,20 @@ internal class DSLBuilderGenerator : BuilderGenerator {
         wrapperBuilder.addProperties(type.mapNormalFields(types) {
             val fieldType = it.asClassName(types)
             val propertyName = FieldNamer.getFieldName(it.name)
-            val accessor = FieldNamer.getAccessorName(it.name)
 
             PropertySpec.builder(propertyName, fieldType)
                 .mutable(true)
                 .getter(
                     FunSpec.getterBuilder()
                         .addModifiers(KModifier.INLINE)
-                        .addStatement("return builder.%L", accessor)
+                        .addStatement("return builder.%L", FieldNamer.getJavaBuilderAccessorName(it.name))
                         .build()
                 )
                 .setter(
                     FunSpec.setterBuilder()
                         .addModifiers(KModifier.INLINE)
                         .addParameter("value", fieldType)
-                        .addStatement("builder.%L = value", accessor)
+                        .addStatement("builder.%L = value", FieldNamer.getJavaBuilderSyntheticSetterName(it.name))
                         .build()
                 ).build()
         })
@@ -116,7 +115,7 @@ internal class DSLBuilderGenerator : BuilderGenerator {
                 .getter(
                     FunSpec.getterBuilder()
                         .addModifiers(KModifier.INLINE)
-                        .addStatement("return builder.%L", FieldNamer.getAccessorRepeatedName(it.name))
+                        .addStatement("return builder.%L", FieldNamer.getJavaBuilderAccessorRepeatedName(it.name))
                         .build()
                 )
                 .setter(
@@ -129,7 +128,7 @@ internal class DSLBuilderGenerator : BuilderGenerator {
                             |builder.%L(values)
                             |""".trimMargin(),
                             propertyName.capitalize(),
-                            FieldNamer.getSetterRepeatedName(it.name)
+                            FieldNamer.getJavaBuilderSetterRepeatedName(it.name)
                         ).build()
                 ).build()
         })
@@ -145,7 +144,7 @@ internal class DSLBuilderGenerator : BuilderGenerator {
                     ParameterSpec.builder("values", fieldType, KModifier.VARARG)
                         .build()
                 )
-                .addStatement("builder.%L(values.toList())", FieldNamer.getSetterRepeatedName(it.name))
+                .addStatement("builder.%L(values.toList())", FieldNamer.getJavaBuilderSetterRepeatedName(it.name))
                 .build()
         })
 
@@ -163,7 +162,7 @@ internal class DSLBuilderGenerator : BuilderGenerator {
                 .getter(
                     FunSpec.getterBuilder()
                         .addModifiers(KModifier.INLINE)
-                        .addStatement("return builder.%L", FieldNamer.getAccessorMapName(it.name))
+                        .addStatement("return builder.%L", FieldNamer.getJavaBuilderAccessorMapName(it.name))
                         .build()
                 )
                 .setter(
@@ -176,7 +175,7 @@ internal class DSLBuilderGenerator : BuilderGenerator {
                             |builder.%L(values)
                             |""".trimMargin(),
                             propertyName.capitalize(),
-                            FieldNamer.getSetterMapName(it.name)
+                            FieldNamer.getJavaBuilderSetterMapName(it.name)
                         ).build()
                 ).build()
         })
@@ -196,7 +195,7 @@ internal class DSLBuilderGenerator : BuilderGenerator {
                     ParameterSpec.builder("values", pairType, KModifier.VARARG)
                         .build()
                 )
-                .addStatement("builder.%L(values.toMap())", FieldNamer.getSetterMapName(it.name))
+                .addStatement("builder.%L(values.toMap())", FieldNamer.getJavaBuilderSetterMapName(it.name))
                 .build()
         })
 
@@ -228,8 +227,7 @@ internal class DSLBuilderGenerator : BuilderGenerator {
         )
     }
 
-    // constructs a name for the builder function
-    private fun getBuilderFunName(type: TypeInfo): String {
+    private fun getBuilderBaseName(type: TypeInfo): String {
         var parentType = type.className.enclosingClassName()
         val parentTypes = mutableListOf<String>()
         while (parentType != null) {
@@ -242,8 +240,13 @@ internal class DSLBuilderGenerator : BuilderGenerator {
         } else {
             // TODO: better way to name w/o collisions?
             "${parentTypes.reversed().joinToString("_")}_${type.className.simpleName}"
-        }.decapitalize()
+        }
     }
+
+    // constructs a name for the builder type/functio
+    private fun getBuilderFunName(type: TypeInfo) = getBuilderBaseName(type).decapitalize()
+
+    private fun getBuilderTypeName(type: TypeInfo) = getBuilderBaseName(type) + "Dsl"
 }
 
 private data class TypeInfo(val proto: DescriptorProtos.DescriptorProto, val className: ClassName)

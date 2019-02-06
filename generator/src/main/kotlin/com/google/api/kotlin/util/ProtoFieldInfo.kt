@@ -29,7 +29,6 @@ import com.squareup.kotlinpoet.FLOAT
 import com.squareup.kotlinpoet.INT
 import com.squareup.kotlinpoet.LONG
 import com.squareup.kotlinpoet.ParameterSpec
-import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asTypeName
 
 /**
@@ -41,7 +40,7 @@ internal data class ProtoFieldInfo(
     val message: DescriptorProtos.DescriptorProto,
     val field: DescriptorProtos.FieldDescriptorProto,
     val index: Int = -1,
-    val kotlinType: TypeName
+    val kotlinType: ClassName
 )
 
 /**
