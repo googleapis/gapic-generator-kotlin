@@ -26,9 +26,11 @@ import com.google.api.examples.kotlin.util.AudioEmitter
 import com.google.api.kgax.grpc.StreamingCall
 import com.google.cloud.speech.v1.RecognitionConfig
 import com.google.cloud.speech.v1.SpeechClient
-import com.google.cloud.speech.v1.StreamingRecognitionConfig
 import com.google.cloud.speech.v1.StreamingRecognizeRequest
 import com.google.cloud.speech.v1.StreamingRecognizeResponse
+import com.google.cloud.speech.v1.recognitionConfig
+import com.google.cloud.speech.v1.streamingRecognitionConfig
+import com.google.cloud.speech.v1.streamingRecognizeRequest
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -128,8 +130,8 @@ class SpeechStreamingActivity : AppCompatActivity(), CoroutineScope {
 
         // start streaming the data to the server and collect responses
         val streams = client.streamingRecognize(
-            StreamingRecognitionConfig {
-                config = RecognitionConfig {
+            streamingRecognitionConfig {
+                config = recognitionConfig {
                     languageCode = "en-US"
                     encoding = RecognitionConfig.AudioEncoding.LINEAR16
                     sampleRateHertz = 16000
@@ -141,7 +143,7 @@ class SpeechStreamingActivity : AppCompatActivity(), CoroutineScope {
         // monitor the input stream and send requests as audio data becomes available
         launch(Dispatchers.IO) {
             for (bytes in audioEmitter.start(this)) {
-                streams.requests.send(StreamingRecognizeRequest {
+                streams.requests.send(streamingRecognizeRequest {
                     audioContent = bytes
                 })
             }

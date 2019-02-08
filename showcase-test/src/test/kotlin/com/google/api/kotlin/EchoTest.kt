@@ -20,15 +20,15 @@ import com.google.api.kgax.Retry
 import com.google.api.kgax.RetryContext
 import com.google.api.kgax.grpc.BasicInterceptor
 import com.google.common.truth.Truth.assertThat
-import com.google.protobuf.Duration
+import com.google.protobuf.duration
 import com.google.rpc.Code
-import com.google.rpc.Status
+import com.google.rpc.status
 import com.google.showcase.v1alpha3.EchoClient
-import com.google.showcase.v1alpha3.EchoRequest
-import com.google.showcase.v1alpha3.ExpandRequest
-import com.google.showcase.v1alpha3.PagedExpandRequest
 import com.google.showcase.v1alpha3.PagedExpandResponse
-import com.google.showcase.v1alpha3.WaitRequest
+import com.google.showcase.v1alpha3.echoRequest
+import com.google.showcase.v1alpha3.expandRequest
+import com.google.showcase.v1alpha3.pagedExpandRequest
+import com.google.showcase.v1alpha3.waitRequest
 import io.grpc.ManagedChannelBuilder
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -69,7 +69,7 @@ class EchoTest {
     @Test
     fun `echos a request`() = runBlocking<Unit> {
         val result = client.echo(
-            EchoRequest { content = "Hi there!" }
+            echoRequest { content = "Hi there!" }
         )
 
         assertThat(result.body.content).isEqualTo("Hi there!")
@@ -79,9 +79,9 @@ class EchoTest {
     fun `throws an error`() = runBlocking<Unit> {
         try {
             client.echo(
-                EchoRequest {
+                echoRequest {
                     content = "junk"
-                    error = Status {
+                    error = status {
                         code = Code.DATA_LOSS_VALUE
                         message = "oh no!"
                     }
@@ -98,7 +98,7 @@ class EchoTest {
     fun `can expand a stream of responses`() = runBlocking<Unit> {
         val expansions = mutableListOf<String>()
 
-        val streams = client.expand(ExpandRequest {
+        val streams = client.expand(expandRequest {
             content = "well hello there how are you"
         })
 
@@ -113,9 +113,9 @@ class EchoTest {
     fun `can expand a stream of responses and then error`() = runBlocking<Unit> {
         val expansions = mutableListOf<String>()
 
-        val streams = client.expand(ExpandRequest {
+        val streams = client.expand(expandRequest {
             content = "one two zee"
-            error = Status {
+            error = status {
                 code = Code.ABORTED_VALUE
                 message = "yikes"
             }
@@ -139,7 +139,7 @@ class EchoTest {
         val streams = client.collect()
 
         listOf("a", "b", "c", "done").map {
-            streams.requests.send(EchoRequest { content = it })
+            streams.requests.send(echoRequest { content = it })
         }
         streams.requests.close()
 
@@ -159,7 +159,7 @@ class EchoTest {
 
         launch {
             for (str in inputs) {
-                streams.requests.send(EchoRequest { content = str })
+                streams.requests.send(echoRequest { content = str })
             }
             streams.requests.close()
         }
@@ -177,7 +177,7 @@ class EchoTest {
         val numbers = mutableListOf<String>()
         var pageCount = 0
 
-        val pager = client.pagedExpand(PagedExpandRequest {
+        val pager = client.pagedExpand(pagedExpandRequest {
             content = (0 until 40).joinToString(" ") { "num-$it" }
             pageSize = 10
             pageToken = "0"
@@ -202,7 +202,7 @@ class EchoTest {
                     count += (it as PagedExpandResponse).responsesCount
                 }))
             }
-            .pagedExpand(PagedExpandRequest {
+            .pagedExpand(pagedExpandRequest {
                 content = (0 until 59).joinToString(" ") { "x-$it" }
                 pageSize = 5
                 pageToken = "0"
@@ -232,9 +232,9 @@ class EchoTest {
         try {
             client.prepare {
                 withRetry(retry)
-            }.wait(WaitRequest {
-                ttl = Duration { seconds = 1 }
-                error = Status {
+            }.wait(waitRequest {
+                ttl = duration { seconds = 1 }
+                error = status {
                     code = Code.UNAVAILABLE_VALUE
                     message = "go away"
                 }

@@ -21,6 +21,7 @@ import android.support.v7.app.AppCompatActivity
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
+import com.google.cloud.language.v1.document
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -53,7 +54,7 @@ class LanguageActivity : AppCompatActivity(), CoroutineScope {
 
         // call the API
         launch {
-            val response = client.analyzeEntities(Document {
+            val response = client.analyzeEntities(document {
                 content = "Hi there Joe"
                 type = Document.Type.PLAIN_TEXT
             }, EncodingType.UTF8)

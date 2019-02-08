@@ -16,10 +16,11 @@
 
 package example
 
-import com.google.cloud.speech.v1.LongRunningRecognizeRequest
-import com.google.cloud.speech.v1.RecognitionAudio
 import com.google.cloud.speech.v1.RecognitionConfig
 import com.google.cloud.speech.v1.SpeechClient
+import com.google.cloud.speech.v1.longRunningRecognizeRequest
+import com.google.cloud.speech.v1.recognitionAudio
+import com.google.cloud.speech.v1.recognitionConfig
 import com.google.common.io.ByteStreams
 import com.google.protobuf.ByteString
 import kotlinx.coroutines.runBlocking
@@ -43,11 +44,11 @@ fun speechExample() = runBlocking {
     }
 
     // call the API
-    val operation = client.longRunningRecognize(LongRunningRecognizeRequest {
-        audio = RecognitionAudio {
+    val operation = client.longRunningRecognize(longRunningRecognizeRequest {
+        audio = recognitionAudio {
             content = audioData
         }
-        config = RecognitionConfig {
+        config = recognitionConfig {
             encoding = RecognitionConfig.AudioEncoding.LINEAR16
             sampleRateHertz = 16000
             languageCode = "en-US"

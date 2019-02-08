@@ -18,6 +18,7 @@ package example
 
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.LanguageServiceClient
+import com.google.cloud.language.v1.document
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -34,7 +35,7 @@ fun languageExample() = runBlocking {
     val client = LanguageServiceClient.fromEnvironment()
 
     // call the API
-    val result = client.analyzeSentiment(Document {
+    val result = client.analyzeSentiment(document {
         content = "Let's see what this API can do. It's great! Right?"
         type = Document.Type.PLAIN_TEXT
     })

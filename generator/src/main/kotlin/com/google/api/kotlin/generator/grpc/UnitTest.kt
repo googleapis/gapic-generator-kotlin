@@ -24,8 +24,7 @@ import com.google.api.kotlin.config.MethodOptions
 import com.google.api.kotlin.config.PropertyPath
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.types.GrpcTypes
-import com.google.api.kotlin.util.FieldNamer.getAccessorName
-import com.google.api.kotlin.util.FieldNamer.getSetterName
+import com.google.api.kotlin.util.FieldNamer
 import com.google.api.kotlin.util.Flattening
 import com.google.api.kotlin.util.ParameterInfo
 import com.google.api.kotlin.util.ProtoFieldInfo
@@ -217,7 +216,7 @@ internal class UnitTestImpl(
 
         // if paging add extra mocks for the page handling
         if (methodOptions.pagedResponse != null) {
-            val pageSizeSetter = getSetterName(methodOptions.pagedResponse.pageSize)
+            val pageSizeSetter = FieldNamer.getJavaBuilderRawSetterName(methodOptions.pagedResponse.pageSize)
 
             // non-paged flattened methods need an extra mock since the original
             // request object is not directly used (it's builder is used instead)
@@ -499,8 +498,8 @@ internal class UnitTestImpl(
                     currentPath: PropertyPath,
                     fieldInfo: ProtoFieldInfo
                 ) {
-                    val key = getAccessorName(currentPath.lastSegment)
-                    val accessor = getAccessorName(ctx.typeMap, fieldInfo)
+                    val key = FieldNamer.getFieldName(currentPath.lastSegment)
+                    val accessor = FieldNamer.getJavaAccessorName(ctx.typeMap, fieldInfo)
                     val variable = given.variables[key]?.variableName
                         ?: throw IllegalStateException("Could not locate variable with name: $key")
 

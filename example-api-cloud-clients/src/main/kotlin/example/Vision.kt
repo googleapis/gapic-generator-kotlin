@@ -16,11 +16,11 @@
 
 package example
 
-import com.google.cloud.vision.v1.AnnotateImageRequest
 import com.google.cloud.vision.v1.Feature
-import com.google.cloud.vision.v1.Image
 import com.google.cloud.vision.v1.ImageAnnotatorClient
-import com.google.cloud.vision.v1.features
+import com.google.cloud.vision.v1.annotateImageRequest
+import com.google.cloud.vision.v1.feature
+import com.google.cloud.vision.v1.image
 import com.google.common.io.ByteStreams
 import com.google.protobuf.ByteString
 import kotlinx.coroutines.runBlocking
@@ -45,11 +45,11 @@ fun visionExample() = runBlocking {
 
     // call the API
     val result = client.batchAnnotateImages(listOf(
-        AnnotateImageRequest {
-            image = Image { content = imageData }
-            features(
-                Feature { type = Feature.Type.FACE_DETECTION },
-                Feature { type = Feature.Type.LANDMARK_DETECTION }
+        annotateImageRequest {
+            image = image { content = imageData }
+            features = listOf(
+                feature { type = Feature.Type.FACE_DETECTION },
+                feature { type = Feature.Type.LANDMARK_DETECTION }
             )
         }
     ))

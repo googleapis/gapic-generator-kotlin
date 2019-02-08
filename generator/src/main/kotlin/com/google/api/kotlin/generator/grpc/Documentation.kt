@@ -147,7 +147,7 @@ internal class DocumentationImpl : Documentation {
                         context, type.message, type.kotlinType, listOf(p.last), sample
                     ).builder
                 } else {
-                    val prop = FieldNamer.getAccessorName(
+                    val prop = FieldNamer.getFieldName(
                         sample?.parameters?.find { it.parameterPath == p.toString() }?.value
                             ?: p.toString()
                     )

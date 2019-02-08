@@ -24,8 +24,8 @@ import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.whenever
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asTypeName
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -49,13 +49,26 @@ internal class FieldNamerTest {
             String::class.asTypeName()
         )
 
-        val setter = FieldNamer.getSetterCode(typeMap, fieldInfo, CodeBlock.of("5"), false)
-        assertThat(setter.toString()).isEqualTo(".setTheThing(5)")
+        assertThat(FieldNamer.getDslSetterCode(typeMap, fieldInfo, CodeBlock.of("\"5\"")).toString())
+            .isEqualTo("theThing = \"5\"")
 
-        val dslSetter = FieldNamer.getSetterCode(typeMap, fieldInfo, CodeBlock.of("5"), true)
-        assertThat(dslSetter.toString()).isEqualTo("theThing = 5")
+        assertThat(FieldNamer.getJavaAccessorName(typeMap, fieldInfo)).isEqualTo("theThing")
+    }
 
-        assertThat(FieldNamer.getAccessorName(typeMap, fieldInfo)).isEqualTo("theThing")
+    @Test
+    fun `can generate setter code with qualifier`() {
+        val fieldInfo = getFieldInfo(
+            DescriptorProtos.FieldDescriptorProto.newBuilder()
+                .setName("some_other_thing")
+                .setType(DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING)
+                .build(),
+            String::class.asTypeName()
+        )
+
+        assertThat(FieldNamer.getDslSetterCode(typeMap, fieldInfo, CodeBlock.of("someOtherThing")).toString())
+            .isEqualTo("this.someOtherThing = someOtherThing")
+
+        assertThat(FieldNamer.getJavaAccessorName(typeMap, fieldInfo)).isEqualTo("someOtherThing")
     }
 
     @Test
@@ -69,17 +82,17 @@ internal class FieldNamerTest {
             String::class.asTypeName()
         )
 
-        val setter = FieldNamer.getSetterCode(typeMap, fieldInfo, CodeBlock.of("5"), false)
-        assertThat(setter.toString()).isEqualTo(".addAllThing(5)")
+        assertThat(FieldNamer.getDslSetterCode(typeMap, fieldInfo, CodeBlock.of("5")).toString())
+            .isEqualTo("thing = 5")
 
-        val dslSetter = FieldNamer.getSetterCode(typeMap, fieldInfo, CodeBlock.of("5"), true)
-        assertThat(dslSetter.toString()).isEqualTo("addAllThing(5)")
+        assertThat(FieldNamer.getDslSetterCode(typeMap, fieldInfo, CodeBlock.of("listOf(5, 6, 7)")).toString())
+            .isEqualTo("thing = listOf(5, 6, 7)")
 
-        assertThat(FieldNamer.getAccessorName(typeMap, fieldInfo)).isEqualTo("thingList")
+        assertThat(FieldNamer.getJavaAccessorName(typeMap, fieldInfo)).isEqualTo("thingList")
     }
 
     @Test
-    fun `can generate setter code for repeated fields at index`() {
+    fun `can generate accessor code for repeated fields at index`() {
         val fieldInfo = getFieldInfo(
             DescriptorProtos.FieldDescriptorProto.newBuilder()
                 .setName("thing")
@@ -90,13 +103,7 @@ internal class FieldNamerTest {
             2
         )
 
-        val setter = FieldNamer.getSetterCode(typeMap, fieldInfo, CodeBlock.of("5"), false)
-        assertThat(setter.toString()).isEqualTo(".addThing(2, 5)")
-
-        val dslSetter = FieldNamer.getSetterCode(typeMap, fieldInfo, CodeBlock.of("5"), true)
-        assertThat(dslSetter.toString()).isEqualTo("addThing(2, 5)")
-
-        assertThat(FieldNamer.getAccessorName(typeMap, fieldInfo)).isEqualTo("thing[2]")
+        assertThat(FieldNamer.getJavaAccessorName(typeMap, fieldInfo)).isEqualTo("thingList[2]")
     }
 
     @Test
@@ -118,16 +125,17 @@ internal class FieldNamerTest {
             2
         )
 
-        val setter = FieldNamer.getSetterCode(typeMap, fieldInfo, CodeBlock.of("5"), false)
-        assertThat(setter.toString()).isEqualTo(".putAllThing(5)")
+        assertThat(FieldNamer.getDslSetterCode(typeMap, fieldInfo, CodeBlock.of("stuff")).toString())
+            .isEqualTo("thing = stuff")
 
-        val dslSetter = FieldNamer.getSetterCode(typeMap, fieldInfo, CodeBlock.of("5"), true)
-        assertThat(dslSetter.toString()).isEqualTo("putAllThing(5)")
-
-        assertThat(FieldNamer.getAccessorName(typeMap, fieldInfo)).isEqualTo("thingMap")
+        assertThat(FieldNamer.getJavaAccessorName(typeMap, fieldInfo)).isEqualTo("thingMap")
     }
 
-    private fun getFieldInfo(field: DescriptorProtos.FieldDescriptorProto, type: TypeName, index: Int = -1): ProtoFieldInfo {
+    private fun getFieldInfo(
+        field: DescriptorProtos.FieldDescriptorProto,
+        type: ClassName,
+        index: Int = -1
+    ): ProtoFieldInfo {
         val protoMessage = DescriptorProtos.DescriptorProto.newBuilder()
             .addField(field)
             .build()
@@ -147,66 +155,17 @@ internal class FieldNamerTest {
     }
 
     @Test
-    fun `can get setter name`() =
-        testSetterMethod(FieldNamer::getSetterName, "set")
-
-    @Test
-    fun `can get setter map name`() =
-        testSetterMethod(FieldNamer::getSetterMapName, "putAll")
-
-    @Test
-    fun `can get setter repeated name`() =
-        testSetterMethod(FieldNamer::getSetterRepeatedName, "addAll")
-
-    @Test
-    fun `can get setter repeated at index name`() =
-        testSetterMethod(FieldNamer::getSetterRepeatedAtIndexName, "add")
-
-    private fun testSetterMethod(method: (protoFieldName: String) -> String, prefix: String = "") {
-        assertThat(method("z")).isEqualTo("${prefix}Z")
-        assertThat(method("zero")).isEqualTo("${prefix}Zero")
-        assertThat(method("ok_go")).isEqualTo("${prefix}OkGo")
-        assertThat(method("hello")).isEqualTo("${prefix}Hello")
+    fun `can generate Java builder setter names`() {
+        assertThat(FieldNamer.getJavaBuilderRawSetterName("a_field")).isEqualTo("setAField")
+        assertThat(FieldNamer.getJavaBuilderSyntheticSetterName("a_field")).isEqualTo("aField")
+        assertThat(FieldNamer.getJavaBuilderSetterMapName("a_field")).isEqualTo("putAllAField")
+        assertThat(FieldNamer.getJavaBuilderSetterRepeatedName("a_field")).isEqualTo("addAllAField")
     }
 
     @Test
-    fun `can get accessor name`() =
-        testAccessorMethod(FieldNamer::getAccessorName)
-
-    @Test
-    fun `can get repeated accessor name`() =
-        testAccessorMethod(FieldNamer::getAccessorRepeatedName, "List")
-
-    @Test
-    fun `can get repeated at index accessor name`() =
-        testAccessorMethod(FieldNamer::getAccessorRepeatedAtIndexName)
-
-    @Test
-    fun `can get parameter name`() =
-        testAccessorMethod(FieldNamer::getParameterName)
-
-    private fun testAccessorMethod(
-        method: (protoFieldName: String, value: CodeBlock?) -> String,
-        suffix: String = ""
-    ) {
-        assertThat(method("boo_hoo", null))
-            .isEqualTo("booHoo$suffix")
-        assertThat(method("a", null))
-            .isEqualTo("a$suffix")
-        assertThat(method("one_TWO", null))
-            .isEqualTo("oneTwo$suffix")
-        assertThat(method("three_two_one", null))
-            .isEqualTo("threeTwoOne$suffix")
-
-        assertThat(method("a", CodeBlock.of("a")))
-            .isEqualTo("this.a$suffix")
-        assertThat(method("a", CodeBlock.of("b")))
-            .isEqualTo("a$suffix")
-        assertThat(method("ahoy_there", CodeBlock.of("ahoyThere")))
-            .isEqualTo("this.ahoyThere$suffix")
-        assertThat(method("ahoy_there", CodeBlock.of("ahoy_there")))
-            .isEqualTo("ahoyThere$suffix")
-        assertThat(method("ahoy_there", CodeBlock.of("ahoy")))
-            .isEqualTo("ahoyThere$suffix")
+    fun `can generate Java builder accessor names`() {
+        assertThat(FieldNamer.getJavaBuilderAccessorName("a_field")).isEqualTo("aField")
+        assertThat(FieldNamer.getJavaBuilderAccessorMapName("a_field")).isEqualTo("aFieldMap")
+        assertThat(FieldNamer.getJavaBuilderAccessorRepeatedName("a_field")).isEqualTo("aFieldList")
     }
 }

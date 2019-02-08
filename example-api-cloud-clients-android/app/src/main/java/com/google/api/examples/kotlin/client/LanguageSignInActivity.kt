@@ -29,6 +29,7 @@ import com.google.auth.oauth2.AccessToken
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
+import com.google.cloud.language.v1.document
 import com.google.gson.Gson
 import com.squareup.okhttp.Callback
 import com.squareup.okhttp.FormEncodingBuilder
@@ -124,7 +125,7 @@ class LanguageSignInActivity : AppCompatActivity(), CoroutineScope {
         languageClient = LanguageServiceClient.fromAccessToken(token)
 
         // call the API
-        val response = languageClient!!.analyzeEntities(Document {
+        val response = languageClient!!.analyzeEntities(document {
             content = "Hi there Joe"
             type = Document.Type.PLAIN_TEXT
         }, EncodingType.UTF8)

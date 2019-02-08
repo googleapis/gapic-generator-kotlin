@@ -103,7 +103,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |* ```
             |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val result = client.test(
-            |*     TestRequest {
+            |*     testRequest {
             |*     }
             |* )
             |* ```
@@ -146,7 +146,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |* ```
             |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val result = client.operationTest(
-            |*     TestRequest {
+            |*     testRequest {
             |*     }
             |* )
             |* ```
@@ -183,7 +183,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | * ```
             | * val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             | * val result = client.streamTest(
-            | *     TestRequest {
+            | *     testRequest {
             | *     }
             | * )
             | * ```
@@ -233,7 +233,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |): com.google.api.kgax.grpc.StreamingCall<google.example.TestRequest, google.example.TestResponse> =
             |    stubs.api.prepare {
             |        withInitialRequest(
-            |            google.example.TestRequest {
+            |            google.example.testRequest {
             |                this.query = query
             |            }
             |        )
@@ -252,7 +252,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val result = client.streamTest(
             |*     query,
-            |*     Detail {
+            |*     detail {
             |*         this.mainDetail = mainDetail
             |*     }
             |* )
@@ -268,7 +268,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |): com.google.api.kgax.grpc.StreamingCall<google.example.TestRequest, google.example.TestResponse> =
             |    stubs.api.prepare {
             |        withInitialRequest(
-            |            google.example.TestRequest {
+            |            google.example.testRequest {
             |                this.query = query
             |                this.mainDetail = mainDetail
             |            }
@@ -295,7 +295,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |* ```
             |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val result = client.streamClientTest(
-            |*     TestRequest {
+            |*     testRequest {
             |*     }
             |* )
             |* ```
@@ -325,7 +325,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |* ```
             |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val result = client.streamClientTest(
-            |*     TestRequest {
+            |*     testRequest {
             |*     }
             |* )
             |* ```
@@ -365,7 +365,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |* ```
             |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val result = client.streamServerTest(
-            |*     MoreDetail {
+            |*     moreDetail {
             |*         this.evenMore = evenMore
             |*     }
             |*)
@@ -376,8 +376,8 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |): com.google.api.kgax.grpc.ServerStreamingCall<google.example.TestResponse> =
             |    stubs.api.executeServerStreaming("streamServerTest") { stub, observer ->
             |        stub.streamServerTest(
-            |            google.example.TestRequest {
-            |                mainDetail = google.example.Detail {
+            |            google.example.testRequest {
+            |                mainDetail = google.example.detail {
             |                    this.evenMore = evenMore
             |                }
             |            },
@@ -414,7 +414,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |* ```
             |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val result = client.streamServerTest(
-            |*     MoreDetail {
+            |*     moreDetail {
             |*         this.evenMore = evenMore
             |*     }
             |* )
@@ -423,8 +423,8 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |suspend fun streamServerTest(
             |    evenMore: google.example.MoreDetail
             |): com.google.api.kgax.grpc.ServerStreamingCall<google.example.TestResponse> = stubs.api.executeServerStreaming("streamServerTest") { stub, observer ->
-            |    stub.streamServerTest(google.example.TestRequest {
-            |        mainDetail = google.example.Detail {
+            |    stub.streamServerTest(google.example.testRequest {
+            |        mainDetail = google.example.detail {
             |            this.evenMore = evenMore
             |        }
             |    },
@@ -463,7 +463,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |* ```
             |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val result = client.testFlat(
-            |*     TestRequest {
+            |*     testRequest {
             |*     }
             |* )
             |* ```
@@ -497,7 +497,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |suspend fun testFlat(
             |    query: kotlin.String
             |): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> = stubs.api.execute("testFlat") {
-            |    it.testFlat(google.example.TestRequest {
+            |    it.testFlat(google.example.testRequest {
             |        this.query = query
             |    })
             |}
@@ -515,7 +515,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val result = client.testFlat(
             |*     query,
-            |*     Detail {
+            |*     detail {
             |*         this.mainDetail = mainDetail
             |*     }
             |* )
@@ -529,7 +529,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |    query: kotlin.String,
             |    mainDetail: google.example.Detail
             |): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> = stubs.api.execute("testFlat") {
-            |    it.testFlat(google.example.TestRequest {
+            |    it.testFlat(google.example.testRequest {
             |        this.query = query
             |        this.mainDetail = mainDetail
             |    })
@@ -566,7 +566,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
                 |* ```
                 |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
                 |* val result = client.testFlatWithoutOriginal(
-                |*     Detail {
+                |*     detail {
                 |*         this.mainDetail = mainDetail
                 |*     }
                 |* )
@@ -578,7 +578,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
                 |    mainDetail: google.example.Detail
                 |): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> = stubs.api.execute("testFlatWithoutOriginal") {
                 |    it.testFlatWithoutOriginal(
-                |        google.example.TestRequest {
+                |        google.example.testRequest {
                 |            this.mainDetail = mainDetail
                 |        }
                 |    )
@@ -613,7 +613,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |* ```
             |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val result = client.nestedFlat(
-            |*     MoreDetail {
+            |*     moreDetail {
             |*         this.evenMore = evenMore
             |*     }
             |* )
@@ -622,8 +622,8 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |suspend fun nestedFlat(
             |    evenMore: google.example.MoreDetail
             |): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> = stubs.api.execute("nestedFlat") {
-            |    it.nestedFlat(google.example.TestRequest {
-            |        mainDetail = google.example.Detail {
+            |    it.nestedFlat(google.example.testRequest {
+            |        mainDetail = google.example.detail {
             |            this.evenMore = evenMore
             |        }
             |    })
@@ -658,8 +658,8 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |* ```
             |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             |* val result = client.nestedFlat(
-            |*     Detail {
-            |*         addAllMoreDetails(moreDetails)
+            |*     detail {
+            |*         this.moreDetails = moreDetails
             |*     }
             |* )
             |* ```
@@ -670,8 +670,8 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |    moreDetails: kotlin.collections.List<google.example.Detail>
             |): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> = stubs.api.execute("nestedFlat") {
             |    it.nestedFlat(
-            |        google.example.TestRequest {
-            |            addAllMoreDetails(moreDetails)
+            |        google.example.testRequest {
+            |            this.moreDetails = moreDetails
             |        }
             |    )
             |}
@@ -696,30 +696,28 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
         val methods = generate(opts).testServiceClient().funSpecs.filter { it.name == "nestedFlat" }
         assertThat(methods).hasSize(1)
 
-        val method = methods.first { it.parameters.size == 1 }
-        assertThat(method.toString().asNormalizedString()).isEqualTo(
+        assertThat(methods.first().toString().asNormalizedString()).isEqualTo(
             """
             |/**
-            |*
-            |*
-            |* For example:
-            |* ```
-            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
-            |* val result = client.nestedFlat(
-            |*     MoreDetail {
-            |*         this.evenMore = evenMore
-            |*     }
-            |* )
-            |* ```
-            |*/
+            | *
+            | *
+            | * For example:
+            | * ```
+            | * val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            | * val result = client.nestedFlat(
+            | *     moreDetail {
+            | *         this.evenMore = evenMore
+            | *     }
+            | *)
+            | * ```
+            | */
             |suspend fun nestedFlat(
             |    evenMore: google.example.MoreDetail
             |): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> = stubs.api.execute("nestedFlat") {
-            |    it.nestedFlat(google.example.TestRequest {
-            |        addMoreDetails(0, google.example.Detail {
+            |    it.nestedFlat(google.example.testRequest {
+            |        moreDetails(google.example.detail {
             |            this.evenMore = evenMore
-            |        }
-            |    )})
+            |    })})
             |}
             |""".asNormalizedString()
         )
@@ -760,8 +758,8 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |suspend fun nestedFlatPrimitive(
             |    useful: kotlin.Boolean
             |): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> = stubs.api.execute("nestedFlatPrimitive") {
-            |    it.nestedFlatPrimitive(google.example.TestRequest {
-            |        mainDetail = google.example.Detail {
+            |    it.nestedFlatPrimitive(google.example.testRequest {
+            |        mainDetail = google.example.detail {
             |            this.useful = useful
             |        }
             |    })
@@ -800,7 +798,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | * ```
             | * val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             | * val pager = client.pagedTest(
-            | *     PagedRequest {
+            | *     pagedRequest {
             | *     }
             | *)
             | * val page = pager.next()
@@ -884,7 +882,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |        stubs.api.execute("pagedTest") { it.pagedTest(request) }
             |    },
             |    initialRequest = {
-            |        google.example.PagedRequest {
+            |        google.example.pagedRequest {
             |            this.flag = flag
             |            this.pageSize = pageSize
             |        }
@@ -922,7 +920,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | * ```
             | * val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
             | * val result = client.pagedTest(
-            | *     PagedRequest {
+            | *     pagedRequest {
             | *     }
             | *)
             | * ```

@@ -21,6 +21,7 @@ import android.support.v7.app.AppCompatActivity
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
+import com.google.cloud.language.v1.document
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -56,7 +57,7 @@ class LanguageMetadataActivity : AppCompatActivity(), CoroutineScope {
             val response = client.prepare {
                 withMetadata("foo", listOf("1", "2"))
                 withMetadata("bar", listOf("a", "b"))
-            }.analyzeEntities(Document {
+            }.analyzeEntities(document {
                 content = "Hi there Joe"
                 type = Document.Type.PLAIN_TEXT
             }, EncodingType.UTF8)

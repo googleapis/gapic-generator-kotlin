@@ -26,7 +26,6 @@ import com.google.api.kotlin.util.describeMap
 import com.google.api.kotlin.util.isMap
 import com.google.api.kotlin.util.isRepeated
 import com.google.protobuf.DescriptorProtos
-import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
@@ -34,6 +33,7 @@ import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
 
@@ -51,124 +51,258 @@ internal class DSLBuilderGenerator : BuilderGenerator {
 
         // generate all the builder functions
         types.getAllTypes()
-            .asSequence()
             .map { TypeInfo(types.getProtoTypeDescriptor(it.protoName), ClassName.bestGuess(it.kotlinName)) }
             .filter {
                 !(it.className.packageName == "com.google.protobuf" &&
                     (it.className.canonicalName.contains("DescriptorProtos") || SKIP.contains(it.className.simpleName)))
             }
             .filter { !it.proto.isMap() }
-            .forEach { type ->
-                val builderType = ClassName.bestGuess("${type.className}.Builder")
+            .forEach { addBuildersForType(packagesToBuilders, types, it) }
 
-                // construct function name
-                var parentType = type.className.enclosingClassName()
-                val parentTypes = mutableListOf<String>()
-                while (parentType != null) {
-                    parentTypes.add(parentType.simpleName)
-                    parentType = parentType.enclosingClassName()
-                }
-                val name = if (parentTypes.isEmpty()) {
-                    type.className.simpleName
-                } else {
-                    // TODO: better way to name w/o collisions?
-                    "${parentTypes.reversed().joinToString("_")}_${type.className.simpleName}"
-                }
+        return packagesToBuilders.asGeneratedSources()
+    }
 
-                // create builder function body
-                val builder = FunSpec.builder(name)
-                .returns(type.className)
-                    .addParameter(
-                        "init",
-                        LambdaTypeName.get(
-                            builderType.copy(annotations = listOf(AnnotationSpec.builder(GrpcTypes.Support.ProtoBuilder).build())),
-                            listOf(),
-                            Unit::class.asTypeName()
-                        )
-                    )
-                    .addStatement("return %T.newBuilder().apply(init).build()", type.className)
+    // adds builders for the given to the set of package-level builders
+    private fun addBuildersForType(builders: PackagesToBuilders, types: ProtobufTypeMapper, type: TypeInfo) {
+        val builderType = ClassName.bestGuess("${type.className}.Builder")
 
-                // create an extensions property for repeated fields
-                val repeatedSetters = type.proto.fieldList
-                    .asSequence()
-                    .filter { it.isRepeated() && !it.isMap(types) }
-                    .map {
-                        val fieldType = it.asClassName(types)
-                        val propertyName = FieldNamer.getFieldName(it.name)
-
-                        FunSpec.builder(propertyName)
-                            .receiver(builderType)
-                            .addParameter(
-                                ParameterSpec.builder("values", fieldType, KModifier.VARARG)
-                                    .build()
-                            )
-                            .addStatement("this.%L(values.toList())", FieldNamer.getSetterRepeatedName(it.name))
-                            .build()
-                    }
-
-                // create an extensions property for map fields
-                val mapSetters = type.proto.fieldList
-                    .asSequence()
-                    .filter { it.isRepeated() && it.isMap(types) }
-                    .map {
-                        val (keyType, valueType) = it.describeMap(types)
-                        val pairType = Pair::class.asClassName().parameterizedBy(
-                            keyType.asClassName(types),
-                            valueType.asClassName(types)
-                        )
-                        val propertyName = FieldNamer.getFieldName(it.name)
-
-                        FunSpec.builder(propertyName)
-                            .receiver(builderType)
-                            .addParameter(
-                                ParameterSpec.builder("values", pairType, KModifier.VARARG)
-                                    .build()
-                            )
-                            .addStatement("this.%L(values.toMap())", FieldNamer.getSetterMapName(it.name))
-                            .build()
-                    }
-
-                // get list of builder functions in this package and append to it
-                val (funBuilders, _) = packagesToBuilders[type.className.packageName]
-                funBuilders.add(builder.build())
-                funBuilders.addAll(repeatedSetters)
-                funBuilders.addAll(mapSetters)
-            }
-
-        // collect the builder functions into types
-        return packagesToBuilders.map { packageName, functions, properties ->
-            GeneratedSource(
-                packageName,
-                "KotlinBuilders",
-                functions = functions,
-                properties = properties
+        // Create the wrapper type
+        val wrapperClass = ClassName(type.className.packageName, getBuilderTypeName(type))
+        val wrapperBuilder = TypeSpec.classBuilder(wrapperClass)
+            .addModifiers(KModifier.INLINE)
+            .addAnnotation(GrpcTypes.Support.ProtoBuilder)
+            .primaryConstructor(
+                FunSpec.constructorBuilder()
+                    .addParameter("builder", builderType)
+                    .build()
             )
+            .addProperty(
+                PropertySpec.builder("builder", builderType)
+                    .initializer("builder")
+                    .build()
+            )
+
+        // create a property for each normal field
+        wrapperBuilder.addProperties(type.mapNormalFields(types) {
+            val fieldType = it.asClassName(types)
+            val propertyName = FieldNamer.getFieldName(it.name)
+
+            PropertySpec.builder(propertyName, fieldType)
+                .mutable(true)
+                .getter(
+                    FunSpec.getterBuilder()
+                        .addModifiers(KModifier.INLINE)
+                        .addStatement("return builder.%L", FieldNamer.getJavaBuilderAccessorName(it.name))
+                        .build()
+                )
+                .setter(
+                    FunSpec.setterBuilder()
+                        .addModifiers(KModifier.INLINE)
+                        .addParameter("value", fieldType)
+                        .addStatement("builder.%L = value", FieldNamer.getJavaBuilderSyntheticSetterName(it.name))
+                        .build()
+                ).build()
+        })
+
+        // create an extensions property for repeated fields
+        wrapperBuilder.addProperties(type.mapRepeatedFields(types) {
+            val fieldType = it.asClassName(types)
+            val propertyName = FieldNamer.getFieldName(it.name)
+            val listType = List::class.asTypeName().parameterizedBy(fieldType)
+
+            PropertySpec.builder(propertyName, listType)
+                .mutable(true)
+                .getter(
+                    FunSpec.getterBuilder()
+                        .addModifiers(KModifier.INLINE)
+                        .addStatement("return builder.%L", FieldNamer.getJavaBuilderAccessorRepeatedName(it.name))
+                        .build()
+                )
+                .setter(
+                    FunSpec.setterBuilder()
+                        .addModifiers(KModifier.INLINE)
+                        .addParameter("values", listType)
+                        .addCode(
+                            """
+                            |builder.clear%L()
+                            |builder.%L(values)
+                            |""".trimMargin(),
+                            propertyName.capitalize(),
+                            FieldNamer.getJavaBuilderSetterRepeatedName(it.name)
+                        ).build()
+                ).build()
+        })
+
+        // create an extensions property for repeated fields
+        wrapperBuilder.addFunctions(type.mapRepeatedFields(types) {
+            val fieldType = it.asClassName(types)
+            val propertyName = FieldNamer.getFieldName(it.name)
+
+            FunSpec.builder(propertyName)
+                .addModifiers(KModifier.INLINE)
+                .addParameter(
+                    ParameterSpec.builder("values", fieldType, KModifier.VARARG)
+                        .build()
+                )
+                .addStatement("builder.%L(values.toList())", FieldNamer.getJavaBuilderSetterRepeatedName(it.name))
+                .build()
+        })
+
+        // create an extensions property for map fields
+        wrapperBuilder.addProperties(type.mapMappedFields(types) {
+            val (keyType, valueType) = it.describeMap(types)
+            val mapType = Map::class.asClassName().parameterizedBy(
+                keyType.asClassName(types),
+                valueType.asClassName(types)
+            )
+            val propertyName = FieldNamer.getFieldName(it.name)
+
+            PropertySpec.builder(propertyName, mapType)
+                .mutable(true)
+                .getter(
+                    FunSpec.getterBuilder()
+                        .addModifiers(KModifier.INLINE)
+                        .addStatement("return builder.%L", FieldNamer.getJavaBuilderAccessorMapName(it.name))
+                        .build()
+                )
+                // TODO: should use builder.clear%L()
+                //       https://github.com/protocolbuffers/protobuf/issues/2263
+                .setter(
+                    FunSpec.setterBuilder()
+                        .addModifiers(KModifier.INLINE)
+                        .addParameter("values", mapType)
+                        .addCode(
+                            """
+                            |builder.%LMap.keys.map { builder.remove%L(it) }
+                            |builder.%L(values)
+                            |""".trimMargin(),
+                            propertyName, propertyName.capitalize(),
+                            FieldNamer.getJavaBuilderSetterMapName(it.name)
+                        ).build()
+                ).build()
+        })
+
+        // create an extensions property for map fields
+        wrapperBuilder.addFunctions(type.mapMappedFields(types) {
+            val (keyType, valueType) = it.describeMap(types)
+            val pairType = Pair::class.asClassName().parameterizedBy(
+                keyType.asClassName(types),
+                valueType.asClassName(types)
+            )
+            val propertyName = FieldNamer.getFieldName(it.name)
+
+            FunSpec.builder(propertyName)
+                .addModifiers(KModifier.INLINE)
+                .addParameter(
+                    ParameterSpec.builder("values", pairType, KModifier.VARARG)
+                        .build()
+                )
+                .addStatement("builder.%L(values.toMap())", FieldNamer.getJavaBuilderSetterMapName(it.name))
+                .build()
+        })
+
+        // create builder function that uses the wrapper
+        val builderFun = FunSpec.builder(getBuilderFunName(type))
+            .returns(type.className)
+            .addParameter(
+                "init",
+                LambdaTypeName.get(
+                    wrapperClass, listOf(), Unit::class.asTypeName()
+                )
+            )
+            .addCode(
+                """
+                |val builder = %T.newBuilder()
+                |%T(builder).apply(init)
+                |return builder.build()
+                |""".trimMargin(),
+                type.className,
+                wrapperClass
+            )
+            .build()
+
+        // get list of builder functions in this package and append to it
+        builders.addTo(
+            type.className.packageName,
+            types = listOf(wrapperBuilder.build()),
+            functions = listOf(builderFun)
+        )
+    }
+
+    private fun getBuilderBaseName(type: TypeInfo): String {
+        var parentType = type.className.enclosingClassName()
+        val parentTypes = mutableListOf<String>()
+        while (parentType != null) {
+            parentTypes.add(parentType.simpleName)
+            parentType = parentType.enclosingClassName()
+        }
+
+        return if (parentTypes.isEmpty()) {
+            type.className.simpleName
+        } else {
+            // TODO: better way to name w/o collisions?
+            "${parentTypes.reversed().joinToString("_")}_${type.className.simpleName}"
         }
     }
+
+    // constructs a name for the builder type/functio
+    private fun getBuilderFunName(type: TypeInfo) = getBuilderBaseName(type).decapitalize()
+
+    private fun getBuilderTypeName(type: TypeInfo) = getBuilderBaseName(type) + "Dsl"
 }
 
 private data class TypeInfo(val proto: DescriptorProtos.DescriptorProto, val className: ClassName)
 
-private typealias FunList = MutableList<FunSpec>
-private typealias PropList = MutableList<PropertySpec>
-private typealias BuilderIterator<T> = (packageName: String, functions: List<FunSpec>, properties: List<PropertySpec>) -> T
+private class PackagesToBuilders {
 
-private data class PackagesToBuilders(
-    private val functions: MutableMap<String, FunList> = mutableMapOf(),
-    private val properties: MutableMap<String, PropList> = mutableMapOf()
-) {
+    private class Parts(
+        val types: MutableList<TypeSpec> = mutableListOf(),
+        val functions: MutableList<FunSpec> = mutableListOf(),
+        val properties: MutableList<PropertySpec> = mutableListOf()
+    )
 
-    fun <T> map(handler: BuilderIterator<T>) = functions.keys.map {
-        handler(it, functions[it]!!, properties[it]!!)
+    private val builders: MutableMap<String, Parts> = mutableMapOf()
+
+    fun addTo(
+        packageName: String,
+        types: List<TypeSpec> = listOf(),
+        functions: List<FunSpec> = listOf(),
+        properties: List<PropertySpec> = listOf()
+    ) {
+        val parts = builders[packageName] ?: Parts()
+        if (!builders.containsKey(packageName)) {
+            builders[packageName] = parts
+        }
+        parts.types += types
+        parts.functions += functions
+        parts.properties += properties
     }
 
-    operator fun get(key: String): Pair<FunList, PropList> {
-        if (!functions.containsKey(key)) {
-            functions[key] = mutableListOf()
-        }
-        if (!properties.containsKey(key)) {
-            properties[key] = mutableListOf()
-        }
-        return Pair(functions[key]!!, properties[key]!!)
+    fun asGeneratedSources() =
+        builders.keys.mapNotNull { asGeneratedSourceFor(it) }
+
+    fun asGeneratedSourceFor(packageName: String) = builders[packageName]?.let {
+        GeneratedSource(
+            packageName,
+            "KotlinBuilders",
+            types = it.types,
+            functions = it.functions,
+            properties = it.properties
+        )
     }
 }
+
+private fun <T> TypeInfo.mapNormalFields(types: ProtobufTypeMapper, t: (DescriptorProtos.FieldDescriptorProto) -> T) =
+    this.proto.fieldList
+        .filter { !it.isRepeated() && !it.isMap(types) }
+        .map { t(it) }
+
+private fun <T> TypeInfo.mapRepeatedFields(types: ProtobufTypeMapper, t: (DescriptorProtos.FieldDescriptorProto) -> T) =
+    this.proto.fieldList
+        .filter { it.isRepeated() && !it.isMap(types) }
+        .map { t(it) }
+
+private fun <T> TypeInfo.mapMappedFields(types: ProtobufTypeMapper, t: (DescriptorProtos.FieldDescriptorProto) -> T) =
+    this.proto.fieldList
+        .filter { it.isRepeated() && it.isMap(types) }
+        .map { t(it) }

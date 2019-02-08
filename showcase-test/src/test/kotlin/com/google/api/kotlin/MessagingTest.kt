@@ -17,9 +17,9 @@
 package com.google.api.kotlin
 
 import com.google.common.truth.Truth.assertThat
-import com.google.showcase.v1alpha3.ConnectRequest
-import com.google.showcase.v1alpha3.ConnectRequest_ConnectConfig
 import com.google.showcase.v1alpha3.MessagingClient
+import com.google.showcase.v1alpha3.connectRequest
+import com.google.showcase.v1alpha3.connectRequest_ConnectConfig
 import io.grpc.ManagedChannelBuilder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -60,8 +60,8 @@ class MessagingTest {
 
         // connect to the room
         val streams = client.connect()
-        streams.requests.send(ConnectRequest {
-            config = ConnectRequest_ConnectConfig { parent = room.name }
+        streams.requests.send(connectRequest {
+            config = connectRequest_ConnectConfig { parent = room.name }
         })
 
         // aggregate all messages in the room

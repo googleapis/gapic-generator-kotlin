@@ -54,8 +54,8 @@ internal abstract class BaseGeneratorTest(
     // the primary test proto (test.proto)
     protected val proto = proto("google/example/test.proto")
     protected val services =
-        generatorRequest.protoFileList.first {
-                p -> p.name == "google/example/test.proto"
+        generatorRequest.protoFileList.first { p ->
+            p.name == "google/example/test.proto"
         }.serviceList!!
     protected val typeMap = ProtobufTypeMapper.fromProtos(generatorRequest.protoFileList)
 

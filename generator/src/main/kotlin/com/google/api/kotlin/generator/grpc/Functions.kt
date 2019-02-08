@@ -23,9 +23,7 @@ import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.MethodOptions
 import com.google.api.kotlin.indent
 import com.google.api.kotlin.types.GrpcTypes
-import com.google.api.kotlin.util.FieldNamer.getAccessorName
-import com.google.api.kotlin.util.FieldNamer.getAccessorRepeatedName
-import com.google.api.kotlin.util.FieldNamer.getSetterName
+import com.google.api.kotlin.util.FieldNamer
 import com.google.api.kotlin.util.Flattening
 import com.google.api.kotlin.util.Flattening.getFlattenedParameters
 import com.google.api.kotlin.util.ParameterInfo
@@ -252,9 +250,10 @@ internal class FunctionsImpl(
                 val pageType = GrpcTypes.Support.PageWithMetadata(responseListItemType)
 
                 // getters and setters for setting the page sizes, etc.
-                val pageTokenSetter = getSetterName(methodOptions.pagedResponse.requestPageToken)
-                val nextPageTokenGetter = getAccessorName(methodOptions.pagedResponse.responsePageToken)
-                val responseListGetter = getAccessorRepeatedName(methodOptions.pagedResponse.responseList)
+                val pageTokenSetter = FieldNamer.getJavaBuilderRawSetterName(methodOptions.pagedResponse.requestPageToken)
+                val nextPageTokenGetter = FieldNamer.getFieldName(methodOptions.pagedResponse.responsePageToken)
+                val responseListGetter =
+                    FieldNamer.getJavaBuilderAccessorRepeatedName(methodOptions.pagedResponse.responseList)
 
                 // build method body using a pager
                 m.returns(ReceiveChannel::class.asClassName().parameterizedBy(pageType))
