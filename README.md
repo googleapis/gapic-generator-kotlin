@@ -132,7 +132,7 @@ fun main() = runBlocking<Unit> {
     )
 
     // call the API
-    val response = client.hiThere(HiRequest {
+    val response = client.hiThere(hiRequest {
         query = "Hello!"
     })
 
