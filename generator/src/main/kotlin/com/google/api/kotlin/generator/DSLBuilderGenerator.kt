@@ -119,17 +119,15 @@ internal class DSLBuilderGenerator : BuilderGenerator {
                         .build()
                 )
                 .setter(
-                    // TODO: should use builder.clear%L()
-                    //       https://github.com/protocolbuffers/protobuf/issues/2263
                     FunSpec.setterBuilder()
                         .addModifiers(KModifier.INLINE)
                         .addParameter("values", listType)
                         .addCode(
                             """
-                            |builder.%L.keys.map { builder.remove%L(it) }
+                            |builder.clear%L()
                             |builder.%L(values)
                             |""".trimMargin(),
-                            propertyName, propertyName.capitalize(),
+                            propertyName.capitalize(),
                             FieldNamer.getJavaBuilderSetterRepeatedName(it.name)
                         ).build()
                 ).build()
@@ -167,16 +165,18 @@ internal class DSLBuilderGenerator : BuilderGenerator {
                         .addStatement("return builder.%L", FieldNamer.getJavaBuilderAccessorMapName(it.name))
                         .build()
                 )
+                // TODO: should use builder.clear%L()
+                //       https://github.com/protocolbuffers/protobuf/issues/2263
                 .setter(
                     FunSpec.setterBuilder()
                         .addModifiers(KModifier.INLINE)
                         .addParameter("values", mapType)
                         .addCode(
                             """
-                            |builder.clear%L()
+                            |builder.%LMap.keys.map { builder.remove%L(it) }
                             |builder.%L(values)
                             |""".trimMargin(),
-                            propertyName.capitalize(),
+                            propertyName, propertyName.capitalize(),
                             FieldNamer.getJavaBuilderSetterMapName(it.name)
                         ).build()
                 ).build()

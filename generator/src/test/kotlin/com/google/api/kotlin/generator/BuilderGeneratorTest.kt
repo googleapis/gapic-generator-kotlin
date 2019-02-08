@@ -260,10 +260,7 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
             |inline class FooDsl(val builder: com.google.api.Foo.Builder) {
             |    inline var responses: kotlin.collections.List<com.google.api.Response>
             |        get() = builder.responsesList
-            |        set(values) {
-            |            builder.responses.keys.map { builder.removeResponses(it) }
-            |            builder.addAllResponses(values)
-            |        }
+            |        set(values) { builder.clearResponses() builder.addAllResponses(values) }
             |
             |    inline fun responses(vararg values: com.google.api.Response) { builder.addAllResponses(values.toList()) }
             |}
@@ -316,10 +313,7 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
             |inline class FooDsl(val builder: com.google.api.Foo.Builder) {
             |    inline var theStrings: kotlin.collections.List<kotlin.String>
             |        get() = builder.theStringsList
-            |        set(values) {
-            |            builder.theStrings.keys.map { builder.removeTheStrings(it) }
-            |            builder.addAllTheStrings(values)
-            |        }
+            |        set(values) { builder.clearTheStrings() builder.addAllTheStrings(values) }
             |
             |    inline fun theStrings(vararg values: kotlin.String) { builder.addAllTheStrings(values.toList()) }
             |}
@@ -392,10 +386,7 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
             """
             |inline var lotsMore: kotlin.collections.List<google.example.MoreDetail>
             |    get() = builder.lotsMoreList
-            |    set(values) {
-            |        builder.lotsMore.keys.map { builder.removeLotsMore(it) }
-            |        builder.addAllLotsMore(values)
-            |}
+            |    set(values) { builder.clearLotsMore() builder.addAllLotsMore(values) }
             """.asNormalizedString()
         )
         assertThat(builders.builderTypeFun("Detail", "lotsMore")).isEqualTo(
@@ -408,10 +399,7 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
             """
             |inline var moreDetails: kotlin.collections.List<google.example.Detail>
             |    get() = builder.moreDetailsList
-            |    set(values) {
-            |        builder.moreDetails.keys.map { builder.removeMoreDetails(it) }
-            |        builder.addAllMoreDetails(values)
-            |}
+            |    set(values) { builder.clearMoreDetails() builder.addAllMoreDetails(values) }
             """.asNormalizedString()
         )
         assertThat(builders.builderTypeFun("TestRequest", "moreDetails")).isEqualTo(
@@ -424,10 +412,7 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
             """
             |inline var responses: kotlin.collections.List<kotlin.Int>
             |    get() = builder.responsesList
-            |    set(values) {
-            |        builder.responses.keys.map { builder.removeResponses(it) }
-            |        builder.addAllResponses(values)
-            |}
+            |    set(values) { builder.clearResponses() builder.addAllResponses(values) }
             """.asNormalizedString()
         )
 
@@ -446,7 +431,7 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
             """
             |inline var tonsMore: kotlin.collections.Map<kotlin.String, google.example.MoreDetail>
             |    get() = builder.tonsMoreMap
-            |    set(values) { builder.clearTonsMore() builder.putAllTonsMore(values) }
+            |    set(values) { builder.tonsMoreMap.keys.map { builder.removeTonsMore(it) } builder.putAllTonsMore(values) }
             """.asNormalizedString()
         )
         assertThat(builders.builderTypeFun("Detail", "tonsMore")).isEqualTo(
