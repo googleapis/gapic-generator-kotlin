@@ -47,7 +47,6 @@ The docker images supports the following command line arguments:
 | ----                  | ----------- |
 | `--android`           | Generate Android style code |
 | `--auth-google-cloud` | Include Google authentication mechanisms (only use for Google APIs) |
-| `--no-builders`       | Do not generate Kotlin DSL builders for proto message types |
 | `--no-format`         | Do not format the generated code |
 | `--no-lint`           | Do not lint the generated code |
 | `--no-compile`        | Do not compile the generated code (compilation is a sanity check) |
@@ -138,7 +137,6 @@ The `client {}` block supports the following options:
 | ----                           | ----------- |
 | `option "test-output=<path>"`  | Generate unit tests for the client at the given `path` |
 | `option "auth-google-cloud"`   | Include Google authentication mechanisms (only use for Google APIs) |
-| `option "no-builders"`         | Do not generate Kotlin DSL builders for proto message types |
 
 ### Protoc
 

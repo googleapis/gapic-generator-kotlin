@@ -10,7 +10,6 @@ show_help() {
     echo "    --android             Generate code for the Android platform"
     echo "    --lite                Generate code for the Android platform (same as --android)"
     echo "    --auth-google-cloud   Generate additional code for Google Cloud Platform APIs"
-    echo "    --no-builders         Skip generating Kotlin builders for Java proto message types"
     echo "    --no-compile          Skip compiling the generated code"
     echo "    --no-format           Skip formatting the generated code"
     echo "    --overwrite           Overwrite everything in the output directory"
@@ -42,10 +41,6 @@ while (( "$#" )); do
       ;;
     --auth-google-cloud)
       IS_AUTH_GCLOUD=1
-      shift
-      ;;
-    --no-builders)
-      IS_NO_BUILDERS=1
       shift
       ;;
     --no-compile)
@@ -108,11 +103,6 @@ fi
 if [ ! -z ${IS_AUTH_GCLOUD+x} ]; then
   sed -i '/\/\/ EXTRA-PLUGIN-OPTIONS/a\
                     option "auth-google-cloud"
-  ' build.gradle
-fi
-if [ ! -x ${IS_NO_BUILDERS+x} ]; then
-  sed -i '/\/\/ EXTRA-PLUGIN-OPTIONS/a\
-                    option "no-builders"
   ' build.gradle
 fi
 

@@ -36,7 +36,7 @@ import kotlin.test.Test
 internal class KotlinClientGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
 
     @Test
-    fun `generates a class with context and a license`() {
+    fun `generates a class with context`() {
         val clientGenerator: ClientGenerator = mock {
             on { generateServiceClient(any()) }.doReturn(
                 listOf(
@@ -58,7 +58,6 @@ internal class KotlinClientGeneratorTest : BaseClientGeneratorTest(GRPCGenerator
 
         assertThat(result.sourceCode.fileCount).isEqualTo(1)
         val testClient = result.sourceCode.fileList.first { it.name == "google/example/TestServiceClient.kt" }
-        assertThat(testClient.content).contains("Copyright")
         assertThat(testClient.content).contains("class TestServiceClient")
 
         verify(clientGenerator).generateServiceClient(check {
@@ -106,9 +105,6 @@ internal class KotlinClientGeneratorTest : BaseClientGeneratorTest(GRPCGenerator
         assertThat(result.sourceCode.fileList.map { it.name }).containsExactly(
             "google/example/FooService.kt", "foo/bar/Baz.kt"
         )
-        result.sourceCode.fileList.forEach {
-            assertThat(it.content).contains("Copyright")
-        }
     }
 
     @Test

@@ -86,14 +86,6 @@ class ClientPluginOptions(
 
     @JvmField
     @Option(
-        name = "no-builders",
-        help = "Do not generate DSL style builders for message types.",
-        defaultValue = "false"
-    )
-    var noBuilders: Boolean = false,
-
-    @JvmField
-    @Option(
         name = "auth-google-cloud",
         help = "Add additional methods to support authentication on Google Cloud.",
         defaultValue = "false"

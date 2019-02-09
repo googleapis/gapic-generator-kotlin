@@ -31,14 +31,11 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import mu.KotlinLogging
 import org.apache.commons.text.WordUtils
-import java.util.Calendar
 
 private val log = KotlinLogging.logger {}
 
 /**
  * Generator for Kotlin client libraries.
- *
- * @author jbolinger
  */
 internal class KotlinClientGenerator(
     private val clientGenerator: ClientGenerator,
@@ -140,25 +137,10 @@ internal class KotlinClientGenerator(
     }
 
     private fun toSourceFile(
-        source: GeneratedSource,
-        addLicense: Boolean = true
+        source: GeneratedSource
     ): PluginProtos.CodeGeneratorResponse.File {
         val name = source.name
         val fileSpec = FileSpec.builder(source.packageName, name)
-
-        // add header
-        if (addLicense) {
-            // TODO: not sure how this will be configured long term
-            val license =
-                this.javaClass.getResource("/license-templates/apache-2.0.txt")?.readText()
-            license?.let {
-                fileSpec.addComment(
-                    "%L", it
-                        .replaceFirst("[yyyy]", "${Calendar.getInstance().get(Calendar.YEAR)}")
-                        .replaceFirst("[name of copyright owner]", "Google LLC")
-                )
-            }
-        }
 
         // add implementation
         source.types.forEach { fileSpec.addType(it) }

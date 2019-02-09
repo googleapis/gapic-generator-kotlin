@@ -142,9 +142,6 @@ internal class ClientPluginTest {
     }
 
     private fun verifyResponse(client: String, clientStub: String, builders: String) {
-        for (file in listOf(client, clientStub, builders)) {
-            assertThat(file.substringBefore("\n")).contains("Copyright")
-        }
         for (file in listOf(client, clientStub)) {
             assertThat(file).contains("@Generated(\"${GRPCGenerator::class.qualifiedName}\")")
         }

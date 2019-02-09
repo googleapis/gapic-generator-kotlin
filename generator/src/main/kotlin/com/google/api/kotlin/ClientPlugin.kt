@@ -86,7 +86,7 @@ fun main(args: Array<String>) {
             else -> GRPCGenerator()
         },
         options.asSwappableConfiguration(typeMap),
-        if (options.noBuilders) null else DSLBuilderGenerator()
+        DSLBuilderGenerator()
     )
     val (sourceCode, testCode) = generator.generate(request, typeMap, options) { proto ->
         if (options.includeGoogleCommon) true else proto.isNotWellKnown()
