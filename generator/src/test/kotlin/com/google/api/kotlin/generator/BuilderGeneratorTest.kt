@@ -380,35 +380,38 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
 
     @Test
     fun `generates repeated getters and setters`() {
-        val builders = generate().kotlinBuilders()
+        val builders = generate().kotlinBuilders("google.example")
+        assertThat(builders).hasSize(1)
 
-        assertThat(builders.builderTypeProp("Detail", "lotsMore")).isEqualTo(
+        val builder = builders.first()
+
+        assertThat(builder.builderTypeProp("Detail", "lotsMore")).isEqualTo(
             """
             |inline var lotsMore: kotlin.collections.List<google.example.MoreDetail>
             |    get() = builder.lotsMoreList
             |    set(values) { builder.clearLotsMore() builder.addAllLotsMore(values) }
             """.asNormalizedString()
         )
-        assertThat(builders.builderTypeFun("Detail", "lotsMore")).isEqualTo(
+        assertThat(builder.builderTypeFun("Detail", "lotsMore")).isEqualTo(
             """
             |inline fun lotsMore(vararg values: google.example.MoreDetail) { builder.addAllLotsMore(values.toList()) }
             """.asNormalizedString()
         )
 
-        assertThat(builders.builderTypeProp("TestRequest", "moreDetails")).isEqualTo(
+        assertThat(builder.builderTypeProp("TestRequest", "moreDetails")).isEqualTo(
             """
             |inline var moreDetails: kotlin.collections.List<google.example.Detail>
             |    get() = builder.moreDetailsList
             |    set(values) { builder.clearMoreDetails() builder.addAllMoreDetails(values) }
             """.asNormalizedString()
         )
-        assertThat(builders.builderTypeFun("TestRequest", "moreDetails")).isEqualTo(
+        assertThat(builder.builderTypeFun("TestRequest", "moreDetails")).isEqualTo(
             """
             |inline fun moreDetails(vararg values: google.example.Detail) { builder.addAllMoreDetails(values.toList()) }
             """.asNormalizedString()
         )
 
-        assertThat(builders.builderTypeProp("PagedResponse", "responses")).isEqualTo(
+        assertThat(builder.builderTypeProp("PagedResponse", "responses")).isEqualTo(
             """
             |inline var responses: kotlin.collections.List<kotlin.Int>
             |    get() = builder.responsesList
@@ -416,7 +419,7 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
             """.asNormalizedString()
         )
 
-        assertThat(builders.builderTypeFun("PagedResponse", "responses")).isEqualTo(
+        assertThat(builder.builderTypeFun("PagedResponse", "responses")).isEqualTo(
             """
             |inline fun responses(vararg values: kotlin.Int) { builder.addAllResponses(values.toList()) }
             """.asNormalizedString()
@@ -425,16 +428,18 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
 
     @Test
     fun `generates map getters and setters`() {
-        val builders = generate().kotlinBuilders()
+        val builders = generate().kotlinBuilders("google.example")
+        assertThat(builders).hasSize(1)
 
-        assertThat(builders.builderTypeProp("Detail", "tonsMore")).isEqualTo(
+        val builder = builders.first()
+        assertThat(builder.builderTypeProp("Detail", "tonsMore")).isEqualTo(
             """
             |inline var tonsMore: kotlin.collections.Map<kotlin.String, google.example.MoreDetail>
             |    get() = builder.tonsMoreMap
             |    set(values) { builder.tonsMoreMap.keys.map { builder.removeTonsMore(it) } builder.putAllTonsMore(values) }
             """.asNormalizedString()
         )
-        assertThat(builders.builderTypeFun("Detail", "tonsMore")).isEqualTo(
+        assertThat(builder.builderTypeFun("Detail", "tonsMore")).isEqualTo(
             """
             |inline fun tonsMore(vararg values: kotlin.Pair<kotlin.String, google.example.MoreDetail>) { builder.putAllTonsMore(values.toMap()) }
             """.asNormalizedString()
@@ -443,11 +448,13 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
 
     @Test
     fun `generates the correct number of builder functions`() {
-        val builders = generate().kotlinBuilders()
+        val builders = generate().kotlinBuilders("google.example")
+        assertThat(builders).hasSize(1)
 
-        assertThat(builders.types).hasSize(16)
-        assertThat(builders.functions).hasSize(16)
-        assertThat(builders.properties).isEmpty()
+        val builder = builders.first()
+        assertThat(builder.types).hasSize(16)
+        assertThat(builder.functions).hasSize(16)
+        assertThat(builder.properties).isEmpty()
     }
 }
 

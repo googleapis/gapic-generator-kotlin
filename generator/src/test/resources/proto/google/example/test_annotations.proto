@@ -19,15 +19,16 @@ syntax = "proto3";
 package google.example;
 
 import "google/api/annotations.proto";
+import "google/api/client.proto";
 import "google/longrunning/operations.proto";
-import "google/rpc/code.proto";
 
 option java_multiple_files = true;
 
-option (google.api.metadata) = {
-  product_name: "The Test Product"
-  product_uri: "https://github.com/googleapis/gapic-generator-kotlin"
-  package_namespace: ["A", "Name", "space"]
+option (google.api.client_package) = {
+  title: "Test"
+  version: "v12"
+  product_title: "The Test Product"
+  namespace: ["A", "Name", "space"]
 };
 
 // This a proto for testing the config annotations
@@ -43,13 +44,12 @@ service AnnotationService {
     }
 
     rpc AnnotationSignatureTest (FooRequest) returns (BarResponse) {
-        option (google.api.method_signature) = {
-            fields: ["foo", "other.foo"]
-        };
+        option (google.api.method_signature) = "foo";
+        option (google.api.method_signature) = "foo,other.foo";
     }
 
     rpc AnnotationLongRunningTest (FooRequest) returns (google.longrunning.Operation) {
-        option (google.api.operation) = {
+        option (google.longrunning.operation_info) = {
             response_type: "TheLongRunningResponse"
             metadata_type: "google.example.TheLongRunningMetadata"
         };

@@ -17,6 +17,8 @@
 package com.google.api.kotlin.config
 
 import com.google.api.AnnotationsProto
+import com.google.api.ClientProto
+import com.google.longrunning.OperationsProto
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.ExtensionRegistry
 import com.google.protobuf.GeneratedMessage
@@ -27,6 +29,8 @@ internal object ProtobufExtensionRegistry {
     val INSTANCE: ExtensionRegistry by lazy {
         val extensionRegistry = ExtensionRegistry.newInstance()
         AnnotationsProto.registerAllExtensions(extensionRegistry)
+        ClientProto.registerAllExtensions(extensionRegistry)
+        OperationsProto.registerAllExtensions(extensionRegistry)
         extensionRegistry
     }
 }

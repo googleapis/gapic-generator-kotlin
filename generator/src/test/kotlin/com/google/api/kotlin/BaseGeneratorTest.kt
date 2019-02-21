@@ -142,8 +142,9 @@ internal fun List<GeneratedArtifact>.testServiceClient() =
 internal fun List<GeneratedArtifact>.testServiceClientStub() =
     this.sources().first { it.name == "TheTestStub" }.types.first()
 
-internal fun List<GeneratedSource>.kotlinBuilders() =
-    this.first { it.name == "KotlinBuilders" }
+internal fun List<GeneratedSource>.kotlinBuilders(packageName: String) =
+    this.filter { it.name == "KotlinBuilders" }
+        .filter { it.packageName.startsWith(packageName) }
 
 // misc. proto helpers
 

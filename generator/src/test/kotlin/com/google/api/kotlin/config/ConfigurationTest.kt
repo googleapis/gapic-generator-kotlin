@@ -31,7 +31,6 @@ internal class ConfigurationTest : BaseClientGeneratorTest(GRPCGenerator()) {
         val config = factory.fromProto(proto)
 
         assertThat(config.branding.name).isEqualTo("")
-        assertThat(config.branding.url).isEqualTo("")
         assertThat(config.packageName).isEqualTo("google.example")
     }
 
@@ -41,7 +40,6 @@ internal class ConfigurationTest : BaseClientGeneratorTest(GRPCGenerator()) {
         val config = factory.fromProto(annotationsProto)
 
         assertThat(config.branding.name).isEqualTo("The Test Product")
-        assertThat(config.branding.url).isEqualTo("https://github.com/googleapis/gapic-generator-kotlin")
         assertThat(config.packageName).isEqualTo("a.name.space")
     }
 
@@ -98,12 +96,15 @@ internal class ConfigurationTest : BaseClientGeneratorTest(GRPCGenerator()) {
         val method = config["google.example.AnnotationService"].methods.find { it.name == "AnnotationSignatureTest" }
         val signatures = method?.flattenedMethods ?: fail("method signatures not found")
 
-        assertThat(signatures).hasSize(1)
+        assertThat(signatures).hasSize(2)
 
         assertThat(signatures[0].parameters).containsExactly(
+            "foo".asPropertyPath()
+        ).inOrder()
+        assertThat(signatures[1].parameters).containsExactly(
             "foo".asPropertyPath(),
             "other.foo".asPropertyPath()
-        )
+        ).inOrder()
     }
 
     @Test

@@ -17,12 +17,13 @@
 package com.google.api.kotlin.config
 
 import com.google.api.AnnotationsProto
-import com.google.api.MethodSignature
+import com.google.api.ClientProto
 import com.google.api.kotlin.ClientPluginOptions
 import com.google.api.kotlin.ConfigurationFactory
 import com.google.api.kotlin.util.isIntOrLong
 import com.google.api.kotlin.util.isRepeated
 import com.google.api.kotlin.util.isString
+import com.google.longrunning.OperationsProto
 import com.google.protobuf.DescriptorProtos
 import com.google.rpc.Code
 import mu.KotlinLogging
@@ -74,19 +75,19 @@ internal class AnnotationConfigurationFactory(
 ) : ConfigurationFactory {
 
     override fun fromProto(proto: DescriptorProtos.FileDescriptorProto): Configuration {
-        val metadata = proto.options.getExtensionOrNull(AnnotationsProto.metadata)
+        val metadata = proto.options.getExtensionOrNull(ClientProto.clientPackage)
 
         // parse package name
-        val packageName = if (metadata != null && metadata.packageNamespaceCount > 0) {
-            metadata.packageNamespaceList.joinToString(".")
+        val packageName = if (metadata != null && metadata.namespaceCount > 0) {
+            metadata.namespaceList.joinToString(".")
         } else {
             proto.`package`!!
         }.toLowerCase().replace("\\s".toRegex(), "")
 
         // parse branding (non-code) items
         val branding = BrandingOptions(
-            name = metadata?.productName ?: "",
-            url = metadata?.productUri ?: ""
+            name = metadata?.productTitle ?: metadata?.title ?: "",
+            url = "[TODO: URL was removed from the spec]"
         )
 
         // parse API method config for each service
@@ -108,13 +109,13 @@ internal class AnnotationConfigurationFactory(
         proto: DescriptorProtos.FileDescriptorProto,
         service: DescriptorProtos.ServiceDescriptorProto
     ): ServiceOptions {
-        val host = service.options.getExtensionOrNull(AnnotationsProto.defaultHost)
-        val scopes = service.options.getExtensionOrNull(AnnotationsProto.oauth)
+        val host = service.options.getExtensionOrNull(ClientProto.defaultHost)
+        val scopes = service.options.getExtensionOrNull(ClientProto.oauthScopes)?.split(",") ?: listOf()
         val methods = service.methodList.map { getOptionsForServiceMethod(proto, it) }
 
         val options = ServiceOptions(
             host = host ?: "localhost",
-            scopes = scopes?.scopesList ?: listOf(),
+            scopes = scopes,
             methods = methods
         )
 
@@ -128,7 +129,7 @@ internal class AnnotationConfigurationFactory(
         proto: DescriptorProtos.FileDescriptorProto,
         method: DescriptorProtos.MethodDescriptorProto
     ): MethodOptions {
-        val signatures = method.options.getExtensionOrNull(AnnotationsProto.methodSignature) ?: listOf()
+        val signatures = method.options.getExtensionOrNull(ClientProto.methodSignature) ?: listOf()
         val httpBindings = method.options.getExtensionOrNull(AnnotationsProto.http)
 
         // TODO: retry was removed from the spec - will it return?
@@ -162,13 +163,15 @@ internal class AnnotationConfigurationFactory(
     }
 
     // parse method signatures
-    private fun getMethodFrom(signature: MethodSignature, paging: PagedResponse?): FlattenedMethod {
+    private fun getMethodFrom(signature: String, paging: PagedResponse?): FlattenedMethod {
         // add all paths
-        var paths = signature.fieldsList.map { it.asPropertyPath() }
+        val paths = signature.split(",")
+            .map { it.asPropertyPath() }
+            .toMutableList()
 
         // when paging always embed the page size at the end
         if (paging != null) {
-            paths += paging.pageSize.asPropertyPath()
+            paths.add(paging.pageSize.asPropertyPath())
         }
 
         // add this method and any nested signature
@@ -208,7 +211,7 @@ internal class AnnotationConfigurationFactory(
         proto: DescriptorProtos.FileDescriptorProto,
         method: DescriptorProtos.MethodDescriptorProto
     ): LongRunningResponse? {
-        val longRunning = method.options.getExtensionOrNull(AnnotationsProto.operation)
+        val longRunning = method.options.getExtensionOrNull(OperationsProto.operationInfo)
 
         if (longRunning != null) {
             // extract response and metadata type
@@ -255,9 +258,8 @@ internal class SwappableConfigurationFactory(
         getFactory(proto).fromProto(proto)
 
     private fun getFactory(proto: DescriptorProtos.FileDescriptorProto): ConfigurationFactory {
-        val metadata = proto.options.getExtensionOrNull(AnnotationsProto.metadata)
-        val hasAnnotation = metadata?.productName?.length ?: 0 > 0 ||
-            metadata?.productUri?.length ?: 0 > 0
+        val hasAnnotation = proto.serviceList.any { it.options.getExtensionOrNull(ClientProto.defaultHost) != null } ||
+            proto.options.getExtensionOrNull(ClientProto.clientPackage)?.title?.length ?: 0 > 0
 
         return if (hasAnnotation) {
             log.debug { "Using annotation based config for ${proto.name}" }
@@ -420,9 +422,9 @@ internal class LegacyConfigurationFactory(
                     // parse flattening setup
                     val flattening =
                         method.flattening?.groups?.map {
-                            var paths = it.parameters.map { p -> p.asPropertyPath() }
+                            val paths = it.parameters.map { p -> p.asPropertyPath() }.toMutableList()
                             if (paging != null) {
-                                paths += paging.pageSize.asPropertyPath()
+                                paths.add(paging.pageSize.asPropertyPath())
                             }
                             FlattenedMethod(paths)
                         } ?: listOf()
