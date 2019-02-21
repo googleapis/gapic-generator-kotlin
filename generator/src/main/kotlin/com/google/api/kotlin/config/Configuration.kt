@@ -258,9 +258,8 @@ internal class SwappableConfigurationFactory(
         getFactory(proto).fromProto(proto)
 
     private fun getFactory(proto: DescriptorProtos.FileDescriptorProto): ConfigurationFactory {
-        val metadata = proto.options.getExtensionOrNull(ClientProto.clientPackage)
-        val hasAnnotation = metadata?.title?.length ?: 0 > 0 ||
-            metadata?.version?.length ?: 0 > 0
+        val hasAnnotation = proto.serviceList.any { it.options.getExtensionOrNull(ClientProto.defaultHost) != null } ||
+            proto.options.getExtensionOrNull(ClientProto.clientPackage)?.title?.length ?: 0 > 0
 
         return if (hasAnnotation) {
             log.debug { "Using annotation based config for ${proto.name}" }
