@@ -367,24 +367,29 @@ workflows:
   build_and_test:
     jobs:
       - build:
-          filters:
+          filters: &build-filter
             tags:
               only: /.*/
       - dockerize:
           requires:
             - build
+          filters: *build-filter
       - build_cloud_examples:
           requires:
             - build
+          filters: *build-filter
       - build_cloud_android_examples:
           requires:
             - build
+          filters: *build-filter
       - test_showcase:
           requires:
             - build
+          filters: *build-filter
       - test_example:
           requires:
             - build
+          filters: *build-filter
       - test_cloud_android_examples:
           requires:
             - build
