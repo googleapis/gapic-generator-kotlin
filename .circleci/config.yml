@@ -309,7 +309,7 @@ jobs:
     working_directory: ~/gapic-generator-kotlin/generator
     steps:
       - setup_remote_docker
-      - run: &setup-gcloud
+      - run:
           name: Setup gcloud
           command: |
             echo ${GCLOUD_SERVICE_KEY} > ${HOME}/gcp-key.json
@@ -335,7 +335,13 @@ jobs:
     working_directory: ~/gapic-generator-kotlin/generator
     steps:
       - setup_remote_docker
-      - run: *setup-gcloud
+      - run:
+          name: Setup gcloud
+          command: |
+            echo ${GCLOUD_GAPIC_SERVICE_KEY} > ${HOME}/gcp-key.json
+            gcloud auth activate-service-account --key-file ${HOME}/gcp-key.json
+            gcloud config set project ${GCLOUD_GAPIC_PROJECT_ID}
+            gcloud auth configure-docker
       - attach_workspace:
           at: ./..
       - run:
@@ -344,13 +350,13 @@ jobs:
       - run:
           name: Tag release
           command: |
-            docker tag kgen gcr.io/kotlin-gapic/kgen:latest
-            docker tag kgen gcr.io/kotlin-gapic/kgen:${CIRCLE_TAG:1}
+            docker tag kgen gcr.io/gapic-images/gapic-generator-kotlin:latest
+            docker tag kgen gcr.io/gapic-images/gapic-generator-kotlin:${CIRCLE_TAG:1}
       - run:
           name: Push release
           command: |
-            docker push gcr.io/kotlin-gapic/kgen:latest
-            docker push gcr.io/kotlin-gapic/kgen:${CIRCLE_TAG:1}
+            docker push gcr.io/gapic-images/gapic-generator-kotlin:latest
+            docker push gcr.io/gapic-images/gapic-generator-kotlin:${CIRCLE_TAG:1}
 
 # -------------------------------------------------------------------------------
 # CI Workflow
@@ -404,6 +410,6 @@ workflows:
             - release_gcr_snapshot
           filters:
             branches:
-              ignore: /.*/
+              only: master
             tags:
               only: /^v.*/
