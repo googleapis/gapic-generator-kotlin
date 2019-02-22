@@ -410,6 +410,6 @@ workflows:
             - release_gcr_snapshot
           filters:
             branches:
-              only: master
+              ignore: /.*/
             tags:
               only: /^v.*/
