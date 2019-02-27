@@ -54,7 +54,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |* Prepare for an API call by setting any desired options. For example:
             |*
             |* ```
-            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* val client = TheTest.create()
             |* val response = client.prepare {
             |*     withMetadata("my-custom-header", listOf("some", "thing"))
             |* }.test(request)
@@ -101,7 +101,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* val client = TheTest.create()
             |* val result = client.test(
             |*     testRequest {
             |*     }
@@ -144,7 +144,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* val client = TheTest.create()
             |* val result = client.operationTest(
             |*     testRequest {
             |*     }
@@ -181,7 +181,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | *
             | * For example:
             | * ```
-            | * val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            | * val client = TheTest.create()
             | * val result = client.streamTest(
             | *     testRequest {
             | *     }
@@ -220,7 +220,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* val client = TheTest.create()
             |* val result = client.streamTest(
             |*     query
             |* )
@@ -249,7 +249,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* val client = TheTest.create()
             |* val result = client.streamTest(
             |*     query,
             |*     detail {
@@ -293,7 +293,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* val client = TheTest.create()
             |* val result = client.streamClientTest(
             |*     testRequest {
             |*     }
@@ -323,7 +323,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* val client = TheTest.create()
             |* val result = client.streamClientTest(
             |*     testRequest {
             |*     }
@@ -363,7 +363,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* val client = TheTest.create()
             |* val result = client.streamServerTest(
             |*     moreDetail {
             |*         this.evenMore = evenMore
@@ -412,7 +412,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* val client = TheTest.create()
             |* val result = client.streamServerTest(
             |*     moreDetail {
             |*         this.evenMore = evenMore
@@ -461,7 +461,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* val client = TheTest.create()
             |* val result = client.testFlat(
             |*     testRequest {
             |*     }
@@ -486,7 +486,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* val client = TheTest.create()
             |* val result = client.testFlat(
             |*     query
             |* )
@@ -512,7 +512,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* val client = TheTest.create()
             |* val result = client.testFlat(
             |*     query,
             |*     detail {
@@ -564,7 +564,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
                 |*
                 |* For example:
                 |* ```
-                |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+                |* val client = TheTest.create()
                 |* val result = client.testFlatWithoutOriginal(
                 |*     detail {
                 |*         this.mainDetail = mainDetail
@@ -611,7 +611,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* val client = TheTest.create()
             |* val result = client.nestedFlat(
             |*     moreDetail {
             |*         this.evenMore = evenMore
@@ -656,7 +656,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* val client = TheTest.create()
             |* val result = client.nestedFlat(
             |*     detail {
             |*         this.moreDetails = moreDetails
@@ -703,7 +703,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | *
             | * For example:
             | * ```
-            | * val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            | * val client = TheTest.create()
             | * val result = client.nestedFlat(
             | *     moreDetail {
             | *         this.evenMore = evenMore
@@ -749,7 +749,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* val client = TheTest.create()
             |* val result = client.nestedFlatPrimitive(
             |*     mainDetail.useful
             |* )
@@ -796,7 +796,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | *
             | * For example:
             | * ```
-            | * val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            | * val client = TheTest.create()
             | * val pager = client.pagedTest(
             | *     pagedRequest {
             | *     }
@@ -862,7 +862,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | *
             | * For example:
             | * ```
-            | * val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            | * val client = TheTest.create()
             | * val pager = client.pagedTest(
             | *     flag,
             | *     pageSize
@@ -918,7 +918,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | *
             | * For example:
             | * ```
-            | * val client = google.example.TheTest.fromServiceAccount(YOUR_KEY_FILE)
+            | * val client = TheTest.create()
             | * val result = client.pagedTest(
             | *     pagedRequest {
             | *     }

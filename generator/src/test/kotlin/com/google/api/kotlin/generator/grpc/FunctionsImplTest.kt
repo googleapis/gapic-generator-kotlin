@@ -16,6 +16,7 @@
 
 package com.google.api.kotlin.generator.grpc
 
+import com.google.api.kotlin.ClientPluginOptions
 import com.google.api.kotlin.DescriptorProto
 import com.google.api.kotlin.FieldDescriptorProto
 import com.google.api.kotlin.FileDescriptorProto
@@ -66,7 +67,9 @@ internal class FunctionsImplTest {
         whenever(ctx.typeMap).doReturn(types)
         whenever(ctx.metadata).doReturn(meta)
         whenever(ctx.metadata.get(any<String>())).doReturn(options)
+        whenever(ctx.commandLineOptions).doReturn(ClientPluginOptions(authGoogleCloud = true))
         whenever(options.methods).doReturn(listOf<MethodOptions>())
+        whenever(documentationGenerator.getClientInitializer(ctx)).doReturn(CodeBlock.of("--INIT--"))
     }
 
     @Test
@@ -116,7 +119,7 @@ internal class FunctionsImplTest {
             |* Prepare for an API call by setting any desired options. For example:
             |*
             |* ```
-            |* val client = foo.bar.ZaTest.fromServiceAccount(YOUR_KEY_FILE)
+            |* --INIT--
             |* val response = client.prepare {
             |*     withMetadata("my-custom-header", listOf("some", "thing"))
             |* }.funFunction(request)

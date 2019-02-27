@@ -16,6 +16,7 @@
 
 package com.google.api.kotlin.generator.grpc
 
+import com.google.api.kotlin.ClientPluginOptions
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.BrandingOptions
@@ -73,6 +74,7 @@ internal class DocumentationImplTest {
         whenever(ctx.metadata).doReturn(meta)
         whenever(ctx.metadata[any<String>()]).doReturn(options)
         whenever(options.methods).doReturn(listOf<MethodOptions>())
+        whenever(ctx.commandLineOptions).doReturn(ClientPluginOptions(authGoogleCloud = true))
     }
 
     @Test
@@ -115,7 +117,7 @@ internal class DocumentationImplTest {
             |
             |For example:
             |```
-            |val client = doc.test.fromServiceAccount(YOUR_KEY_FILE)
+            |val client = test.fromServiceAccount(YOUR_KEY_FILE)
             |val result = client.myMethod(a.test.type { })
             |```
             """.asNormalizedString()
@@ -144,7 +146,7 @@ internal class DocumentationImplTest {
             |
             |For example:
             |```
-            |val client = doc.test.fromServiceAccount(YOUR_KEY_FILE)
+            |val client = test.fromServiceAccount(YOUR_KEY_FILE)
             |val result = client.myMethod(query)
             |```
             |
@@ -170,7 +172,7 @@ internal class DocumentationImplTest {
             |
             |For example:
             |```
-            |val client = doc.test.fromServiceAccount(YOUR_KEY_FILE)
+            |val client = test.fromServiceAccount(YOUR_KEY_FILE)
             |val result = client.myMethod(a.test.type {
             |    query = 4
             })

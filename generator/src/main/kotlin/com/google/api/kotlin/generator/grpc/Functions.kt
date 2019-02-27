@@ -73,7 +73,7 @@ internal class FunctionsImpl(
                     |Prepare for an API call by setting any desired options. For example:
                     |
                     |```
-                    |val client = %T.fromServiceAccount(YOUR_KEY_FILE)
+                    |%L
                     |val response = client.prepare {
                     |    withMetadata("my-custom-header", listOf("some", "thing"))
                     |}.%N(request)
@@ -82,7 +82,7 @@ internal class FunctionsImpl(
                     |You may save the client returned by this call and reuse it if you
                     |plan to make multiple requests with the same settings.
                     |""".trimMargin(),
-                    context.className,
+                    documentation.getClientInitializer(context),
                     firstMethodName ?: "method"
                 )
                 .returns(context.className)

@@ -27,7 +27,7 @@ internal data class PropertyPath(
     val last get() = this.segments.last().asPropertyPath()
     val size get() = this.segments.size
 
-    constructor(segment: String): this(listOf(segment))
+    constructor(segment: String) : this(listOf(segment))
 
     /** path between the specified [fromIndex] (inclusive) and [toIndex] (exclusive). */
     fun subPath(fromIndex: Int, toIndex: Int) =

@@ -16,6 +16,7 @@
 
 package com.google.api.kotlin.generator.grpc
 
+import com.google.api.kotlin.ClientPluginOptions
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.Configuration
@@ -51,6 +52,7 @@ internal class PropertiesImplTest {
         whenever(ctx.service).doReturn(service)
         whenever(ctx.metadata).doReturn(meta)
         whenever(ctx.typeMap).doReturn(types)
+        whenever(ctx.commandLineOptions).doReturn(ClientPluginOptions(authGoogleCloud = true))
         whenever(stubs.getStubTypeName(ctx)).doReturn(ClassName("foo.bar", "DaStub"))
     }
 
