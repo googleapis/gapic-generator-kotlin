@@ -45,6 +45,7 @@ repositories {
     google()
     mavenCentral()
     jcenter()
+    maven(url = "https://jitpack.io")
 }
 
 val ktlintImplementation by configurations.creating
@@ -68,13 +69,15 @@ dependencies {
     implementation("com.google.protobuf:protobuf-java:3.5.1")
     implementation("com.github.pcj:google-options:1.0.0")
 
+    implementation("com.github.shyiko:ktlint:0.30.0")
+
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
     testImplementation("junit:junit:4.12")
     testImplementation("com.nhaarman:mockito-kotlin:1.6.0")
     testImplementation("com.google.truth:truth:0.41")
 
-    ktlintImplementation("com.github.shyiko:ktlint:0.29.0")
+    ktlintImplementation("com.github.shyiko:ktlint:0.30.0")
 }
 
 application {

@@ -16,6 +16,7 @@
 
 package com.google.api.kotlin.generator.grpc
 
+import com.google.api.kotlin.ClientPluginOptions
 import com.google.api.kotlin.DescriptorProto
 import com.google.api.kotlin.FieldDescriptorProto
 import com.google.api.kotlin.FileDescriptorProto
@@ -65,6 +66,9 @@ internal class UnitTestImplTest {
         whenever(ctx.service).doReturn(service)
         whenever(ctx.typeMap).doReturn(types)
         whenever(ctx.metadata).doReturn(meta)
+        whenever(ctx.commandLineOptions).doReturn(ClientPluginOptions(authGoogleCloud = true))
+        whenever(ctx.className).doReturn(ClassName("blah.test", "Unitz"))
+        whenever(documentationGenerator.getClientInitializer(ctx)).doReturn(CodeBlock.of("--INIT--"))
     }
 
     @Test
@@ -121,7 +125,7 @@ internal class UnitTestImplTest {
             | *
             | *
             | ```
-            | * val client = foo.bar.ZaTest.fromServiceAccount(YOUR_KEY_FILE)
+            | * --INIT--
             | * val response = client.prepare {
             | *     withMetadata("my-custom-header", listOf("some", "thing"))
             | * }.funFunction(request)

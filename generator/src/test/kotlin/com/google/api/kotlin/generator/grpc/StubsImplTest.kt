@@ -58,6 +58,7 @@ internal class StubsImplTest {
         whenever(ctx.service).doReturn(service)
         whenever(ctx.typeMap).doReturn(types)
         whenever(ctx.className).doReturn(ClassName("a.b.c", "Foo"))
+        whenever(ctx.commandLineOptions).doReturn(ClientPluginOptions(authGoogleCloud = true))
     }
 
     @Test

@@ -16,6 +16,7 @@
 
 package com.google.api.kotlin.generator.grpc
 
+import com.google.api.kotlin.ClientPluginOptions
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.AuthOptions
@@ -50,6 +51,8 @@ internal class CompanionObjectImplTest {
         reset(ctx, meta, serviceOptions)
         whenever(ctx.metadata).doReturn(meta)
         whenever(ctx.serviceOptions).doReturn(serviceOptions)
+        whenever(ctx.className).doReturn(ClassName("blah.test.bar", "Comps"))
+        whenever(ctx.commandLineOptions).doReturn(ClientPluginOptions(authGoogleCloud = true))
         whenever(meta.authentication).doReturn(AuthOptions(listOf(AuthTypes.GOOGLE_CLOUD)))
     }
 

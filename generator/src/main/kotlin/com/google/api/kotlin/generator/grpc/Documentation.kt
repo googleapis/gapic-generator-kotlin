@@ -23,6 +23,7 @@ import com.google.api.kotlin.config.SampleMethod
 import com.google.api.kotlin.util.FieldNamer
 import com.google.api.kotlin.util.ParameterInfo
 import com.google.api.kotlin.util.RequestObject.getBuilder
+import com.google.api.kotlin.util.formatSample
 import com.google.api.kotlin.util.getMethodComments
 import com.google.api.kotlin.util.getParameterComments
 import com.google.api.kotlin.util.getProtoFieldInfoForPath
@@ -42,6 +43,8 @@ internal interface Documentation {
         flatteningConfig: FlattenedMethod? = null,
         extras: List<CodeBlock> = listOf()
     ): CodeBlock
+
+    fun getClientInitializer(context: GeneratorContext, variableName: String = "client"): CodeBlock
 }
 
 internal class DocumentationImpl : Documentation {
@@ -94,11 +97,7 @@ internal class DocumentationImpl : Documentation {
             doc.add(generateMethodSample(context, method, methodOptions, flatteningConfig))
         } else {
             for (sample in methodOptions.samples) {
-                doc.add(
-                    generateMethodSample(
-                        context, method, methodOptions, flatteningConfig, sample
-                    )
-                )
+                doc.add(generateMethodSample(context, method, methodOptions, flatteningConfig, sample))
             }
         }
 
@@ -119,6 +118,20 @@ internal class DocumentationImpl : Documentation {
         return doc.build()
     }
 
+    // get code for instantiating a client
+    override fun getClientInitializer(context: GeneratorContext, variableName: String): CodeBlock {
+        val initMethod = if (context.commandLineOptions.authGoogleCloud) {
+            "fromServiceAccount(YOUR_KEY_FILE)"
+        } else {
+            "create()"
+        }
+
+        return CodeBlock.of(
+            "val %L = %L.%L",
+            variableName, context.className.simpleName, initMethod
+        )
+    }
+
     private fun generateMethodSample(
         context: GeneratorContext,
         method: DescriptorProtos.MethodDescriptorProto,
@@ -130,12 +143,7 @@ internal class DocumentationImpl : Documentation {
         val call = CodeBlock.builder()
 
         // create client
-        call.addStatement("For example:")
-        call.addStatement("```")
-        call.addStatement(
-            "val client = %T.fromServiceAccount(YOUR_KEY_FILE)",
-            context.className
-        )
+        call.addStatement("%L", getClientInitializer(context))
 
         // create inputs
         val inputType = context.typeMap.getProtoTypeDescriptor(method.inputType)
@@ -186,10 +194,16 @@ internal class DocumentationImpl : Documentation {
             )
         }
 
-        // close
-        call.addStatement("```")
-
-        return call.build()
+        // wrap the sample in KDoc
+        return CodeBlock.of(
+            """
+            |For example:
+            |```
+            |%L
+            |```
+            |""".trimMargin(),
+            call.build().formatSample()
+        )
     }
 
     /**

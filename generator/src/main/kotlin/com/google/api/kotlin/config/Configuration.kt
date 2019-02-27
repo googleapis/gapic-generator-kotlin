@@ -109,12 +109,17 @@ internal class AnnotationConfigurationFactory(
         proto: DescriptorProtos.FileDescriptorProto,
         service: DescriptorProtos.ServiceDescriptorProto
     ): ServiceOptions {
-        val host = service.options.getExtensionOrNull(ClientProto.defaultHost)
+        var host = service.options.getExtensionOrNull(ClientProto.defaultHost) ?: ""
         val scopes = service.options.getExtensionOrNull(ClientProto.oauthScopes)?.split(",") ?: listOf()
         val methods = service.methodList.map { getOptionsForServiceMethod(proto, it) }
 
+        // don't allow blank host & default to localhost
+        if (host.isBlank()) {
+            host = "localhost"
+        }
+
         val options = ServiceOptions(
-            host = host ?: "localhost",
+            host = host,
             scopes = scopes,
             methods = methods
         )
