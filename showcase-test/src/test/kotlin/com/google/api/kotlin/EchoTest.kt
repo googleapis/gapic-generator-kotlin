@@ -71,7 +71,7 @@ class EchoTest {
         val result = client.echo(
             echoRequest { content = "Hi there!" }
         )
-echoRequest { `if` = "" }
+
         assertThat(result.body.content).isEqualTo("Hi there!")
     }
 
