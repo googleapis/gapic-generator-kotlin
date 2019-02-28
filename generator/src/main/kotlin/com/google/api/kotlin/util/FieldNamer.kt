@@ -94,34 +94,34 @@ internal object FieldNamer {
         CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
 
     private fun getDslSetterMapName(protoFieldName: String): String =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
+        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName).escapeIfReserved()
 
     private fun getDslSetterRepeatedName(protoFieldName: String): String =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
+        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName).escapeIfReserved()
 
     private fun getDslSetterRepeatedNameAtIndex(protoFieldName: String): String =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
+        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName).escapeIfReserved()
 
     fun getJavaBuilderSetterMapName(protoFieldName: String): String =
-        "putAll" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)
+        "putAll${CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)}".escapeIfReserved()
 
     fun getJavaBuilderSetterRepeatedName(protoFieldName: String): String =
-        "addAll" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)
+        "addAll${CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)}".escapeIfReserved()
 
     fun getJavaBuilderRawSetterName(protoFieldName: String): String =
-        "set" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)
+        "set${CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)}".escapeIfReserved()
 
     fun getJavaBuilderSyntheticSetterName(protoFieldName: String): String =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
+        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName).escapeIfReserved()
 
     fun getJavaBuilderAccessorMapName(protoFieldName: String): String =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName) + "Map"
+        "${CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)}Map".escapeIfReserved()
 
     fun getJavaBuilderAccessorRepeatedName(protoFieldName: String): String =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName) + "List"
+        "${CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)}List".escapeIfReserved()
 
     fun getJavaBuilderAccessorName(protoFieldName: String): String =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
+        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName).escapeIfReserved()
 
     private fun getQualifier(protoFieldName: String, value: CodeBlock? = null): String {
         val name = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
@@ -131,4 +131,38 @@ internal object FieldNamer {
             ""
         }
     }
+
+    // TODO: can remove this when Kotlin poet releases %M support
+    private fun String.escapeIfReserved() = if (KEYWORDS.contains(this)) "`$this`" else this
+
+    private val KEYWORDS = setOf(
+        "package",
+        "as",
+        "typealias",
+        "class",
+        "this",
+        "super",
+        "val",
+        "var",
+        "fun",
+        "for",
+        "null",
+        "true",
+        "false",
+        "is",
+        "in",
+        "throw",
+        "return",
+        "break",
+        "continue",
+        "object",
+        "if",
+        "try",
+        "else",
+        "while",
+        "do",
+        "when",
+        "interface",
+        "typeof"
+    )
 }

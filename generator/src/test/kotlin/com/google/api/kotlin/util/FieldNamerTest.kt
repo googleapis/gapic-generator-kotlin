@@ -168,4 +168,15 @@ internal class FieldNamerTest {
         assertThat(FieldNamer.getJavaBuilderAccessorMapName("a_field")).isEqualTo("aFieldMap")
         assertThat(FieldNamer.getJavaBuilderAccessorRepeatedName("a_field")).isEqualTo("aFieldList")
     }
+
+    @Test
+    fun `can recognize reserved names`() {
+        assertThat(FieldNamer.getJavaBuilderRawSetterName("if")).isEqualTo("setIf")
+        assertThat(FieldNamer.getJavaBuilderSyntheticSetterName("if")).isEqualTo("`if`")
+        assertThat(FieldNamer.getJavaBuilderSetterMapName("if")).isEqualTo("putAllIf")
+        assertThat(FieldNamer.getJavaBuilderSetterRepeatedName("if")).isEqualTo("addAllIf")
+        assertThat(FieldNamer.getJavaBuilderAccessorName("if")).isEqualTo("`if`")
+        assertThat(FieldNamer.getJavaBuilderAccessorMapName("if")).isEqualTo("ifMap")
+        assertThat(FieldNamer.getJavaBuilderAccessorRepeatedName("if")).isEqualTo("ifList")
+    }
 }
