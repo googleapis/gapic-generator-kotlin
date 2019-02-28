@@ -101,7 +101,7 @@ message EchoRequest {
   oneof response {
     // The content to be echoed by the server.
     string content = 1;
-
+    string if = 3;
     // The error to be thrown by the server.
     google.rpc.Status error = 2;
   }

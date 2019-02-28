@@ -379,6 +379,22 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
     }
 
     @Test
+    fun `generates getters and setters`() {
+        val builders = generate().kotlinBuilders("google.example")
+        assertThat(builders).hasSize(1)
+
+        val builder = builders.first()
+        assertThat(builder.builderTypeProp("Detail", "useful")).isEqualTo(
+            """
+            |inline var useful: kotlin.Boolean
+            |    get() = builder.useful
+            |    set(value) { builder.useful = value }
+            """.asNormalizedString()
+        )
+        assertThat(builder.builderTypeFun("Detail", "useful")).isNull()
+    }
+
+    @Test
     fun `generates repeated getters and setters`() {
         val builders = generate().kotlinBuilders("google.example")
         assertThat(builders).hasSize(1)
@@ -447,6 +463,22 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
     }
 
     @Test
+    fun `generates getters and setters with reserved names`() {
+        val builders = generate().kotlinBuilders("google.example")
+        assertThat(builders).hasSize(1)
+
+        val builder = builders.first()
+        assertThat(builder.builderTypeProp("MoreDetail", "if")).isEqualTo(
+            """
+            |inline var `if`: kotlin.String
+            |    get() = builder.`if`
+            |    set(value) { builder.`if` = value }
+            """.asNormalizedString()
+        )
+        assertThat(builder.builderTypeFun("Detail", "if")).isNull()
+    }
+
+    @Test
     fun `generates the correct number of builder functions`() {
         val builders = generate().kotlinBuilders("google.example")
         assertThat(builders).hasSize(1)
@@ -460,7 +492,7 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
 
 private fun GeneratedSource.builderType(name: String) = this.types.first { it.name == "${name}Dsl" }
 private fun GeneratedSource.builderTypeFun(name: String, method: String) =
-    this.builderType(name).funSpecs.first { it.name == method }.toString().asNormalizedString()
+    this.builderType(name).funSpecs.firstOrNull { it.name == method }?.toString()?.asNormalizedString()
 
 private fun GeneratedSource.builderTypeProp(name: String, property: String) =
     this.builderType(name).propertySpecs.first { it.name == property }.toString().asNormalizedString()

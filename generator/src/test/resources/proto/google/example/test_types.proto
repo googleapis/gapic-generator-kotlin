@@ -41,6 +41,7 @@ message MoreDetail {
     }
     string very_detailed = 1;
     HowMuchMore level = 2;
+    string if = 4;
 }
 
 enum AnEnum {
