@@ -17,7 +17,7 @@ jobs:
           name: "Checkout submodules"
           command: |
             git submodule init
-            git submodule update
+            git submodule update --recursive
       - restore_cache:
           key: generator-v0-{{ checksum "build.gradle.kts" }}
       - run: 
