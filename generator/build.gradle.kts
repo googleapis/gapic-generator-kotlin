@@ -100,7 +100,7 @@ java {
             compileClasspath += sourceSets["test"].output
             runtimeClasspath += sourceSets["test"].output
         }
-        for(sSet in listOf("main", "test")) {
+        for (sSet in listOf("main", "test")) {
             getByName(sSet).proto.srcDir("$projectDir/../gax-kotlin/api-common-protos")
         }
     }
