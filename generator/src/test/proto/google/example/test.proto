@@ -1,0 +1,96 @@
+/*
+ * Copyright 2018 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package google.example;
+
+import "google/example/test_annotations.proto";
+import "google/example/test_types.proto";
+import "google/protobuf/empty.proto";
+import "google/longrunning/operations.proto";
+
+option java_multiple_files = true;
+
+// This is the test service
+service TestService {
+    // This is the test method
+    rpc Test (TestRequest) returns (TestResponse);
+    rpc TestFlat (TestRequest) returns (TestResponse);
+    rpc TestFlatWithoutOriginal (TestRequest) returns (TestResponse);
+
+    rpc StreamTest (stream TestRequest) returns (stream TestResponse);
+    rpc StreamClientTest (stream TestRequest) returns (TestResponse);
+    rpc StreamServerTest (TestRequest) returns (stream TestResponse);
+
+    rpc OperationTest (TestRequest) returns (google.longrunning.Operation);
+
+    rpc NestedFlat (TestRequest) returns (TestResponse);
+    rpc NestedFlatPrimitive (TestRequest) returns (TestResponse);
+
+    rpc PagedTest (PagedRequest) returns (PagedResponse);
+    rpc NotPagedTest (NotPagedRequest) returns (PagedResponse);
+    rpc StillNotPagedTest (PagedRequest) returns (StillNotPagedResponse);
+    rpc NotPagedTest2 (PagedRequest) returns (NotPagedResponse);
+
+    rpc Empty (TestRequest) returns (google.protobuf.Empty);
+    rpc StillEmpty (google.protobuf.Empty) returns (TestResponse);
+    rpc ReallyEmpty (google.protobuf.Empty) returns (google.protobuf.Empty);
+}
+
+message TestRequest {
+    // the query
+    string query = 1;
+    Detail main_detail = 2;
+    repeated Detail more_details = 3;
+}
+
+message TestResponse {
+    Result result = 1;
+}
+
+message PagedRequest {
+    int32 page_size = 1;
+    string page_token = 2;
+    bool flag = 3;
+}
+
+message NotPagedRequest {
+    int32 page_size = 1;
+    int32 page_token = 2;
+}
+
+message PagedResponse {
+    repeated int32 responses = 1;
+    string next_page_token = 2;
+}
+
+message NotPagedResponse {
+    int32 responses = 1;
+    string next_page_token = 2;
+}
+
+message StillNotPagedResponse {
+    repeated string responses = 1;
+    int32 next_page_token = 2;
+}
+
+message SomeResponse {
+    string response = 1;
+}
+message SomeMetadata {
+    string meta = 1;
+}

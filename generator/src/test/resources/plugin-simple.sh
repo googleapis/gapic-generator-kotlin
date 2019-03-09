@@ -21,4 +21,4 @@
 #
 
 # save the code generator request
-cat > ./generate-simple.data
+cat > ./src/test/resources/generated-simple.data

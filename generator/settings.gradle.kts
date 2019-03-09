@@ -15,3 +15,5 @@
  */
 
 rootProject.name = "generator"
+
+includeBuild("../gax-kotlin")

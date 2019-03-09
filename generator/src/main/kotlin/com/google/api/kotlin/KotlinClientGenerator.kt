@@ -19,7 +19,6 @@ package com.google.api.kotlin
 import com.google.api.kotlin.config.Configuration
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.ServiceOptions
-import com.google.api.kotlin.util.format
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.compiler.PluginProtos
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest
@@ -160,7 +159,7 @@ internal class KotlinClientGenerator(
         // put it together and create file
         return PluginProtos.CodeGeneratorResponse.File.newBuilder()
             .setName(fileName)
-            .setContent(file.format())
+            .setContent(file.toString())
             .build()
     }
 }

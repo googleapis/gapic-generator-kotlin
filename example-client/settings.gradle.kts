@@ -15,3 +15,5 @@
  */
 
 rootProject.name = "example-client"
+
+includeBuild("../gax-kotlin")

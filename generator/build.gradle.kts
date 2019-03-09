@@ -16,6 +16,10 @@
 
 import com.google.protobuf.gradle.protobuf
 import com.google.protobuf.gradle.protoc
+import com.google.protobuf.gradle.plugins
+import com.google.protobuf.gradle.id
+import com.google.protobuf.gradle.generateProtoTasks
+import com.google.protobuf.gradle.ofSourceSet
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
@@ -25,8 +29,8 @@ plugins {
     application
     `maven-publish`
     jacoco
-    kotlin("jvm") version "1.3.20"
-    id("org.springframework.boot") version "2.1.1.RELEASE"
+    kotlin("jvm") version "1.3.21"
+    id("org.springframework.boot") version "2.1.3.RELEASE"
     id("com.google.protobuf") version "0.8.8"
 }
 
@@ -69,13 +73,16 @@ dependencies {
     implementation("com.google.protobuf:protobuf-java:3.5.1")
     implementation("com.github.pcj:google-options:1.0.0")
 
-    implementation("com.github.shyiko:ktlint:0.30.0")
-
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
     testImplementation("junit:junit:4.12")
     testImplementation("com.nhaarman:mockito-kotlin:1.6.0")
+    // needed to unit test with suspend functions (can remove when the dependency above is updated most likely)
+    testImplementation("org.mockito:mockito-core:2.23.4")
     testImplementation("com.google.truth:truth:0.41")
+
+    // for compiling and running the generated test clients / unit tests
+    testImplementation("com.google.api:kgax-grpc:0.3.0-SNAPSHOT")
 
     ktlintImplementation("com.github.shyiko:ktlint:0.30.0")
 }
@@ -89,7 +96,13 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_8
 
     sourceSets {
-        getByName("main").proto.srcDir("api-common-protos")
+        create("testSimple") {
+            compileClasspath += sourceSets["test"].output
+            runtimeClasspath += sourceSets["test"].output
+        }
+        for(sSet in listOf("main", "test")) {
+            getByName(sSet).proto.srcDir("$projectDir/../gax-kotlin/api-common-protos")
+        }
     }
 }
 
@@ -102,6 +115,35 @@ protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:3.6.1"
     }
+    plugins {
+        id("gen-test") {
+            path = "$projectDir/src/test/resources/plugin-test.sh"
+        }
+        id("gen-simple") {
+            path = "$projectDir/src/test/resources/plugin-simple.sh"
+        }
+        id("local") {
+            path = "$projectDir/../runLocalGenerator.sh"
+        }
+    }
+    generateProtoTasks {
+        ofSourceSet("test").forEach {
+            it.plugins {
+                id("gen-test") {}
+                id("local") {
+                    option("test-output=$buildDir/generated/source/proto/test/local")
+                }
+            }
+        }
+        ofSourceSet("testSimple").forEach {
+            it.plugins {
+                id("gen-simple") {}
+                id("local") {
+                    option("test-output=$buildDir/generated/source/proto/testSimple/local")
+                }
+            }
+        }
+    }
 }
 
 publishing {
@@ -113,15 +155,20 @@ publishing {
     }
 }
 
+configurations["testSimpleImplementation"].extendsFrom(configurations.testImplementation)
+configurations["testSimpleRuntimeOnly"].extendsFrom(configurations.runtimeOnly)
+
 tasks {
     val test = getByName("test")
     val check = getByName("check")
+    val clean = getByName("clean")
 
     withType<BootJar> {
         enabled = true
         baseName = "gapic-generator-kotlin"
         classifier = "core"
         mainClassName = "com.google.api.kotlin.ClientPluginKt"
+        requiresUnpack("**/ktlint-*.jar")
         launchScript()
     }
 
@@ -156,4 +203,46 @@ tasks {
         classpath = ktlintImplementation
         args = listOf("-F", "src/**/*.kt", "test/**/*.kt")
     }
+
+    val baselinePath = "$projectDir/src/test/resources/baselines"
+
+    val updateTestBaselines by creating {
+        delete(baselinePath)
+
+        for (name in listOf("test", "testSimple")) {
+            val output = file("$baselinePath/$name.baseline.txt")
+            file(output.parent).mkdirs()
+            val baseDir = "$buildDir/generated/source/proto/$name/local"
+
+            output.bufferedWriter().use { w ->
+                val sources = file(baseDir).walk()
+                    .filter { it.isFile }
+                    .sortedBy { it.absolutePath }
+                for (file in sources) {
+                    val fileName = file.relativeTo(file(baseDir)).path
+                    w.write("-----BEGIN:$fileName-----\n")
+                    w.write(file.bufferedReader().use { it.readText() })
+                    w.write("-----END:$fileName-----\n")
+                    w.flush()
+                }
+            }
+        }
+
+        outputs.upToDateWhen { false }
+    }
+    test.dependsOn(updateTestBaselines)
+
+    val testSimpleTest by creating(Test::class) {
+        testClassesDirs = java.sourceSets["testSimple"].output.classesDirs
+        classpath = java.sourceSets["testSimple"].runtimeClasspath
+    }
+    test.dependsOn(testSimpleTest)
+
+    val cleanBaselines by creating(Delete::class) {
+        delete(baselinePath)
+        for (name in listOf("test", "simple")) {
+            delete("$projectDir/src/test/resources/generated-$name.data")
+        }
+    }
+    clean.dependsOn(cleanBaselines)
 }

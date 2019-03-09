@@ -47,7 +47,7 @@ internal class DocumentationImplTest {
 
     // accessors for the test protos
     private val generatorRequest = PluginProtos.CodeGeneratorRequest.parseFrom(
-        javaClass.getResourceAsStream("/generate-simple.data"),
+        javaClass.getResourceAsStream("/generated-simple.data"),
         ProtobufExtensionRegistry.INSTANCE
     )
 

@@ -16,12 +16,16 @@
 
 package com.google.api.kotlin
 
+import com.google.api.kotlin.config.AuthOptions
+import com.google.api.kotlin.config.AuthTypes
+import com.google.api.kotlin.config.BrandingOptions
 import com.google.api.kotlin.config.Configuration
 import com.google.api.kotlin.config.LegacyConfigurationFactory
+import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.ServiceOptions
-import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.common.truth.Truth.assertThat
 import com.google.protobuf.DescriptorProtos
+import com.google.protobuf.compiler.PluginProtos
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.check
 import com.nhaarman.mockito_kotlin.doReturn
@@ -33,10 +37,24 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeSpec
 import kotlin.test.Test
 
-internal class KotlinClientGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
+internal class KotlinClientGeneratorTest {
+
+    private val proto = FileDescriptorProto {
+        name = "foo.bar.proto"
+        addService(ServiceDescriptorProto {
+            `package` = "google.example"
+            name = "TestService"
+        })
+    }
 
     @Test
     fun `generates a class with context`() {
+        val generatorRequest = PluginProtos.CodeGeneratorRequest.newBuilder()
+            .addFileToGenerate("foo.bar.proto")
+            .addProtoFile(proto)
+            .build()
+        val typeMap: ProtobufTypeMapper = mock()
+
         val clientGenerator: ClientGenerator = mock {
             on { generateServiceClient(any()) }.doReturn(
                 listOf(
@@ -70,6 +88,12 @@ internal class KotlinClientGeneratorTest : BaseClientGeneratorTest(GRPCGenerator
 
     @Test
     fun `generates builders along with class`() {
+        val generatorRequest = PluginProtos.CodeGeneratorRequest.newBuilder()
+            .addFileToGenerate("foo.bar.proto")
+            .addProtoFile(proto)
+            .build()
+        val typeMap: ProtobufTypeMapper = mock()
+
         val clientGenerator: ClientGenerator = mock {
             on { generateServiceClient(any()) }.doReturn(
                 listOf(
@@ -131,6 +155,11 @@ internal class KotlinClientGeneratorTest : BaseClientGeneratorTest(GRPCGenerator
 
     @Test
     fun `can handle exceptions`() {
+        val generatorRequest = PluginProtos.CodeGeneratorRequest.newBuilder()
+            .addFileToGenerate("foo.bar.tez.proto")
+            .build()
+        val typeMap: ProtobufTypeMapper = mock()
+
         val clientGenerator: ClientGenerator = mock {
             on { generateServiceClient(any()) } doThrow SomeException()
         }
@@ -145,6 +174,14 @@ internal class KotlinClientGeneratorTest : BaseClientGeneratorTest(GRPCGenerator
         assertThat(result.sourceCode.fileCount).isEqualTo(0)
         assertThat(result.testCode.fileCount).isEqualTo(0)
     }
+
+    private fun getMockedConfig(options: ServiceOptions): Configuration =
+        mock {
+            on { branding } doReturn BrandingOptions("testing", "just a simple test")
+            on { authentication } doReturn AuthOptions(listOf(AuthTypes.GOOGLE_CLOUD))
+            on { get(any<String>()) } doReturn options
+            on { get(any<DescriptorProtos.ServiceDescriptorProto>()) } doReturn options
+        }
 }
 
 private class SomeException : RuntimeException()

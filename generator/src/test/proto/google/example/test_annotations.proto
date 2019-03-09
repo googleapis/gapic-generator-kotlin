@@ -1,0 +1,87 @@
+/*
+ * Copyright 2018 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package google.example;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/longrunning/operations.proto";
+
+option java_multiple_files = true;
+
+option (google.api.client_package) = {
+  title: "Test"
+  version: "v12"
+  product_title: "The Test Product"
+  namespace: ["A", "Name", "space"]
+};
+
+// This a proto for testing the config annotations
+service AnnotationService {
+
+    option (google.api.default_host) = "localhost:7469";
+
+    rpc AnnotationTest (FooRequest) returns (BarResponse) {
+        option (google.api.http) = {
+            post: "/foo/annotation:annotation"
+            body: "*"
+        };
+    }
+
+    rpc AnnotationSignatureTest (FooRequest) returns (BarResponse) {
+        option (google.api.method_signature) = "foo";
+        option (google.api.method_signature) = "foo,other.foo";
+    }
+
+    rpc AnnotationLongRunningTest (FooRequest) returns (google.longrunning.Operation) {
+        option (google.longrunning.operation_info) = {
+            response_type: "TheLongRunningResponse"
+            metadata_type: "google.example.TheLongRunningMetadata"
+        };
+    }
+
+//    rpc AnnotationRetryTest (FooRequest) returns (BarResponse) {
+//        option (google.api.retry) = {
+//            codes: [UNKNOWN, NOT_FOUND]
+//        };
+//    }
+
+    rpc AnnotationRetryDefaultTest (FooRequest) returns (BarResponse) {
+        option (google.api.http) = {
+            get: "/foo/annotation/*"
+        };
+    }
+}
+
+message FooRequest {
+    string foo = 1;
+    FooRequest other = 2;
+}
+
+message BarResponse {
+    int32 bar = 1;
+}
+
+message TheLongRunningResponse {
+    string thing = 1;
+}
+
+message TheLongRunningMetadata {
+    string meta = 1;
+    string data = 2;
+}

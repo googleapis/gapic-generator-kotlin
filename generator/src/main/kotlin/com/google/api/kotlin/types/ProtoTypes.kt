@@ -17,11 +17,14 @@
 package com.google.api.kotlin.types
 
 import com.google.protobuf.DescriptorProtos
+import com.squareup.kotlinpoet.ClassName
 
 internal interface ProtoTypes {
     companion object {
         val GOOGLE_BYTESTREAM = "google/bytestream/bytestream.proto"
         val GOOGLE_OPERATIONS = "google/longrunning/operations.proto"
+
+        val EMPTY = ClassName("com.google.protobuf", "Empty")
     }
 }
 
@@ -35,3 +38,6 @@ internal fun DescriptorProtos.FileDescriptorProto.isWellKnown() = SKIP_PROTOS.co
 internal fun DescriptorProtos.FileDescriptorProto.isNotWellKnown() = !this.isWellKnown()
 
 internal fun DescriptorProtos.FileDescriptorProto.isGoogleOperationsProto() = ProtoTypes.GOOGLE_OPERATIONS == this.name
+
+internal fun ClassName.isProtobufEmpty() = ProtoTypes.EMPTY == this
+internal fun ClassName.isNotProtobufEmpty() = !this.isProtobufEmpty()

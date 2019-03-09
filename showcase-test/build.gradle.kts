@@ -25,7 +25,7 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 plugins {
     idea
     java
-    kotlin("jvm") version "1.3.20"
+    kotlin("jvm") version "1.3.21"
     id("com.google.protobuf") version "0.8.8"
 }
 
@@ -43,25 +43,22 @@ repositories {
     google()
     mavenCentral()
     jcenter()
-    maven(url = "https://jitpack.io")
 }
 
 val ktlintImplementation by configurations.creating
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.1")
 
-    // temporary
-    implementation("com.github.googleapis.gax-kotlin:kgax-grpc:v0.2.0")
-    // implementation("com.google.kgax:kgax-grpc:0.1.0-SNAPSHOT")
+    implementation("com.google.api:kgax-grpc:0.3.0-SNAPSHOT")
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
     testImplementation("junit:junit:4.12")
     testImplementation("com.google.truth:truth:0.41")
 
-    ktlintImplementation("com.github.shyiko:ktlint:0.29.0")
+    ktlintImplementation("com.github.shyiko:ktlint:0.30.0")
 }
 
 kotlin {

@@ -17,38 +17,56 @@
 package com.google.api.kotlin.util
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.kotlinpoet.CodeBlock
+import com.google.protobuf.compiler.PluginProtos
 import kotlin.test.Test
 
 internal class FormatterTest {
     @Test
     fun `can format code`() {
-        val code = CodeBlock.of("fun foo(x:     Int)       =    2").format()
-        assertThat(code).isEqualTo("fun foo(x: Int) = 2")
-    }
+        val response = response {
+            addSource("foo.kt", "fun foo(x:     Int)       =    2")
+            addSource("bar.kt", "fun   bar(y:  String) =  \"hi\"  ")
+        }
 
-    @Test
-    fun `can format non-top-level sample code`() {
-        val code = CodeBlock.builder()
-            .addStatement("val  l =      listOf(  1,   2,3, 4)")
-            .beginControlFlow("for ( x in  l  )")
-            .addStatement("println(  x    )")
-            .endControlFlow()
-            .build()
-            .formatSample()
-
-        assertThat(code).isEqualTo(
-            """
-            |val l = listOf(1, 2, 3, 4)
-            |for (x in l) {
-            |    println(x)
-            |}""".trimMargin()
+        val formatted = response.format()
+        assertThat(formatted.fileList).containsExactly(
+            source("foo.kt", "fun foo(x: Int) = 2"),
+            source("bar.kt", "fun bar(y: String) = \"hi\"")
         )
     }
 
-    @Test
-    fun `can survive bad formatting`() {
-        val code = CodeBlock.of(" val   x =;")
-        assertThat(code.format()).isEqualTo(" val   x =;")
-    }
+//    @Test
+//    fun `can format non-top-level sample code`() {
+//        val code = CodeBlock.builder()
+//            .addStatement("val  l =      listOf(  1,   2,3, 4)")
+//            .beginControlFlow("for ( x in  l  )")
+//            .addStatement("println(  x    )")
+//            .endControlFlow()
+//            .build()
+//            .formatSample()
+//
+//        assertThat(code).isEqualTo(
+//            """
+//            |val l = listOf(1, 2, 3, 4)
+//            |for (x in l) {
+//            |    println(x)
+//            |}""".trimMargin()
+//        )
+//    }
 }
+
+private fun response(init: PluginProtos.CodeGeneratorResponse.Builder.() -> Unit) =
+    with(PluginProtos.CodeGeneratorResponse.newBuilder()) {
+        apply(init)
+        build()
+    }
+
+private fun PluginProtos.CodeGeneratorResponse.Builder.addSource(name: String, content: String) =
+    this.addFile(source(name, content))
+
+private fun source(name: String, content: String) =
+    with(PluginProtos.CodeGeneratorResponse.File.newBuilder()) {
+        this.name = name
+        this.content = content
+        build()
+    }

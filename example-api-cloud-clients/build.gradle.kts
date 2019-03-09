@@ -24,7 +24,7 @@ import com.google.protobuf.gradle.ofSourceSet
 plugins {
     idea
     application
-    kotlin("jvm") version "1.3.20"
+    kotlin("jvm") version "1.3.21"
     id("com.google.protobuf") version "0.8.8"
 }
 
@@ -40,7 +40,6 @@ repositories {
     google()
     mavenCentral()
     jcenter()
-    maven(url = "https://jitpack.io")
 }
 
 application {
@@ -52,9 +51,15 @@ defaultTasks = listOf("run")
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
 
-    // get the KGax library via jitpack
-    // (this library is in preview and not yet published to maven)
-    implementation("com.github.googleapis.gax-kotlin:kgax-grpc:v0.2.0")
+    // normally get the KGax library via jitpack:
+    //    (this library is in preview and not yet published to maven)
+    //
+    // implementation("com.github.googleapis.gax-kotlin:kgax-grpc:v0.3.0")
+    //
+    // but we use a local copy for development
+    implementation("com.google.api:kgax-grpc:0.3.0-SNAPSHOT")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.1")
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))

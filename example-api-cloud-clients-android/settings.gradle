@@ -15,3 +15,5 @@
  */
 
 include ':app'
+
+includeBuild("../gax-kotlin")
