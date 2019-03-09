@@ -168,7 +168,6 @@ tasks {
         baseName = "gapic-generator-kotlin"
         classifier = "core"
         mainClassName = "com.google.api.kotlin.ClientPluginKt"
-        requiresUnpack("**/ktlint-*.jar")
         launchScript()
     }
 

@@ -15,6 +15,7 @@
  */
 
 package example
+
 import google.example.HelloServiceClient
 import google.example.hiRequest
 import io.grpc.ManagedChannelBuilder
