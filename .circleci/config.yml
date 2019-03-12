@@ -55,6 +55,9 @@ jobs:
     steps:
       - checkout:
           path: ~/gapic-generator-kotlin
+      - run:
+          name: "Checkout submodules"
+          command: git submodule update --init --recursive
       - attach_workspace:
           at: ./..
       - setup_remote_docker
@@ -91,6 +94,9 @@ jobs:
     steps:
       - checkout:
           path: ~/gapic-generator-kotlin
+      - run:
+          name: "Checkout submodules"
+          command: git submodule update --init --recursive
       - attach_workspace:
           at: ./..
       - restore_cache:
@@ -125,6 +131,9 @@ jobs:
     steps:
       - checkout:
           path: ~/gapic-generator-kotlin
+      - run:
+          name: "Checkout submodules"
+          command: git submodule update --init --recursive
       - attach_workspace:
           at: ./..
       - restore_cache: &android-example-key
@@ -161,6 +170,9 @@ jobs:
     steps:
       - checkout:
           path: ~/gapic-generator-kotlin
+      - run:
+          name: "Checkout submodules"
+          command: git submodule update --init --recursive
       - attach_workspace:
           at: ./..
       - restore_cache:
@@ -200,6 +212,9 @@ jobs:
     steps:
       - checkout:
           path: ~/gapic-generator-kotlin
+      - run:
+          name: "Checkout submodules"
+          command: git submodule update --init --recursive
       - attach_workspace:
           at: .
       - restore_cache:
@@ -244,6 +259,9 @@ jobs:
     steps:
       - checkout:
           path: ~/gapic-generator-kotlin
+      - run:
+          name: "Checkout submodules"
+          command: git submodule update --init --recursive
       - attach_workspace:
           at: ./..
       - restore_cache:
@@ -275,6 +293,9 @@ jobs:
     steps:
       - checkout:
           path: ~/gapic-generator-kotlin
+      - run:
+          name: "Checkout submodules"
+          command: git submodule update --init --recursive
       - attach_workspace:
           at: ./..
       - restore_cache:
