@@ -15,3 +15,5 @@
  */
 
 rootProject.name = "example-api-cloud-clients"
+
+includeBuild("../gax-kotlin")

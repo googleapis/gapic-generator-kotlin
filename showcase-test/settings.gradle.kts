@@ -15,3 +15,5 @@
  */
 
 rootProject.name = "showcase"
+
+includeBuild("../gax-kotlin")

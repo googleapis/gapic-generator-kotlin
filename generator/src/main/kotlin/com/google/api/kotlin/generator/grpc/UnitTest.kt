@@ -462,7 +462,11 @@ internal class UnitTestImpl(
     ): CodeBlock {
         val check = CodeBlock.builder()
         if (flatteningConfig == null) {
-            check.add("eq(%N)", given.variables.values.map { it.variableName }.first())
+            if (given.variables.isNotEmpty()) {
+                check.add("eq(%N)", given.variables.values.map { it.variableName }.first())
+            } else {
+                check.add("any()")
+            }
         } else {
             // get an assert for each parameter
             val nestedAssert =

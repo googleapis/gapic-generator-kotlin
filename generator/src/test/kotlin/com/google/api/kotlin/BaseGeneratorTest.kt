@@ -47,9 +47,9 @@ internal abstract class BaseGeneratorTest(
 ) {
     // accessors for the test protos
     protected val generatorRequest = PluginProtos.CodeGeneratorRequest.parseFrom(
-        javaClass.getResourceAsStream("/generate.data"),
+        javaClass.getResourceAsStream("/generated-test.data"),
         ProtobufExtensionRegistry.INSTANCE
-    ) ?: throw RuntimeException("Unable to read test data (generate.data)")
+    ) ?: throw RuntimeException("Unable to read test data (generated-test.data)")
 
     // the primary test proto (test.proto)
     protected val proto = proto("google/example/test.proto")

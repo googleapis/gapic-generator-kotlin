@@ -20,6 +20,7 @@ import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.MethodOptions
 import com.google.api.kotlin.config.SampleMethod
+import com.google.api.kotlin.types.isNotProtobufEmpty
 import com.google.api.kotlin.util.FieldNamer
 import com.google.api.kotlin.util.ParameterInfo
 import com.google.api.kotlin.util.RequestObject.getBuilder
@@ -164,7 +165,11 @@ internal class DocumentationImpl : Documentation {
             }
         } else {
             val inputKotlinType = context.typeMap.getKotlinType(method.inputType)
-            listOf(getBuilder(context, inputType, inputKotlinType, listOf(), sample).builder)
+            if (inputKotlinType.isNotProtobufEmpty()) {
+                listOf(getBuilder(context, inputType, inputKotlinType, listOf(), sample).builder)
+            } else {
+                listOf()
+            }
         }
 
         // fix indentation (can we make the formatter fix this somehow?)
@@ -178,17 +183,23 @@ internal class DocumentationImpl : Documentation {
                 |    ${invokeClientParams.joinToString(",\n    ") { "%L" }}
                 |)
                 |val page = pager.next()
-                |""".trimMargin(),
+                """.trimMargin(),
                 name,
                 *indentedParams.toTypedArray()
             )
+        } else if (indentedParams.isEmpty()) {
+            call.add(
+                """
+                |val result = client.%N()
+                """.trimMargin(),
+                name)
         } else {
             call.add(
                 """
                 |val result = client.%N(
                 |    ${invokeClientParams.joinToString(",\n    ") { "%L" }}
                 |)
-                |""".trimMargin(),
+                """.trimMargin(),
                 name,
                 *indentedParams.toTypedArray()
             )

@@ -1,4 +1,3 @@
-[submodule "generator/api-common-protos"]
-	path = generator/api-common-protos
-	url = git@github.com:googleapis/api-common-protos.git
-	branch = input-contract
+[submodule "gax-kotlin"]
+	path = gax-kotlin
+	url = git@github.com:googleapis/gax-kotlin.git

@@ -23,6 +23,9 @@ import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.MethodOptions
 import com.google.api.kotlin.indent
 import com.google.api.kotlin.types.GrpcTypes
+import com.google.api.kotlin.types.ProtoTypes
+import com.google.api.kotlin.types.isNotProtobufEmpty
+import com.google.api.kotlin.types.isProtobufEmpty
 import com.google.api.kotlin.util.FieldNamer
 import com.google.api.kotlin.util.Flattening
 import com.google.api.kotlin.util.Flattening.getFlattenedParameters
@@ -37,6 +40,7 @@ import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.UNIT
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -166,21 +170,27 @@ internal class FunctionsImpl(
 
         // add normal method
         if (options.keepOriginalMethod) {
-            val parameters = listOf(
-                ParameterInfo(
-                    ParameterSpec.builder(
-                        Functions.PARAM_REQUEST,
-                        context.typeMap.getKotlinType(method.inputType)
-                    ).build()
+            val inputType = context.typeMap.getKotlinType(method.inputType)
+            val parameters = if (inputType.isNotProtobufEmpty()) {
+                listOf(
+                    ParameterInfo(
+                        ParameterSpec.builder(Functions.PARAM_REQUEST, inputType).build()
+                    )
                 )
-            )
+            } else {
+                listOf()
+            }
             methods.add(
                 createUnaryMethod(
                     context = context,
                     method = method,
                     methodOptions = options,
                     parameters = parameters,
-                    requestObject = CodeBlock.of(Functions.PARAM_REQUEST)
+                    requestObject = if (parameters.isNotEmpty()) {
+                        CodeBlock.of(Functions.PARAM_REQUEST)
+                    } else {
+                        CodeBlock.of("%T.getDefaultInstance()", ProtoTypes.EMPTY)
+                    }
                 )
             )
         }
@@ -250,7 +260,8 @@ internal class FunctionsImpl(
                 val pageType = GrpcTypes.Support.PageWithMetadata(responseListItemType)
 
                 // getters and setters for setting the page sizes, etc.
-                val pageTokenSetter = FieldNamer.getJavaBuilderRawSetterName(methodOptions.pagedResponse.requestPageToken)
+                val pageTokenSetter =
+                    FieldNamer.getJavaBuilderRawSetterName(methodOptions.pagedResponse.requestPageToken)
                 val nextPageTokenGetter = FieldNamer.getFieldName(methodOptions.pagedResponse.responsePageToken)
                 val responseListGetter =
                     FieldNamer.getJavaBuilderAccessorRepeatedName(methodOptions.pagedResponse.responseList)
@@ -291,7 +302,12 @@ internal class FunctionsImpl(
             }
             else -> {
                 val originalReturnType = context.typeMap.getKotlinType(method.outputType)
-                m.returns(GrpcTypes.Support.CallResult(originalReturnType))
+                val returnsNothing = originalReturnType.isProtobufEmpty()
+                m.returns(
+                    GrpcTypes.Support.CallResult(
+                        if (returnsNothing) UNIT else originalReturnType
+                    )
+                )
 
                 if (flattenedMethod?.parameters?.size ?: 0 > 1) {
                     m.addCode(
@@ -300,20 +316,22 @@ internal class FunctionsImpl(
                         |    it.%L(
                         |        %L
                         |    )
-                        |}
+                        |}%L
                         |""".trimMargin(),
                         Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name,
-                        name, requestObject.indent(2)
+                        name, requestObject.indent(2),
+                        if (returnsNothing) ".map { Unit }" else ""
                     )
                 } else {
                     m.addCode(
                         """
                         |return %N.%N.execute(%S)·{
                         |    it.%L(%L)
-                        |}
+                        |}%L
                         |""".trimMargin(),
                         Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name,
-                        name, requestObject.indent(1)
+                        name, requestObject.indent(1),
+                        if (returnsNothing) ".map { Unit }" else ""
                     )
                 }
             }

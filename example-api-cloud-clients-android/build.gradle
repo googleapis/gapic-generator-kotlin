@@ -37,9 +37,6 @@ allprojects {
         google()
         jcenter()
         mavenLocal()
-
-        // temporary
-        maven { url 'https://jitpack.io' }
     }
 }
 

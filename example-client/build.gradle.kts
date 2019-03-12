@@ -24,7 +24,7 @@ import com.google.protobuf.gradle.ofSourceSet
 plugins {
     idea
     application
-    kotlin("jvm") version "1.3.20"
+    kotlin("jvm") version "1.3.21"
     id("com.google.protobuf") version "0.8.8"
 }
 
@@ -52,9 +52,19 @@ defaultTasks = listOf("run")
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
 
-    // get the KGax library via jitpack
-    // (this library is in preview and not yet published to maven)
-    implementation("com.github.googleapis.gax-kotlin:kgax-grpc:v0.2.0")
+    // normally get the KGax library via jitpack:
+    //    (this library is in preview and not yet published to maven)
+    //
+    // implementation("com.github.googleapis.gax-kotlin:kgax-grpc:v0.3.0")
+    //
+    // but we use a local copy for development
+    //
+    // Note: must use compile if referencing the included protos in this archive:
+    //   https://github.com/google/protobuf-gradle-plugin/issues/242
+    compile("com.google.api:kgax-grpc:0.3.0-SNAPSHOT")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.1")
+    implementation("javax.annotation:javax.annotation-api:1.3.2")
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))

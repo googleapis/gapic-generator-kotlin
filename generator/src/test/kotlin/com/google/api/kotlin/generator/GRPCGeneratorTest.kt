@@ -32,6 +32,10 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.kotlinpoet.ClassName
 import kotlin.test.Test
 
+/**
+ * Tests for the [GRPCGenerator] using the test protos in the
+ * `proto/google/example` resources directory.
+ */
 internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
 
     @Test
@@ -899,11 +903,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
     @Test
     fun `Generates the PagedTest methods without paging`() {
         val opts = ServiceOptions(
-            methods = listOf(
-                MethodOptions(
-                    name = "PagedTest"
-                )
-            )
+            methods = listOf(MethodOptions(name = "PagedTest"))
         )
 
         val methods =
@@ -929,6 +929,99 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | */
             |suspend fun pagedTest(request: google.example.PagedRequest): com.google.api.kgax.grpc.CallResult<google.example.PagedResponse> =
             |    stubs.api.execute("pagedTest") { it.pagedTest(request) }
+            |""".asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `generates an empty method`() {
+        val opts = ServiceOptions(
+            methods = listOf(MethodOptions(name = "Empty"))
+        )
+
+        val methods =
+            generate(opts).testServiceClient().funSpecs.filter { it.name == "empty" }
+        assertThat(methods).hasSize(1)
+
+        val method = methods.first()
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            | *
+            | *
+            | * For example:
+            | * ```
+            | * val client = TheTest.create()
+            | * val result = client.empty(
+            | *     testRequest {
+            | *     }
+            | *)
+            | * ```
+            | *
+            | * @param request the request object for the API call
+            | */
+            |suspend fun empty(request: google.example.TestRequest): com.google.api.kgax.grpc.CallResult<kotlin.Unit> =
+            |    stubs.api.execute("empty") { it.empty(request) }.map { Unit }
+            |""".asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `generates another empty method`() {
+        val opts = ServiceOptions(
+            methods = listOf(MethodOptions(name = "StillEmpty"))
+        )
+
+        val methods =
+            generate(opts).testServiceClient().funSpecs.filter { it.name == "stillEmpty" }
+        assertThat(methods).hasSize(1)
+
+        val method = methods.first()
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            | *
+            | *
+            | * For example:
+            | * ```
+            | * val client = TheTest.create()
+            | * val result = client.stillEmpty()
+            | * ```
+            | *
+            | * @param request the request object for the API call
+            | */
+            |suspend fun stillEmpty(): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> =
+            |    stubs.api.execute("stillEmpty") { it.stillEmpty(com.google.protobuf.Empty.getDefaultInstance()) }
+            |""".asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `generates a really empty method`() {
+        val opts = ServiceOptions(
+            methods = listOf(MethodOptions(name = "ReallyEmpty"))
+        )
+
+        val methods =
+            generate(opts).testServiceClient().funSpecs.filter { it.name == "reallyEmpty" }
+        assertThat(methods).hasSize(1)
+
+        val method = methods.first()
+        assertThat(method.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            | *
+            | *
+            | * For example:
+            | * ```
+            | * val client = TheTest.create()
+            | * val result = client.reallyEmpty()
+            | * ```
+            | *
+            | * @param request the request object for the API call
+            | */
+            |suspend fun reallyEmpty(): com.google.api.kgax.grpc.CallResult<kotlin.Unit> =
+            |    stubs.api.execute("reallyEmpty") { it.reallyEmpty(com.google.protobuf.Empty.getDefaultInstance()) }.map { Unit }
             |""".asNormalizedString()
         )
     }
