@@ -15,6 +15,3 @@
 .externalNativeBuild
 /out
 /repository
-
-src/test/resources/baselines/
-src/test/resources/generated-*.data

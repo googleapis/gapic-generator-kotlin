@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
+import com.google.protobuf.gradle.GenerateProtoTask
+import com.google.protobuf.gradle.generateProtoTasks
+import com.google.protobuf.gradle.id
+import com.google.protobuf.gradle.ofSourceSet
+import com.google.protobuf.gradle.plugins
 import com.google.protobuf.gradle.protobuf
 import com.google.protobuf.gradle.protoc
-import com.google.protobuf.gradle.plugins
-import com.google.protobuf.gradle.id
-import com.google.protobuf.gradle.generateProtoTasks
-import com.google.protobuf.gradle.ofSourceSet
-import org.springframework.boot.gradle.tasks.bundling.BootJar
 import org.gradle.api.tasks.testing.logging.TestLogEvent
+import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 plugins {
     idea
@@ -53,6 +54,9 @@ repositories {
 }
 
 val ktlintImplementation by configurations.creating
+val testSimpleImplementation by configurations.creating {
+    extendsFrom(configurations.implementation)
+}
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
@@ -73,23 +77,30 @@ dependencies {
     implementation("com.google.protobuf:protobuf-java:3.5.1")
     implementation("com.github.pcj:google-options:1.0.0")
 
-    testImplementation(kotlin("test"))
-    testImplementation(kotlin("test-junit"))
-    testImplementation("junit:junit:4.12")
-    testImplementation("com.nhaarman:mockito-kotlin:1.6.0")
+    testImpl(kotlin("test"))
+    testImpl(kotlin("test-junit"))
+    testImpl("junit:junit:4.12")
+    testImpl("com.nhaarman:mockito-kotlin:1.6.0")
     // needed to unit test with suspend functions (can remove when the dependency above is updated most likely)
-    testImplementation("org.mockito:mockito-core:2.23.4")
-    testImplementation("com.google.truth:truth:0.41")
+    testImpl("org.mockito:mockito-core:2.23.4")
+    testImpl("com.google.truth:truth:0.41")
 
     // for compiling and running the generated test clients / unit tests
-    testImplementation("com.google.api:kgax-grpc:0.3.0-SNAPSHOT")
+    testImpl("com.google.api:kgax-grpc:0.3.0-SNAPSHOT")
 
     ktlintImplementation("com.github.shyiko:ktlint:0.30.0")
+}
+
+fun DependencyHandlerScope.testImpl(obj: Any) {
+    testImplementation(obj)
+    testSimpleImplementation(obj)
 }
 
 application {
     mainClassName = "com.google.api.kotlin.ClientPluginKt"
 }
+
+val testDataDir = "$buildDir/generated/testdata"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -97,53 +108,20 @@ java {
 
     sourceSets {
         create("testSimple") {
-            compileClasspath += sourceSets["test"].output
-            runtimeClasspath += sourceSets["test"].output
+            compileClasspath += sourceSets["main"].output
+            runtimeClasspath += sourceSets["main"].output
         }
         for (sSet in listOf("main", "test")) {
             getByName(sSet).proto.srcDir("$projectDir/../gax-kotlin/api-common-protos")
+        }
+        for (sSet in listOf("test", "testSimple")) {
+            getByName(sSet).output.dir(mapOf("builtBy" to "updateTestBaselines"), testDataDir)
         }
     }
 }
 
 jacoco {
     toolVersion = "0.8.2"
-}
-
-// compile proto and generate gRPC stubs
-protobuf {
-    protoc {
-        artifact = "com.google.protobuf:protoc:3.6.1"
-    }
-    plugins {
-        id("gen-test") {
-            path = "$projectDir/src/test/resources/plugin-test.sh"
-        }
-        id("gen-simple") {
-            path = "$projectDir/src/test/resources/plugin-simple.sh"
-        }
-        id("local") {
-            path = "$projectDir/../runLocalGenerator.sh"
-        }
-    }
-    generateProtoTasks {
-        ofSourceSet("test").forEach {
-            it.plugins {
-                id("gen-test") {}
-                id("local") {
-                    option("test-output=$buildDir/generated/source/proto/test/local")
-                }
-            }
-        }
-        ofSourceSet("testSimple").forEach {
-            it.plugins {
-                id("gen-simple") {}
-                id("local") {
-                    option("test-output=$buildDir/generated/source/proto/testSimple/local")
-                }
-            }
-        }
-    }
 }
 
 publishing {
@@ -154,9 +132,6 @@ publishing {
         }
     }
 }
-
-configurations["testSimpleImplementation"].extendsFrom(configurations.testImplementation)
-configurations["testSimpleRuntimeOnly"].extendsFrom(configurations.runtimeOnly)
 
 tasks {
     val test = getByName("test")
@@ -203,45 +178,82 @@ tasks {
         args = listOf("-F", "src/**/*.kt", "test/**/*.kt")
     }
 
-    val baselinePath = "$projectDir/src/test/resources/baselines"
-
     val updateTestBaselines by creating {
-        delete(baselinePath)
+        doLast {
+            val baselinePath = "$testDataDir/baselines"
+            delete(baselinePath)
 
-        for (name in listOf("test", "testSimple")) {
-            val output = file("$baselinePath/$name.baseline.txt")
-            file(output.parent).mkdirs()
-            val baseDir = "$buildDir/generated/source/proto/$name/local"
+            for (name in listOf("test", "testSimple")) {
+                val output = file("$baselinePath/$name.baseline.txt")
+                file(output.parent).mkdirs()
+                val baseDir = "$buildDir/generated/source/proto/$name/local"
 
-            output.bufferedWriter().use { w ->
-                val sources = file(baseDir).walk()
-                    .filter { it.isFile }
-                    .sortedBy { it.absolutePath }
-                for (file in sources) {
-                    val fileName = file.relativeTo(file(baseDir)).path
-                    w.write("-----BEGIN:$fileName-----\n")
-                    w.write(file.bufferedReader().use { it.readText() })
-                    w.write("-----END:$fileName-----\n")
-                    w.flush()
+                output.bufferedWriter().use { w ->
+                    val sources = file(baseDir).walk()
+                        .filter { it.isFile }
+                        .sortedBy { it.absolutePath }
+                    for (file in sources) {
+                        val fileName = file.relativeTo(file(baseDir)).path
+                        w.write("-----BEGIN:$fileName-----\n")
+                        w.write(file.bufferedReader().use { it.readText() })
+                        w.write("-----END:$fileName-----\n")
+                        w.flush()
+                    }
                 }
             }
         }
-
         outputs.upToDateWhen { false }
     }
-    test.dependsOn(updateTestBaselines)
 
     val testSimpleTest by creating(Test::class) {
         testClassesDirs = java.sourceSets["testSimple"].output.classesDirs
         classpath = java.sourceSets["testSimple"].runtimeClasspath
     }
-    test.dependsOn(testSimpleTest)
+    check.dependsOn(testSimpleTest)
+}
 
-    val cleanBaselines by creating(Delete::class) {
-        delete(baselinePath)
-        for (name in listOf("test", "simple")) {
-            delete("$projectDir/src/test/resources/generated-$name.data")
+// compile proto and generate gRPC stubs
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.6.1"
+    }
+    plugins {
+        id("gen-test") {
+            path = "$projectDir/src/test/resources/plugin-test.sh"
+        }
+        id("gen-simple") {
+            path = "$projectDir/src/test/resources/plugin-simple.sh"
+        }
+        id("local") {
+            path = "$projectDir/../runLocalGenerator.sh"
         }
     }
-    clean.dependsOn(cleanBaselines)
+    generateProtoTasks {
+        ofSourceSet("test").forEach {
+            it.plugins {
+                id("gen-test") {}
+                id("local") {
+                    option("test-output=$buildDir/generated/source/proto/test/local")
+                }
+            }
+            it.dependsOn("assembleBootDist")
+            it.requireBaselineIfNeeded("test")
+        }
+        ofSourceSet("testSimple").forEach {
+            it.plugins {
+                id("gen-simple") {}
+                id("local") {
+                    option("test-output=$buildDir/generated/source/proto/testSimple/local")
+                }
+            }
+            it.dependsOn("assembleBootDist")
+            it.requireBaselineIfNeeded("testSimple")
+        }
+    }
+}
+
+fun GenerateProtoTask.requireBaselineIfNeeded(name: String) {
+    if (this.name == "generate${name.capitalize()}Proto") {
+        tasks.getByName("updateTestBaselines").dependsOn(this)
+    }
 }

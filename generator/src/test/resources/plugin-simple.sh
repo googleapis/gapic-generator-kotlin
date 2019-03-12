@@ -20,5 +20,8 @@
 # Run create-test-data.sh if you update the protos and need to recreate generate.data
 #
 
+OUTPUT_DIR="./build/generated/testdata"
+mkdir -p ${OUTPUT_DIR}
+
 # save the code generator request
-cat > ./src/test/resources/generated-simple.data
+cat > ${OUTPUT_DIR}/generated-simple.data
