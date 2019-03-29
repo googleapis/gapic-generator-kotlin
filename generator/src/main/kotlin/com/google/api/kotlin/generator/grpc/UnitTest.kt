@@ -321,7 +321,7 @@ internal class UnitTestImpl(
             )
         }
         givenBlock.code.addStatement(
-            "whenever(%N.%L(any(), any())).thenReturn(streaming)",
+            "whenever(%N.%L(any(), any(), any())).thenReturn(streaming)",
             UnitTest.MOCK_API_STUB,
             streamMethod
         )
@@ -343,7 +343,7 @@ internal class UnitTestImpl(
             val check = createStubCheckCode(givenBlock, context, method, flatteningConfig)
             thenBlock.code.add(
                 """
-                |verify(%N).%L(any(), check·{
+                |verify(%N).%L(any(),·any(),·check·{
                 |    val mock: %T = mock()
                 |    val mockObserver: %T = mock()
                 |    it(mock, mockObserver)
@@ -358,7 +358,7 @@ internal class UnitTestImpl(
         } else {
             thenBlock.code.add(
                 """
-                |verify(%N).%L(any(), check·{
+                |verify(%N).%L(any(),·any(),·check·{
                 |    val mock: %T = mock()
                 |    assertEquals(mock::%L, it(mock))
                 |})

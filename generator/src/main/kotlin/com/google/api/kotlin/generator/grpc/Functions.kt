@@ -237,7 +237,7 @@ internal class FunctionsImpl(
                     |    %T(
                     |        %N.%N,
                     |        async·{
-                    |            %N.%N.execute(%S)·{
+                    |            %N.%N.execute(context·=·%S)·{
                     |                it.%L(
                     |                    %L
                     |                )
@@ -272,7 +272,7 @@ internal class FunctionsImpl(
                     """
                     |return pager(
                     |    method·=·{·request·->
-                    |        %N.%N.execute(%S)·{
+                    |        %N.%N.execute(context·=·%S)·{
                     |            it.%L(request)
                     |        }
                     |    },
@@ -312,7 +312,7 @@ internal class FunctionsImpl(
                 if (flattenedMethod?.parameters?.size ?: 0 > 1) {
                     m.addCode(
                         """
-                        |return %N.%N.execute(%S)·{
+                        |return %N.%N.execute(context·=·%S)·{
                         |    it.%L(
                         |        %L
                         |    )
@@ -325,7 +325,7 @@ internal class FunctionsImpl(
                 } else {
                     m.addCode(
                         """
-                        |return %N.%N.execute(%S)·{
+                        |return %N.%N.execute(context·=·%S)·{
                         |    it.%L(%L)
                         |}%L
                         |""".trimMargin(),
@@ -374,7 +374,6 @@ internal class FunctionsImpl(
             val (parameters, request) = getFlattenedParameters(context, method, flattenedMethod)
 
             val flattened = FunSpec.builder(name)
-                .addModifiers(KModifier.SUSPEND)
             if (method.hasClientStreaming() && method.hasServerStreaming()) {
                 flattened.addKdoc(
                     documentation.generateMethodKDoc(
@@ -397,7 +396,7 @@ internal class FunctionsImpl(
                     |    withInitialRequest(
                     |        %L
                     |    )
-                    |}.executeStreaming(%S)·{ it::%N }
+                    |}.executeStreaming(context·=·%S)·{ it::%N }
                     |""".trimMargin(),
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_API,
                     request.indent(2),
@@ -419,7 +418,7 @@ internal class FunctionsImpl(
                     )
                 )
                 flattened.addCode(
-                    "return %N.%N.executeClientStreaming(%S)·{ it::%N }\n",
+                    "return %N.%N.executeClientStreaming(context·=·%S)·{ it::%N }\n",
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name, name
                 )
             } else if (method.hasServerStreaming()) { // server only
@@ -436,7 +435,7 @@ internal class FunctionsImpl(
                 flattened.returns(GrpcTypes.Support.ServerStreamingCall(normalOutputType))
                 flattened.addCode(
                     """
-                    |return %N.%N.executeServerStreaming(%S)·{·stub,·observer·->
+                    |return %N.%N.executeServerStreaming(context·=·%S)·{·stub,·observer·->
                     |    stub.%N(
                     |        %L,
                     |        observer
@@ -461,7 +460,6 @@ internal class FunctionsImpl(
         // unchanged method
         if (methodOptions.keepOriginalMethod) {
             val normal = FunSpec.builder(name)
-                .addModifiers(KModifier.SUSPEND)
                 .addKdoc(documentation.generateMethodKDoc(context, method, methodOptions))
             val parameters = mutableListOf<ParameterInfo>()
 
@@ -472,7 +470,7 @@ internal class FunctionsImpl(
                     )
                 )
                 normal.addCode(
-                    "return %N.%N.executeStreaming(%S)·{ it::%N }\n",
+                    "return %N.%N.executeStreaming(context·=·%S)·{ it::%N }\n",
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name, name
                 )
             } else if (method.hasClientStreaming()) { // client only
@@ -482,7 +480,7 @@ internal class FunctionsImpl(
                     )
                 )
                 normal.addCode(
-                    "return %N.%N.executeClientStreaming(%S)·{ it::%N }\n",
+                    "return %N.%N.executeClientStreaming(context·=·%S)·{ it::%N }\n",
                     Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name, name
                 )
             } else if (method.hasServerStreaming()) { // server only
@@ -492,7 +490,7 @@ internal class FunctionsImpl(
                 normal.returns(GrpcTypes.Support.ServerStreamingCall(normalOutputType))
                 normal.addCode(
                     """
-                    |return %N.%N.executeServerStreaming(%S)·{·stub,·observer·->
+                    |return %N.%N.executeServerStreaming(context·=·%S)·{·stub,·observer·->
                     |    stub.%N(%N, observer)
                     |}
                     |""".trimMargin(),
