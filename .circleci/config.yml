@@ -166,6 +166,7 @@ jobs:
   test_showcase:
     docker:
       - image: circleci/openjdk:8-jdk
+      - image: gcr.io/gapic-showcase/gapic-showcase:0.0.12
     working_directory: ~/gapic-generator-kotlin/showcase-test
     steps:
       - checkout:
@@ -184,13 +185,6 @@ jobs:
           paths:
             - ~/.gradle
           key: showcase-v0-{{ checksum "build.gradle.kts" }}
-      - run:
-          name: Download showcase
-          command: sudo sh -c "curl -sSL https://github.com/googleapis/gapic-showcase/releases/download/v0.0.12/gapic-showcase-0.0.12-linux-amd64.tar.gz | tar -zx --no-same-owner -C /usr/local/bin/"
-      - run:
-          name: Run showcase
-          command: /usr/local/bin/gapic-showcase run
-          background: true
       - run:
           name: Test showcase
           command: ./gradlew test
