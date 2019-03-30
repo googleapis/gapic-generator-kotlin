@@ -68,7 +68,7 @@ jobs:
           name: Copy example protos
           command: |
             docker create -v /proto --name protos alpine:3.4 /bin/true
-            docker cp ./example-server/src/main/proto/. protos:/proto
+            docker cp example-server/src/main/proto/. protos:/proto
       - run:
           name: Generate example-client with image
           command: docker run --rm --volumes-from protos kgen

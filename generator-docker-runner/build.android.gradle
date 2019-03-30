@@ -48,6 +48,8 @@ dependencies {
     implementation 'javax.annotation:javax.annotation-api:1.3.2'
 
     implementation 'com.github.googleapis.gax-kotlin:kgax-grpc-android:0.4.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.1.0'
 }
 
 compileKotlin {
