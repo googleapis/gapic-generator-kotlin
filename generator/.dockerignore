@@ -1,8 +1,0 @@
-.gradle/
-runner/.gradle/
-.idea/
-.settings/
-bin/
-out/
-example-input/
-example-output/

@@ -52,13 +52,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # copy distribution
-COPY build/distributions/generator-boot-*.tar /tmp/generator/
+COPY generator/build/distributions/generator-boot-*.tar /tmp/generator/
 RUN mkdir -p /usr/generator && \
     tar xvf /tmp/generator/generator-boot-*.tar --strip-components=1 -C /usr/generator && \
     rm -rf /tmp/generator
 
 # move into the gradle project used to run generator
-COPY runner /usr/src/generator/runner
+COPY generator-docker-runner /usr/src/generator/runner
 WORKDIR /usr/src/generator/runner
 
 # disable gradle daemon
@@ -68,10 +68,10 @@ RUN mkdir -p /root/.gradle && \
 
 # run a build to cache the build artifacts
 RUN cp build.android.gradle build.gradle && \
-    ./gradlew build clean && \
-    cp build.server.gradle build.gradle && \
-    ./gradlew build clean && \
-    rm build.gradle
+    ./gradlew build clean
+RUN cp build.server.gradle build.gradle && \
+    ./gradlew build clean
+RUN rm build.gradle
 
 # create input directories
 RUN  rm -rf src/main/proto && \

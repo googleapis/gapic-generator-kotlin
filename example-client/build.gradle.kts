@@ -55,13 +55,18 @@ dependencies {
     // normally get the KGax library via jitpack:
     //    (this library is in preview and not yet published to maven)
     //
-    // implementation("com.github.googleapis.gax-kotlin:kgax-grpc:v0.3.0")
+    // repositories {
+    //   maven { url 'https://jitpack.io' }
+    // }
+    // dependencies {
+    //   compile("com.github.googleapis.gax-kotlin:kgax-grpc:v0.4.0")
+    // }
     //
     // but we use a local copy for development
     //
     // Note: must use compile if referencing the included protos in this archive:
     //   https://github.com/google/protobuf-gradle-plugin/issues/242
-    compile("com.google.api:kgax-grpc:0.3.0-SNAPSHOT")
+    compile("com.google.api:kgax-grpc:0.4.0-SNAPSHOT")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.1")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
