@@ -1,7 +1,7 @@
 version: '3'
 services:
   showcase:
-    build: .
+    image: gcr.io/gapic-showcase/gapic-showcase:0.0.12
     container_name: showcase
     ports:
      - "7469:7469"

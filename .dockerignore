@@ -1,0 +1,9 @@
+**/.gradle/
+**/.idea/
+**/.settings/
+**/bin/
+**/out/
+.circleci/
+
+example-*/
+showcase-test/

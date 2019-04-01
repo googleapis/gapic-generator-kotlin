@@ -51,7 +51,7 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.1")
 
-    implementation("com.google.api:kgax-grpc:0.3.0-SNAPSHOT")
+    implementation("com.google.api:kgax-grpc:0.4.0-SNAPSHOT")
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))

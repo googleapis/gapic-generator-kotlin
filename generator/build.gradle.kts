@@ -138,7 +138,7 @@ tasks {
     val check = getByName("check")
     val clean = getByName("clean")
 
-    withType<BootJar> {
+    val bootJar = withType<BootJar> {
         enabled = true
         baseName = "gapic-generator-kotlin"
         classifier = "core"
@@ -209,6 +209,7 @@ tasks {
         testClassesDirs = java.sourceSets["testSimple"].output.classesDirs
         classpath = java.sourceSets["testSimple"].runtimeClasspath
     }
+    testSimpleTest.dependsOn(bootJar)
     check.dependsOn(testSimpleTest)
 }
 

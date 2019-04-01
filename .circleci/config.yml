@@ -51,7 +51,7 @@ jobs:
   dockerize:
     docker:
       - image: circleci/openjdk:8-jdk
-    working_directory: ~/gapic-generator-kotlin/generator
+    working_directory: ~/gapic-generator-kotlin
     steps:
       - checkout:
           path: ~/gapic-generator-kotlin
@@ -59,7 +59,7 @@ jobs:
           name: "Checkout submodules"
           command: git submodule update --init --recursive
       - attach_workspace:
-          at: ./..
+          at: .
       - setup_remote_docker
       - run:
           name: Dockerize
@@ -68,7 +68,7 @@ jobs:
           name: Copy example protos
           command: |
             docker create -v /proto --name protos alpine:3.4 /bin/true
-            docker cp ./../example-server/src/main/proto/. protos:/proto
+            docker cp example-server/src/main/proto/. protos:/proto
       - run:
           name: Generate example-client with image
           command: docker run --rm --volumes-from protos kgen
@@ -79,9 +79,9 @@ jobs:
           name: Save docker image
           command: docker save -o kgen.tar kgen
       - persist_to_workspace:
-          root: ./..
+          root: .
           paths:
-            - generator/kgen.tar
+            - kgen.tar
 
   # -------------------------------------------------------------------------------
   # Examples
@@ -166,6 +166,7 @@ jobs:
   test_showcase:
     docker:
       - image: circleci/openjdk:8-jdk
+      - image: gcr.io/gapic-showcase/gapic-showcase:0.0.12
     working_directory: ~/gapic-generator-kotlin/showcase-test
     steps:
       - checkout:
@@ -184,13 +185,6 @@ jobs:
           paths:
             - ~/.gradle
           key: showcase-v0-{{ checksum "build.gradle.kts" }}
-      - run:
-          name: Download showcase
-          command: sudo sh -c "curl -sSL https://github.com/googleapis/gapic-showcase/releases/download/v0.0.12/gapic-showcase-0.0.12-linux-amd64.tar.gz | tar -zx --no-same-owner -C /usr/local/bin/"
-      - run:
-          name: Run showcase
-          command: /usr/local/bin/gapic-showcase run
-          background: true
       - run:
           name: Test showcase
           command: ./gradlew test
@@ -325,7 +319,7 @@ jobs:
   release_gcr_snapshot:
     docker:
       - image: google/cloud-sdk
-    working_directory: ~/gapic-generator-kotlin/generator
+    working_directory: ~/gapic-generator-kotlin
     steps:
       - setup_remote_docker
       - run:
@@ -336,7 +330,7 @@ jobs:
             gcloud config set project ${GCLOUD_PROJECT_ID}
             gcloud auth configure-docker
       - attach_workspace:
-          at: ./..
+          at: .
       - run:
           name: Load docker image
           command: docker load -i kgen.tar
@@ -351,7 +345,7 @@ jobs:
   release:
     docker:
       - image: google/cloud-sdk
-    working_directory: ~/gapic-generator-kotlin/generator
+    working_directory: ~/gapic-generator-kotlin
     steps:
       - setup_remote_docker
       - run:
@@ -362,7 +356,7 @@ jobs:
             gcloud config set project ${GCLOUD_GAPIC_PROJECT_ID}
             gcloud auth configure-docker
       - attach_workspace:
-          at: ./..
+          at: .
       - run:
           name: Load docker image
           command: docker load -i kgen.tar

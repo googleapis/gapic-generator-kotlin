@@ -15,7 +15,7 @@
  */
 
 buildscript {
-    ext.kotlin_version = '1.3.20'
+    ext.kotlin_version = '1.3.21'
 
     repositories {
         mavenCentral()
@@ -47,8 +47,8 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     implementation 'javax.annotation:javax.annotation-api:1.3.2'
 
-    // temporary
-    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc-android:v0.2.0'
+    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:0.4.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.1'
 }
 
 compileKotlin {
@@ -64,24 +64,16 @@ protobuf {
         artifact = 'com.google.protobuf:protoc:3.6.1'
     }
     plugins {
-        javalite {
-            artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0'
-        }
         client {
             path = '/usr/generator/bin/generator'
         }
     }
     generateProtoTasks {
         all().each { task ->
-            task.builtins {
-                remove java
-            }
             task.plugins {
-                javalite {}
                 client {
                     option "source=${projectDir}/src/main/proto"
                     option "test-output=${project.buildDir}/generated/source/protoTest/clientTest"
-                    option "lite"
                     // EXTRA-PLUGIN-OPTIONS
                 }
             }
