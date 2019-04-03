@@ -36,7 +36,7 @@ plugins {
 }
 
 group = "com.google.api"
-version = "0.3.0-SNAPSHOT"
+version = "0.4.0-SNAPSHOT"
 
 buildscript {
     repositories {
@@ -50,7 +50,7 @@ repositories {
     google()
     mavenCentral()
     jcenter()
-    maven(url = "https://jitpack.io")
+    // maven(url = "https://jitpack.io")
 }
 
 val ktlintImplementation by configurations.creating
@@ -62,19 +62,19 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.1")
 
+    compile("com.google.api:kgax-grpc:0.4.0-SNAPSHOT")
+
     implementation("io.github.microutils:kotlin-logging:1.5.4")
     implementation("org.slf4j:slf4j-api:1.7.25")
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.11.0")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
 
-    implementation("com.squareup:kotlinpoet:1.0.1")
+    implementation("com.squareup:kotlinpoet:1.2.0")
 
     implementation("org.yaml:snakeyaml:1.20")
     implementation("org.apache.commons:commons-io:1.3.2")
     implementation("org.apache.commons:commons-text:1.4")
-
-    implementation("com.google.guava:guava:25.1-jre")
-    implementation("com.google.protobuf:protobuf-java:3.5.1")
+    
     implementation("com.github.pcj:google-options:1.0.0")
 
     testImpl(kotlin("test"))
@@ -84,9 +84,6 @@ dependencies {
     // needed to unit test with suspend functions (can remove when the dependency above is updated most likely)
     testImpl("org.mockito:mockito-core:2.23.4")
     testImpl("com.google.truth:truth:0.41")
-
-    // for compiling and running the generated test clients / unit tests
-    testImpl("com.google.api:kgax-grpc:0.3.0-SNAPSHOT")
 
     ktlintImplementation("com.github.shyiko:ktlint:0.30.0")
 }
@@ -136,7 +133,6 @@ publishing {
 tasks {
     val test = getByName("test")
     val check = getByName("check")
-    val clean = getByName("clean")
 
     val bootJar = withType<BootJar> {
         enabled = true
@@ -206,8 +202,8 @@ tasks {
     }
 
     val testSimpleTest by creating(Test::class) {
-        testClassesDirs = java.sourceSets["testSimple"].output.classesDirs
-        classpath = java.sourceSets["testSimple"].runtimeClasspath
+        testClassesDirs = sourceSets["testSimple"].output.classesDirs
+        classpath = sourceSets["testSimple"].runtimeClasspath
     }
     testSimpleTest.dependsOn(bootJar)
     check.dependsOn(testSimpleTest)

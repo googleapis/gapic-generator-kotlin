@@ -72,7 +72,7 @@ class EchoTest {
             echoRequest { content = "Hi there!" }
         )
 
-        assertThat(result.body.content).isEqualTo("Hi there!")
+        assertThat(result.content).isEqualTo("Hi there!")
     }
 
     @Test(expected = StatusRuntimeException::class)

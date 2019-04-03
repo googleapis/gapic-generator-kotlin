@@ -62,8 +62,9 @@ class LanguageMetadataActivity : AppCompatActivity(), CoroutineScope {
                 type = Document.Type.PLAIN_TEXT
             }, EncodingType.UTF8)
 
-            textView.text = "The API says: ${response.body}\n\n" +
-                "with metadata of: ${response.metadata.keys().joinToString(",")}"
+            // TODO: fix me
+            textView.text = "The API says: ${response}\n\n" /* +
+                "with metadata of: ${response.metadata.keys().joinToString(",")}" */
         }
     }
 

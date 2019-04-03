@@ -75,7 +75,7 @@ class SpeechActivity : AppCompatActivity(), CoroutineScope {
 
             // wait for the result and update the UI
             val response = lro.await()
-            textView.text = "The API says: ${response.body}\n via operation: ${lro.operation?.name}"
+            textView.text = "The API says: ${response}\n via operation: ${lro.operation?.name}"
         }
     }
 

@@ -72,7 +72,7 @@ class LanguageInterceptorActivity : AppCompatActivity(), CoroutineScope {
         val secondResponse = async { client.analyzeEntitySentiment(document, EncodingType.UTF8) }
 
         launch {
-            textView.text = "${firstResponse.await().body}\n\n${secondResponse.await().body}"
+            textView.text = "${firstResponse.await()}\n\n${secondResponse.await()}"
         }
     }
 

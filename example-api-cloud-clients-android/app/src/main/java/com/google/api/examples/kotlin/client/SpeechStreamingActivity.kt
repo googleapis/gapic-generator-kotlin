@@ -125,7 +125,7 @@ class SpeechStreamingActivity : AppCompatActivity(), CoroutineScope {
         }
     }
 
-    private suspend fun transcribe(): SpeechStreams {
+    private fun transcribe(): SpeechStreams {
         Log.i(TAG, "Starting talking!")
 
         // start streaming the data to the server and collect responses

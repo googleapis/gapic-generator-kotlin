@@ -54,10 +54,6 @@ internal interface GrpcTypes {
             fun FutureCall(type: TypeName) =
                 ClassName(SUPPORT_LIB_GRPC_PACKAGE, "FutureCall").parameterizedBy(type)
 
-            val CallResult = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "CallResult")
-
-            fun CallResult(type: TypeName) = CallResult.parameterizedBy(type)
-
             fun StreamingCall(requestType: TypeName, responseType: TypeName) =
                 ClassName(SUPPORT_LIB_GRPC_PACKAGE, "StreamingCall").parameterizedBy(
                     requestType,
@@ -78,9 +74,6 @@ internal interface GrpcTypes {
 
             fun LongRunningCall(type: TypeName) =
                 ClassName(SUPPORT_LIB_GRPC_PACKAGE, "LongRunningCall").parameterizedBy(type)
-
-            fun PageWithMetadata(elementType: TypeName) =
-                ClassName(SUPPORT_LIB_GRPC_PACKAGE, "PageWithMetadata").parameterizedBy(elementType)
 
             val Retry = ClassName(SUPPORT_LIB_PACKAGE, "Retry")
             val GrpcBasicRetry = ClassName(SUPPORT_LIB_GRPC_PACKAGE, "GrpcBasicRetry")

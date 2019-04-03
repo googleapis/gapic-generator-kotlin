@@ -131,7 +131,7 @@ class LanguageSignInActivity : AppCompatActivity(), CoroutineScope {
         }, EncodingType.UTF8)
 
         // update the UI
-        textView.text = "The API says: ${response.body}"
+        textView.text = "The API says: $response"
     }
 
     override fun onDestroy() {

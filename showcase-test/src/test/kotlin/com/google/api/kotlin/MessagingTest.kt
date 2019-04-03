@@ -56,7 +56,7 @@ class MessagingTest {
     @Test
     fun `can have a quick chat`() = runBlocking {
         // create a new room
-        val room = client.createRoom("room-${System.currentTimeMillis()}", "for chatty folks").body
+        val room = client.createRoom("room-${System.currentTimeMillis()}", "for chatty folks")
 
         // connect to the room
         val streams = client.connect()

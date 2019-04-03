@@ -61,7 +61,7 @@ class Client {
         })
 
         // print the result
-        println("The response was: ${result.body.result}")
+        println("The response was: ${result.result}")
 
         // shutdown
         client.shutdownChannel()

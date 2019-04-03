@@ -54,7 +54,7 @@ fun visionExample() = runBlocking {
         }
     ))
 
-    println("The response is: ${result.body}")
+    println("The response is: $result")
 
     // shutdown
     client.shutdownChannel()
