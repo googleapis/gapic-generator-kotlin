@@ -50,7 +50,6 @@ repositories {
     google()
     mavenCentral()
     jcenter()
-    // maven(url = "https://jitpack.io")
 }
 
 val ktlintImplementation by configurations.creating
