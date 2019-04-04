@@ -66,9 +66,9 @@ dependencies {
     //
     // Note: must use compile if referencing the included protos in this archive:
     //   https://github.com/google/protobuf-gradle-plugin/issues/242
-    compile("com.google.api:kgax-grpc:0.4.0-SNAPSHOT")
+    compile("com.google.api:kgax-grpc:0.5.0-SNAPSHOT")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.0")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
 
     testImplementation(kotlin("test"))

@@ -52,9 +52,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # copy distribution
-COPY generator/build/distributions/generator-boot-*.tar /tmp/generator/
+RUN mkdir -p                 /usr/local/kgax/repository/com/google/api
+COPY build/kgax-core         /usr/local/kgax/repository/com/google/api/kgax-core
+COPY build/kgax-grpc         /usr/local/kgax/repository/com/google/api/kgax-grpc
+COPY build/kgax-grpc-android /usr/local/kgax/repository/com/google/api/kgax-grpc-android
+COPY build/kgax-grpc-base    /usr/local/kgax/repository/com/google/api/kgax-grpc-base
+COPY build/gapic-generator-kotlin/*-SNAPSHOT/gapic-generator-kotlin-*.tar /tmp/generator/
 RUN mkdir -p /usr/generator && \
-    tar xvf /tmp/generator/generator-boot-*.tar --strip-components=1 -C /usr/generator && \
+    tar xvf /tmp/generator/gapic-generator-kotlin-*.tar --strip-components=1 -C /usr/generator && \
     rm -rf /tmp/generator
 
 # move into the gradle project used to run generator
@@ -65,6 +70,16 @@ WORKDIR /usr/src/generator/runner
 RUN mkdir -p /root/.gradle && \
     echo "org.gradle.daemon=false" > /root/.gradle/gradle.properties && \
     echo "org.gradle.jvmargs=-Xmx4096m -XX:MaxPermSize=4096m" >> /root/.gradle/gradle.properties 
+
+# update gax version in build scripts
+RUN GAX_VERSION=$(basename /usr/local/kgax/repository/com/google/api/kgax-grpc/*/*.jar) && \
+    GAX_VERSION=${GAX_VERSION#"kgax-grpc-"} && \
+    GAX_VERSION=${GAX_VERSION%".jar"} && \
+    sed -i "s/__KGAX__VERSION/${GAX_VERSION}/g" build.server.gradle
+RUN GAX_ANDROID_VERSION=$(basename /usr/local/kgax/repository/com/google/api/kgax-grpc-android/*/*.jar) && \
+    GAX_ANDROID_VERSION=${GAX_ANDROID_VERSION#"kgax-grpc-android-"} && \
+    GAX_ANDROID_VERSION=${GAX_ANDROID_VERSION%".jar"} && \
+    sed -i "s/__KGAX__VERSION/${GAX_ANDROID_VERSION}/g" build.android.gradle
 
 # run a build to cache the build artifacts
 RUN cp build.android.gradle build.gradle && \

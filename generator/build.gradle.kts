@@ -36,7 +36,7 @@ plugins {
 }
 
 group = "com.google.api"
-version = "0.4.0-SNAPSHOT"
+version = "0.5.0-SNAPSHOT"
 
 buildscript {
     repositories {
@@ -59,9 +59,9 @@ val testSimpleImplementation by configurations.creating {
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.0")
 
-    compile("com.google.api:kgax-grpc:0.4.0-SNAPSHOT")
+    compile("com.google.api:kgax-grpc:0.5.0-SNAPSHOT")
 
     implementation("io.github.microutils:kotlin-logging:1.5.4")
     implementation("org.slf4j:slf4j-api:1.7.25")
@@ -125,6 +125,7 @@ publishing {
         create<MavenPublication>("bootJava") {
             artifactId = "gapic-generator-kotlin"
             artifact(tasks.getByName("bootJar"))
+            artifact(tasks.getByName("bootDistTar"))
         }
     }
 }

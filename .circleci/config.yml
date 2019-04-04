@@ -63,7 +63,9 @@ jobs:
       - setup_remote_docker
       - run:
           name: Dockerize
-          command: docker build -t kgen .
+          command: docker-build.sh
+          environment:
+            TAG: kgen
       - run:
           name: Copy example protos
           command: |
