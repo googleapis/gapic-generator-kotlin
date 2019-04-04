@@ -18,7 +18,7 @@ rm -rf ~/.m2/repository/com/google/api/kgax-*
 for DIR in "gax-kotlin" "generator"
 do
   pushd $DIR
-  ./gradlew clean build publishToMavenLocal -x check
+  ./gradlew clean build publishToMavenLocal
   popd
 done
 
