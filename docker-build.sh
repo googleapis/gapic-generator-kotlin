@@ -18,7 +18,7 @@ rm -rf ~/.m2/repository/com/google/api/kgax-*
 for DIR in "gax-kotlin" "generator"
 do
   pushd $DIR
-  ./gradlew clean build publishToMavenLocal
+  ./gradlew clean build publishToMavenLocal -x check
   popd
 done
 
@@ -27,6 +27,7 @@ rm -rf ./build
 mkdir ./build
 cp -R ~/.m2/repository/com/google/api/kgax* ./build/
 cp -R ~/.m2/repository/com/google/api/gapic-generator-kotlin ./build/
+tree ./build
 
 # build docker wrapper
 docker build -t ${TAG} .
