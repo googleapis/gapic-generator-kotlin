@@ -63,7 +63,7 @@ jobs:
       - setup_remote_docker
       - run:
           name: Dockerize
-          command: docker-build.sh
+          command: ./docker-build.sh
           environment:
             TAG: kgen
       - run:
