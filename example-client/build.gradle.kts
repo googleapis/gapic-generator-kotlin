@@ -59,14 +59,14 @@ dependencies {
     //   maven { url 'https://jitpack.io' }
     // }
     // dependencies {
-    //   compile("com.github.googleapis.gax-kotlin:kgax-grpc:v0.4.0")
+    //   compile("com.github.googleapis.gax-kotlin:kgax-grpc:v0.5.0")
     // }
     //
     // but we use a local copy for development
     //
     // Note: must use compile if referencing the included protos in this archive:
     //   https://github.com/google/protobuf-gradle-plugin/issues/242
-    compile("com.google.api:kgax-grpc:0.5.0-SNAPSHOT")
+    compile("com.google.api:kgax-grpc:0.5.0")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.0")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
