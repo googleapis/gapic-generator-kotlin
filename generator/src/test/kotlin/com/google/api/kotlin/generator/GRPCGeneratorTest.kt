@@ -116,7 +116,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*/
             |suspend fun test(
             |    request: google.example.TestRequest
-            |): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> = stubs.api.execute(context = "test") {
+            |): google.example.TestResponse = stubs.api.execute(context = "test") {
             |    it.test(request)
             |}
             |""".asNormalizedString()
@@ -476,7 +476,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*/
             |suspend fun testFlat(
             |    request: google.example.TestRequest
-            |): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> = stubs.api.execute(context = "testFlat") {
+            |): google.example.TestResponse = stubs.api.execute(context = "testFlat") {
             |    it.testFlat(request)
             |}
             |""".asNormalizedString()
@@ -500,7 +500,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*/
             |suspend fun testFlat(
             |    query: kotlin.String
-            |): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> = stubs.api.execute(context = "testFlat") {
+            |): google.example.TestResponse = stubs.api.execute(context = "testFlat") {
             |    it.testFlat(google.example.testRequest {
             |        this.query = query
             |    })
@@ -532,7 +532,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |suspend fun testFlat(
             |    query: kotlin.String,
             |    mainDetail: google.example.Detail
-            |): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> = stubs.api.execute(context = "testFlat") {
+            |): google.example.TestResponse = stubs.api.execute(context = "testFlat") {
             |    it.testFlat(google.example.testRequest {
             |        this.query = query
             |        this.mainDetail = mainDetail
@@ -580,7 +580,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
                 |*/
                 |suspend fun testFlatWithoutOriginal(
                 |    mainDetail: google.example.Detail
-                |): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> = stubs.api.execute(context = "testFlatWithoutOriginal") {
+                |): google.example.TestResponse = stubs.api.execute(context = "testFlatWithoutOriginal") {
                 |    it.testFlatWithoutOriginal(
                 |        google.example.testRequest {
                 |            this.mainDetail = mainDetail
@@ -625,7 +625,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*/
             |suspend fun nestedFlat(
             |    evenMore: google.example.MoreDetail
-            |): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> = stubs.api.execute(context = "nestedFlat") {
+            |): google.example.TestResponse = stubs.api.execute(context = "nestedFlat") {
             |    it.nestedFlat(google.example.testRequest {
             |        mainDetail = google.example.detail {
             |            this.evenMore = evenMore
@@ -672,7 +672,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*/
             |suspend fun nestedFlat(
             |    moreDetails: kotlin.collections.List<google.example.Detail>
-            |): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> = stubs.api.execute(context = "nestedFlat") {
+            |): google.example.TestResponse = stubs.api.execute(context = "nestedFlat") {
             |    it.nestedFlat(
             |        google.example.testRequest {
             |            this.moreDetails = moreDetails
@@ -717,7 +717,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | */
             |suspend fun nestedFlat(
             |    evenMore: google.example.MoreDetail
-            |): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> = stubs.api.execute(context = "nestedFlat") {
+            |): google.example.TestResponse = stubs.api.execute(context = "nestedFlat") {
             |    it.nestedFlat(google.example.testRequest {
             |        moreDetails(google.example.detail {
             |            this.evenMore = evenMore
@@ -761,7 +761,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*/
             |suspend fun nestedFlatPrimitive(
             |    useful: kotlin.Boolean
-            |): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> = stubs.api.execute(context = "nestedFlatPrimitive") {
+            |): google.example.TestResponse = stubs.api.execute(context = "nestedFlatPrimitive") {
             |    it.nestedFlatPrimitive(google.example.testRequest {
             |        mainDetail = google.example.detail {
             |            this.useful = useful
@@ -812,7 +812,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | */
             |suspend fun pagedTest(
             |   request: google.example.PagedRequest
-            |): kotlinx.coroutines.channels.ReceiveChannel<com.google.api.kgax.grpc.PageWithMetadata<kotlin.Int>> =
+            |): kotlinx.coroutines.channels.ReceiveChannel<com.google.api.kgax.Page<kotlin.Int>> =
             |    pager(
             |        method = {
             |            request -> stubs.api.execute(context = "pagedTest") {
@@ -821,8 +821,8 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |        },
             |        initialRequest = { request },
             |        nextRequest = { request, token -> request.toBuilder().setPageToken(token).build() },
-            |        nextPage = { response: com.google.api.kgax.grpc.CallResult<google.example.PagedResponse> ->
-            |            com.google.api.kgax.grpc.PageWithMetadata<kotlin.Int>(response.body.responsesList, response.body.nextPageToken, response.metadata)
+            |        nextPage = { response: google.example.PagedResponse ->
+            |            com.google.api.kgax.Page<kotlin.Int>(response.responsesList, response.nextPageToken)
             |        }
             |    )
             |""".asNormalizedString()
@@ -881,7 +881,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |suspend fun pagedTest(
             |     flag: kotlin.Boolean,
             |     pageSize: kotlin.Int
-            |): kotlinx.coroutines.channels.ReceiveChannel<com.google.api.kgax.grpc.PageWithMetadata<kotlin.Int>> = pager(
+            |): kotlinx.coroutines.channels.ReceiveChannel<com.google.api.kgax.Page<kotlin.Int>> = pager(
             |    method = { request ->
             |        stubs.api.execute(context = "pagedTest") { it.pagedTest(request) }
             |    },
@@ -892,8 +892,8 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |        }
             |    },
             |    nextRequest = { request, token -> request.toBuilder().setPageToken(token).build() },
-            |    nextPage = { response: com.google.api.kgax.grpc.CallResult<google.example.PagedResponse> ->
-            |        com.google.api.kgax.grpc.PageWithMetadata<kotlin.Int>(response.body.responsesList, response.body.nextPageToken, response.metadata)
+            |    nextPage = { response: google.example.PagedResponse ->
+            |        com.google.api.kgax.Page<kotlin.Int>(response.responsesList, response.nextPageToken)
             |    }
             |)
             |""".trimIndent().asNormalizedString()
@@ -927,7 +927,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | *
             | * @param request the request object for the API call
             | */
-            |suspend fun pagedTest(request: google.example.PagedRequest): com.google.api.kgax.grpc.CallResult<google.example.PagedResponse> =
+            |suspend fun pagedTest(request: google.example.PagedRequest): google.example.PagedResponse =
             |    stubs.api.execute(context = "pagedTest") { it.pagedTest(request) }
             |""".asNormalizedString()
         )
@@ -960,9 +960,9 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | *
             | * @param request the request object for the API call
             | */
-            |suspend fun empty(request: google.example.TestRequest): com.google.api.kgax.grpc.CallResult<kotlin.Unit> =
-            |    stubs.api.execute(context = "empty") { it.empty(request) }.map { Unit }
-            |""".asNormalizedString()
+            |suspend fun empty(request: google.example.TestRequest) {
+            |    stubs.api.execute(context = "empty") { it.empty(request) }
+            |}""".asNormalizedString()
         )
     }
 
@@ -990,7 +990,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | *
             | * @param request the request object for the API call
             | */
-            |suspend fun stillEmpty(): com.google.api.kgax.grpc.CallResult<google.example.TestResponse> =
+            |suspend fun stillEmpty(): google.example.TestResponse =
             |    stubs.api.execute(context = "stillEmpty") { it.stillEmpty(com.google.protobuf.Empty.getDefaultInstance()) }
             |""".asNormalizedString()
         )
@@ -1020,9 +1020,9 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | *
             | * @param request the request object for the API call
             | */
-            |suspend fun reallyEmpty(): com.google.api.kgax.grpc.CallResult<kotlin.Unit> =
-            |    stubs.api.execute(context = "reallyEmpty") { it.reallyEmpty(com.google.protobuf.Empty.getDefaultInstance()) }.map { Unit }
-            |""".asNormalizedString()
+            |suspend fun reallyEmpty() {
+            |    stubs.api.execute(context = "reallyEmpty") { it.reallyEmpty(com.google.protobuf.Empty.getDefaultInstance()) }
+            |}""".asNormalizedString()
         )
     }
 }

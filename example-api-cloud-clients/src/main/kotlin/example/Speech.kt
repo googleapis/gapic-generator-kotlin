@@ -56,7 +56,7 @@ fun speechExample() = runBlocking {
     })
 
     // wait for the result
-    println("The response is: ${operation.await().body}")
+    println("The response is: ${operation.await()}")
 
     // shutdown
     client.shutdownChannel()

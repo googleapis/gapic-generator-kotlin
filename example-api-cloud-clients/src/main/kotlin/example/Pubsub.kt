@@ -86,7 +86,7 @@ private class Publisher(
     /** Start sending periodic messages` */
     suspend fun start(): Topic = coroutineScope {
         // create the topic to send on
-        val topic = client.createTopic(topic).body
+        val topic = client.createTopic(topic)
         println("Created topic: ${topic.name}")
 
         // send messages
@@ -141,7 +141,7 @@ private class Subscriber(
 
     /** Start listening and print incoming messages */
     suspend fun start() = coroutineScope {
-        val sub = client.createSubscription(subscription, topic.name, pushConfig {}, 10).body
+        val sub = client.createSubscription(subscription, topic.name, pushConfig {}, 10)
         println("Created subscription: ${sub.name}")
 
         // pool for new messages
@@ -149,7 +149,7 @@ private class Subscriber(
             while (isActive) {
                 // get new messages
                 println("pulling new messages...")
-                val result = client.pull(sub.name, true, 5).body
+                val result = client.pull(sub.name, true, 5)
                 if (result.receivedMessagesCount > 0) {
                     for (received in result.receivedMessagesList) {
                         println("Received message: ${received.asString()}")

@@ -46,7 +46,6 @@ jobs:
           root: ./..
           paths:
             - generator/build/libs
-            - generator/build/distributions
 
   dockerize:
     docker:
@@ -58,12 +57,12 @@ jobs:
       - run:
           name: "Checkout submodules"
           command: git submodule update --init --recursive
-      - attach_workspace:
-          at: .
       - setup_remote_docker
       - run:
           name: Dockerize
-          command: docker build -t kgen .
+          command: ./docker-build.sh
+          environment:
+            TAG: kgen
       - run:
           name: Copy example protos
           command: |
@@ -384,8 +383,6 @@ workflows:
             tags:
               only: /.*/
       - dockerize:
-          requires:
-            - build
           filters: *build-filter
       - build_cloud_examples:
           requires:

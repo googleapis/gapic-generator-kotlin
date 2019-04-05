@@ -41,7 +41,7 @@ fun languageExample() = runBlocking {
     })
 
     // print the result
-    println("The response was: ${result.body}")
+    println("The response was: $result")
 
     // shutdown
     client.shutdownChannel()

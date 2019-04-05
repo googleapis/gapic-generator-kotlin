@@ -33,6 +33,7 @@ import com.google.api.kotlin.util.ParameterInfo
 import com.google.api.kotlin.util.ResponseTypes.getLongRunningResponseType
 import com.google.api.kotlin.util.ResponseTypes.getResponseListElementType
 import com.google.api.kotlin.util.isLongRunningOperation
+import com.google.api.kgax.Page
 import com.google.protobuf.DescriptorProtos
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
@@ -257,7 +258,7 @@ internal class FunctionsImpl(
             methodOptions.pagedResponse != null -> {
                 val outputType = context.typeMap.getKotlinType(method.outputType)
                 val responseListItemType = getResponseListElementType(context, method, methodOptions.pagedResponse)
-                val pageType = GrpcTypes.Support.PageWithMetadata(responseListItemType)
+                val pageType = Page::class.asClassName().parameterizedBy(responseListItemType)
 
                 // getters and setters for setting the page sizes, etc.
                 val pageTokenSetter =
@@ -284,9 +285,8 @@ internal class FunctionsImpl(
                     |    },
                     |    nextPage·=·{·response:·%T·->
                     |        %T(
-                    |            response.body.%L,
-                    |            response.body.%L,
-                    |            response.metadata
+                    |            response.%L,
+                    |            response.%L
                     |        )
                     |    }
                     |)
@@ -295,7 +295,7 @@ internal class FunctionsImpl(
                     name,
                     requestObject.indent(2),
                     pageTokenSetter,
-                    GrpcTypes.Support.CallResult(outputType),
+                    outputType,
                     pageType,
                     responseListGetter, nextPageTokenGetter
                 )
@@ -303,35 +303,29 @@ internal class FunctionsImpl(
             else -> {
                 val originalReturnType = context.typeMap.getKotlinType(method.outputType)
                 val returnsNothing = originalReturnType.isProtobufEmpty()
-                m.returns(
-                    GrpcTypes.Support.CallResult(
-                        if (returnsNothing) UNIT else originalReturnType
-                    )
-                )
+                m.returns(if (returnsNothing) UNIT else originalReturnType)
 
                 if (flattenedMethod?.parameters?.size ?: 0 > 1) {
                     m.addCode(
                         """
-                        |return %N.%N.execute(context·=·%S)·{
+                        |${if (returnsNothing) "" else "return "}%N.%N.execute(context·=·%S)·{
                         |    it.%L(
                         |        %L
                         |    )
-                        |}%L
+                        |}
                         |""".trimMargin(),
                         Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name,
-                        name, requestObject.indent(2),
-                        if (returnsNothing) ".map { Unit }" else ""
+                        name, requestObject.indent(2)
                     )
                 } else {
                     m.addCode(
                         """
-                        |return %N.%N.execute(context·=·%S)·{
+                        |${if (returnsNothing) "" else "return "}%N.%N.execute(context·=·%S)·{
                         |    it.%L(%L)
-                        |}%L
+                        |}
                         |""".trimMargin(),
                         Properties.PROP_STUBS, Stubs.PROP_STUBS_API, name,
-                        name, requestObject.indent(1),
-                        if (returnsNothing) ".map { Unit }" else ""
+                        name, requestObject.indent(1)
                     )
                 }
             }

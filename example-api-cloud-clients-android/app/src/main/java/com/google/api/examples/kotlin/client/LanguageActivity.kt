@@ -59,7 +59,7 @@ class LanguageActivity : AppCompatActivity(), CoroutineScope {
                 type = Document.Type.PLAIN_TEXT
             }, EncodingType.UTF8)
 
-            textView.text = "The API says: ${response.body}"
+            textView.text = "The API says: $response"
         }
     }
 

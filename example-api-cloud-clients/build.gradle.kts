@@ -48,6 +48,8 @@ application {
 
 defaultTasks = listOf("run")
 
+val ktlintImplementation by configurations.creating
+
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
 
@@ -65,9 +67,9 @@ dependencies {
     //
     // Note: must use compile if referencing the included protos in this archive:
     //   https://github.com/google/protobuf-gradle-plugin/issues/242
-    compile("com.google.api:kgax-grpc:0.4.0-SNAPSHOT")
+    compile("com.google.api:kgax-grpc:0.5.0-SNAPSHOT")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.0")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
 
     testImplementation(kotlin("test"))
@@ -77,6 +79,8 @@ dependencies {
 
     // needed to unit test with suspend functions (can remove when the dependency above is updated most likely)
     testImplementation("org.mockito:mockito-core:2.23.4")
+
+    ktlintImplementation("com.github.shyiko:ktlint:0.30.0")
 }
 
 java {
@@ -85,6 +89,27 @@ java {
         getByName("main").proto.srcDir("../example-apis")
         // add generated unit tests to the project
         getByName("test").java.srcDir("${project.buildDir}/generated/source/clientTest")
+    }
+}
+
+tasks {
+    val check = getByName("check")
+
+    val ktlint by creating(JavaExec::class) {
+        group = "verification"
+        description = "Check Kotlin code style."
+        main = "com.github.shyiko.ktlint.Main"
+        classpath = ktlintImplementation
+        args = listOf("src/**/*.kt", "test/**/*.kt")
+    }
+    check.dependsOn(ktlint)
+
+    val ktlintFormat by creating(JavaExec::class) {
+        group = "formatting"
+        description = "Fix Kotlin code style deviations."
+        main = "com.github.shyiko.ktlint.Main"
+        classpath = ktlintImplementation
+        args = listOf("-F", "src/**/*.kt", "test/**/*.kt")
     }
 }
 

@@ -51,7 +51,7 @@ repositories {
 }
 
 plugins {
-    id "com.google.protobuf" version "0.8.7"
+    id "com.google.protobuf" version "0.8.8"
 }
 
 dependencies {
@@ -137,7 +137,7 @@ fun main() = runBlocking<Unit> {
     })
 
     // print the result
-    println("The response was: ${response.body.result}")
+    println("The response was: ${response.result}")
 
     // shutdown
     client.shutdownChannel()

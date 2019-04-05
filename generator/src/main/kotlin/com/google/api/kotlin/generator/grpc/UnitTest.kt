@@ -207,10 +207,10 @@ internal class UnitTestImpl(
         val givenBlock = createGivenCodeBlock(context, parameters)
         givenBlock.code.add(
             """
-           |val callResult = %T(%T.newBuilder().build(), mock())
+           |val callResult = %T.newBuilder().build()
            |whenever(%N.execute<%T>(any(), any())).thenReturn(callResult)
            |""".trimMargin(),
-            GrpcTypes.Support.CallResult, originalReturnType,
+            originalReturnType,
             UnitTest.MOCK_API_STUB, originalReturnType
         )
 
