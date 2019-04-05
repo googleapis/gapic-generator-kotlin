@@ -18,6 +18,7 @@ package com.google.api.examples.kotlin.client
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import com.google.api.kgax.grpc.ResponseMetadata
 import com.google.cloud.language.v1.Document
 import com.google.cloud.language.v1.EncodingType
 import com.google.cloud.language.v1.LanguageServiceClient
@@ -54,17 +55,19 @@ class LanguageMetadataActivity : AppCompatActivity(), CoroutineScope {
 
         // call the api
         launch {
+            lateinit var metadata: ResponseMetadata
             val response = client.prepare {
                 withMetadata("foo", listOf("1", "2"))
                 withMetadata("bar", listOf("a", "b"))
+                onResponseMetadata { m -> metadata = m }
             }.analyzeEntities(document {
                 content = "Hi there Joe"
                 type = Document.Type.PLAIN_TEXT
             }, EncodingType.UTF8)
 
             // TODO: fix me
-            textView.text = "The API says: ${response}\n\n" /* +
-                "with metadata of: ${response.metadata.keys().joinToString(",")}" */
+            textView.text = "The API says: ${response}\n\n" +
+                "with metadata of: ${metadata.keys().joinToString(",")}"
         }
     }
 
