@@ -57,7 +57,7 @@ COPY build/kgax-core         /usr/local/kgax/repository/com/google/api/kgax-core
 COPY build/kgax-grpc         /usr/local/kgax/repository/com/google/api/kgax-grpc
 COPY build/kgax-grpc-android /usr/local/kgax/repository/com/google/api/kgax-grpc-android
 COPY build/kgax-grpc-base    /usr/local/kgax/repository/com/google/api/kgax-grpc-base
-COPY build/gapic-generator-kotlin/*-SNAPSHOT/gapic-generator-kotlin-*.tar /tmp/generator/
+COPY build/gapic-generator-kotlin/*/gapic-generator-kotlin-*.tar /tmp/generator/
 RUN mkdir -p /usr/generator && \
     tar xvf /tmp/generator/gapic-generator-kotlin-*.tar --strip-components=1 -C /usr/generator && \
     rm -rf /tmp/generator
