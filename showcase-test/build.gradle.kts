@@ -25,7 +25,7 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 plugins {
     idea
     java
-    kotlin("jvm") version "1.3.21"
+    kotlin("jvm") version "1.3.30"
     id("com.google.protobuf") version "0.8.8"
 }
 
@@ -51,14 +51,14 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.0")
 
-    implementation("com.google.api:kgax-grpc:0.5.0")
+    implementation("com.google.api:kgax-grpc:0.6.0-SNAPSHOT")
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
     testImplementation("junit:junit:4.12")
     testImplementation("com.google.truth:truth:0.41")
 
-    ktlintImplementation("com.github.shyiko:ktlint:0.30.0")
+    ktlintImplementation("com.github.shyiko:ktlint:0.31.0")
 }
 
 kotlin {
@@ -69,7 +69,7 @@ kotlin {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.6.1"
+        artifact = "com.google.protobuf:protoc:3.7.1"
     }
     plugins {
         id("client") {

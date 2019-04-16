@@ -85,7 +85,7 @@ dependencies {
 protobuf {
     // set the version of protobuf compiler to use
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.6.1'
+        artifact = 'com.google.protobuf:protoc:3.7.1'
     }
     // set the version of the code generators to use
     plugins {
