@@ -30,13 +30,13 @@ plugins {
     application
     `maven-publish`
     jacoco
-    kotlin("jvm") version "1.3.21"
+    kotlin("jvm") version "1.3.30"
     id("org.springframework.boot") version "2.1.3.RELEASE"
     id("com.google.protobuf") version "0.8.8"
 }
 
 group = "com.google.api"
-version = "0.5.0"
+version = "0.6.0-SNAPSHOT"
 
 buildscript {
     repositories {
@@ -61,7 +61,7 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.0")
 
-    compile("com.google.api:kgax-grpc:0.5.0")
+    compile("com.google.api:kgax-grpc:0.6.0-SNAPSHOT")
 
     implementation("io.github.microutils:kotlin-logging:1.5.4")
     implementation("org.slf4j:slf4j-api:1.7.25")
@@ -84,7 +84,7 @@ dependencies {
     testImpl("org.mockito:mockito-core:2.23.4")
     testImpl("com.google.truth:truth:0.41")
 
-    ktlintImplementation("com.github.shyiko:ktlint:0.30.0")
+    ktlintImplementation("com.github.shyiko:ktlint:0.31.0")
 }
 
 fun DependencyHandlerScope.testImpl(obj: Any) {
@@ -212,7 +212,7 @@ tasks {
 // compile proto and generate gRPC stubs
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.6.1"
+        artifact = "com.google.protobuf:protoc:3.7.1"
     }
     plugins {
         id("gen-test") {

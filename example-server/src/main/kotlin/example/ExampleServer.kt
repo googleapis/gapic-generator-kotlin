@@ -22,6 +22,7 @@ import google.example.HiResponse
 import io.grpc.Server
 import io.grpc.ServerBuilder
 import io.grpc.stub.StreamObserver
+import io.grpc.protobuf.services.ProtoReflectionService
 import java.io.IOException
 
 /**
@@ -33,7 +34,6 @@ import java.io.IOException
 class ExampleServer(private val port: Int = 8080) {
 
     companion object {
-
         /** Main launches the server from the command line. */
         @JvmStatic
         @Throws(IOException::class, InterruptedException::class)
@@ -50,6 +50,7 @@ class ExampleServer(private val port: Int = 8080) {
     private fun start() {
         server = ServerBuilder.forPort(port)
                 .addService(HelloServiceImpl())
+                .addService(ProtoReflectionService.newInstance())
                 .build()
                 .start()
 

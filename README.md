@@ -62,7 +62,7 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.6.1'
+        artifact = 'com.google.protobuf:protoc:3.7.1'
     }
     plugins {
         // For android projects, uncomment the lines below

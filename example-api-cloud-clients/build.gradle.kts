@@ -24,7 +24,7 @@ import com.google.protobuf.gradle.ofSourceSet
 plugins {
     idea
     application
-    kotlin("jvm") version "1.3.21"
+    kotlin("jvm") version "1.3.30"
     id("com.google.protobuf") version "0.8.8"
 }
 
@@ -60,14 +60,14 @@ dependencies {
     //   maven { url 'https://jitpack.io' }
     // }
     // dependencies {
-    //   compile("com.github.googleapis.gax-kotlin:kgax-grpc:v0.5.0")
+    //   compile("com.github.googleapis.gax-kotlin:kgax-grpc:v0.6.0")
     // }
     //
     // but we use a local copy for development
     //
     // Note: must use compile if referencing the included protos in this archive:
     //   https://github.com/google/protobuf-gradle-plugin/issues/242
-    compile("com.google.api:kgax-grpc:0.5.0")
+    compile("com.google.api:kgax-grpc:0.6.0-SNAPSHOT")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.0")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
@@ -80,7 +80,7 @@ dependencies {
     // needed to unit test with suspend functions (can remove when the dependency above is updated most likely)
     testImplementation("org.mockito:mockito-core:2.23.4")
 
-    ktlintImplementation("com.github.shyiko:ktlint:0.30.0")
+    ktlintImplementation("com.github.shyiko:ktlint:0.31.0")
 }
 
 java {
@@ -116,7 +116,7 @@ tasks {
 // compile proto and generate Kotlin clients!
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.6.1"
+        artifact = "com.google.protobuf:protoc:3.7.1"
     }
     plugins {
         id("client") {

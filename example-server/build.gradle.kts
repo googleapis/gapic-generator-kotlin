@@ -24,7 +24,7 @@ import com.google.protobuf.gradle.ofSourceSet
 plugins {
     idea
     application
-    kotlin("jvm") version "1.3.21"
+    kotlin("jvm") version "1.3.30"
     id("com.google.protobuf") version "0.8.8"
 }
 
@@ -40,7 +40,6 @@ repositories {
     google()
     mavenCentral()
     jcenter()
-    maven(url = "https://jitpack.io")
 }
 
 application {
@@ -52,10 +51,10 @@ defaultTasks = listOf("run")
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
 
-    implementation("com.google.api.grpc:proto-google-common-protos:1.0.0")
-    implementation("io.grpc:grpc-netty-shaded:1.14.0")
-    implementation("io.grpc:grpc-protobuf:1.14.0")
-    implementation("io.grpc:grpc-stub:1.14.0")
+    implementation("io.grpc:grpc-netty-shaded:1.20.0")
+    implementation("io.grpc:grpc-protobuf:1.20.0")
+    implementation("io.grpc:grpc-stub:1.20.0")
+    implementation("io.grpc:grpc-services:1.20.0")
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
@@ -65,11 +64,11 @@ dependencies {
 // compile proto and gRPC
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.6.1"
+        artifact = "com.google.protobuf:protoc:3.7.1"
     }
     plugins {
         id("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:1.10.0"
+            artifact = "io.grpc:protoc-gen-grpc-java:1.20.0"
         }
     }
     generateProtoTasks {
