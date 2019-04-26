@@ -335,10 +335,14 @@ jobs:
           command: docker load -i kgen.tar
       - run:
           name: Tag snapshot
-          command: docker tag kgen gcr.io/kotlin-gapic/kgen:${CIRCLE_BRANCH:-$CIRCLE_TAG}-${CIRCLE_SHA1}
+          command: |
+            docker tag kgen gcr.io/kotlin-gapic/kgen:${CIRCLE_BRANCH:-$CIRCLE_TAG}-${CIRCLE_SHA1}
+            docker tag kgen gcr.io/kotlin-gapic/kgen:latest
       - run:
           name: Push snapshot
-          command: docker push gcr.io/kotlin-gapic/kgen:${CIRCLE_BRANCH:-$CIRCLE_TAG}-${CIRCLE_SHA1}
+          command: |
+            docker push gcr.io/kotlin-gapic/kgen:${CIRCLE_BRANCH:-$CIRCLE_TAG}-${CIRCLE_SHA1}
+            docker push gcr.io/kotlin-gapic/kgen:latest
 
   # TODO: move to docker hub
   release:
