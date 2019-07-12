@@ -499,10 +499,11 @@ internal class UnitTestImpl(
             flatteningConfig.parameters,
             object : Flattening.Visitor() {
                 override fun onTerminalParam(
+                    paramName: String,
                     currentPath: PropertyPath,
                     fieldInfo: ProtoFieldInfo
                 ) {
-                    val key = FieldNamer.getFieldName(currentPath.lastSegment)
+                    val key = paramName
                     val accessor = FieldNamer.getJavaAccessorName(ctx.typeMap, fieldInfo)
                     val variable = given.variables[key]?.variableName
                         ?: throw IllegalStateException("Could not locate variable with name: $key")

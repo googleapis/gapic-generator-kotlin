@@ -74,14 +74,13 @@ internal object RequestObject {
                     parameters = params
                 }
 
-                override fun onTerminalParam(currentPath: PropertyPath, fieldInfo: ProtoFieldInfo) {
+                override fun onTerminalParam(paramName: String, currentPath: PropertyPath, fieldInfo: ProtoFieldInfo) {
                     // check if an explicit value was set for this property
                     // if not use the parameter name
                     val explicitValue = sample?.parameters?.find {
                         it.parameterPath == currentPath.toString()
                     }
-                    val value =
-                        explicitValue?.value ?: FieldNamer.getFieldName(fieldInfo.field.name)
+                    val value = explicitValue?.value ?: paramName
 
                     // set value or add to appropriate builder
                     val setterCode =
@@ -94,7 +93,7 @@ internal object RequestObject {
                     }
                 }
 
-                override fun onNestedParam(currentPath: PropertyPath, fieldInfo: ProtoFieldInfo) {
+                override fun onNestedParam(paramName: String, currentPath: PropertyPath, fieldInfo: ProtoFieldInfo) {
                     // create a builder for this param, if first time
                     val key = currentPath.toString()
                     if (!builders.containsKey(key)) {

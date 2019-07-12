@@ -28,7 +28,6 @@ import com.google.api.kotlin.types.isNotProtobufEmpty
 import com.google.api.kotlin.types.isProtobufEmpty
 import com.google.api.kotlin.util.FieldNamer
 import com.google.api.kotlin.util.Flattening
-import com.google.api.kotlin.util.Flattening.getFlattenedParameters
 import com.google.api.kotlin.util.ParameterInfo
 import com.google.api.kotlin.util.ResponseTypes.getLongRunningResponseType
 import com.google.api.kotlin.util.ResponseTypes.getResponseListElementType
@@ -365,7 +364,7 @@ internal class FunctionsImpl(
 
         // add flattened methods
         methods.addAll(methodOptions.flattenedMethods.map { flattenedMethod ->
-            val (parameters, request) = getFlattenedParameters(context, method, flattenedMethod)
+            val (parameters, request) = Flattening.getFlattenedParameters(context, method, flattenedMethod)
 
             val flattened = FunSpec.builder(name)
             if (method.hasClientStreaming() && method.hasServerStreaming()) {

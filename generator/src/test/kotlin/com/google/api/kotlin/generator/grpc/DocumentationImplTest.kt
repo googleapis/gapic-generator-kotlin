@@ -174,7 +174,7 @@ internal class DocumentationImplTest {
             |```
             |val client = test.fromServiceAccount(YOUR_KEY_FILE)
             |val result = client.myMethod(a.test.type {
-            |    query = 4
+            |    this.query = 4
             })
             |```
             """.asNormalizedString()

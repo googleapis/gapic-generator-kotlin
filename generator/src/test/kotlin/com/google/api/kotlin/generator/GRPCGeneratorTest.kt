@@ -381,7 +381,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |    stubs.api.executeServerStreaming(context = "streamServerTest") { stub, observer ->
             |        stub.streamServerTest(
             |            google.example.testRequest {
-            |                mainDetail = google.example.detail {
+            |                this.mainDetail = google.example.detail {
             |                    this.evenMore = evenMore
             |                }
             |            },
@@ -428,7 +428,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |    evenMore: google.example.MoreDetail
             |): com.google.api.kgax.grpc.ServerStreamingCall<google.example.TestResponse> = stubs.api.executeServerStreaming(context = "streamServerTest") { stub, observer ->
             |    stub.streamServerTest(google.example.testRequest {
-            |        mainDetail = google.example.detail {
+            |        this.mainDetail = google.example.detail {
             |            this.evenMore = evenMore
             |        }
             |    },
@@ -627,7 +627,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |    evenMore: google.example.MoreDetail
             |): google.example.TestResponse = stubs.api.execute(context = "nestedFlat") {
             |    it.nestedFlat(google.example.testRequest {
-            |        mainDetail = google.example.detail {
+            |        this.mainDetail = google.example.detail {
             |            this.evenMore = evenMore
             |        }
             |    })
@@ -719,7 +719,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |    evenMore: google.example.MoreDetail
             |): google.example.TestResponse = stubs.api.execute(context = "nestedFlat") {
             |    it.nestedFlat(google.example.testRequest {
-            |        moreDetails(google.example.detail {
+            |        this.moreDetails(google.example.detail {
             |            this.evenMore = evenMore
             |    })})
             |}
@@ -763,7 +763,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |    useful: kotlin.Boolean
             |): google.example.TestResponse = stubs.api.execute(context = "nestedFlatPrimitive") {
             |    it.nestedFlatPrimitive(google.example.testRequest {
-            |        mainDetail = google.example.detail {
+            |        this.mainDetail = google.example.detail {
             |            this.useful = useful
             |        }
             |    })

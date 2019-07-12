@@ -50,7 +50,7 @@ internal class FieldNamerTest {
         )
 
         assertThat(FieldNamer.getDslSetterCode(typeMap, fieldInfo, CodeBlock.of("\"5\"")).toString())
-            .isEqualTo("theThing = \"5\"")
+            .isEqualTo("this.theThing = \"5\"")
 
         assertThat(FieldNamer.getJavaAccessorName(typeMap, fieldInfo)).isEqualTo("theThing")
     }
@@ -83,10 +83,10 @@ internal class FieldNamerTest {
         )
 
         assertThat(FieldNamer.getDslSetterCode(typeMap, fieldInfo, CodeBlock.of("5")).toString())
-            .isEqualTo("thing = 5")
+            .isEqualTo("this.thing = 5")
 
         assertThat(FieldNamer.getDslSetterCode(typeMap, fieldInfo, CodeBlock.of("listOf(5, 6, 7)")).toString())
-            .isEqualTo("thing = listOf(5, 6, 7)")
+            .isEqualTo("this.thing = listOf(5, 6, 7)")
 
         assertThat(FieldNamer.getJavaAccessorName(typeMap, fieldInfo)).isEqualTo("thingList")
     }
@@ -126,7 +126,7 @@ internal class FieldNamerTest {
         )
 
         assertThat(FieldNamer.getDslSetterCode(typeMap, fieldInfo, CodeBlock.of("stuff")).toString())
-            .isEqualTo("thing = stuff")
+            .isEqualTo("this.thing = stuff")
 
         assertThat(FieldNamer.getJavaAccessorName(typeMap, fieldInfo)).isEqualTo("thingMap")
     }

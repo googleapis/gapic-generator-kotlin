@@ -16,8 +16,8 @@
 
 package com.google.api.kotlin.util
 
-import com.google.api.kotlin.MockedProtoUtil
 import com.google.api.kotlin.GeneratorContext
+import com.google.api.kotlin.MockedProtoUtil
 import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.asPropertyPath
@@ -101,7 +101,7 @@ internal class FlatteningTest {
             |test.the.input {
             |    this.str = str
             |    this.pam = pam
-            |    foo = test.bar {
+            |    this.foo = test.bar {
             |        this.bar = bar
             |    }
             |}
