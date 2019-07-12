@@ -80,8 +80,7 @@ internal object RequestObject {
                     val explicitValue = sample?.parameters?.find {
                         it.parameterPath == currentPath.toString()
                     }
-                    val value =
-                        explicitValue?.value ?: paramName // FieldNamer.getFieldName(fieldInfo.field.name)
+                    val value = explicitValue?.value ?: paramName
 
                     // set value or add to appropriate builder
                     val setterCode =

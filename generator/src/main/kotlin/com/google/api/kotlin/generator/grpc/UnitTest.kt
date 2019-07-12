@@ -503,7 +503,7 @@ internal class UnitTestImpl(
                     currentPath: PropertyPath,
                     fieldInfo: ProtoFieldInfo
                 ) {
-                    val key = paramName // FieldNamer.getFieldName(currentPath.lastSegment)
+                    val key = paramName
                     val accessor = FieldNamer.getJavaAccessorName(ctx.typeMap, fieldInfo)
                     val variable = given.variables[key]?.variableName
                         ?: throw IllegalStateException("Could not locate variable with name: $key")
