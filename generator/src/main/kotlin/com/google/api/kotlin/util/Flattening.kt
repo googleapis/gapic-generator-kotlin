@@ -58,8 +58,8 @@ internal object Flattening {
     abstract class Visitor {
         open fun onBegin(params: List<ParameterInfo>) {}
         open fun onEnd() {}
-        open fun onNestedParam(currentPath: PropertyPath, fieldInfo: ProtoFieldInfo) {}
-        open fun onTerminalParam(currentPath: PropertyPath, fieldInfo: ProtoFieldInfo) {}
+        open fun onNestedParam(paramName: String, currentPath: PropertyPath, fieldInfo: ProtoFieldInfo) {}
+        open fun onTerminalParam(paramName: String, currentPath: PropertyPath, fieldInfo: ProtoFieldInfo) {}
     }
 
     fun visitType(
@@ -69,6 +69,7 @@ internal object Flattening {
         visitor: Visitor
     ) {
         // create parameter list
+        val parameterNames = mutableMapOf<PropertyPath, String>()
         val parameters = parametersAsPaths.map { path ->
             val fieldInfo = getProtoFieldInfoForPath(context, path, requestType)
             val rawType = fieldInfo.field.asClassName(context.typeMap)
@@ -83,9 +84,11 @@ internal object Flattening {
                 fieldInfo.field.isRepeated() -> List::class.asTypeName().parameterizedBy(rawType)
                 else -> rawType
             }
-            val spec =
-                ParameterSpec.builder(FieldNamer.getFieldName(path.lastSegment), typeName)
-                    .build()
+            val name = FieldNamer
+                .getFieldName(path.lastSegment)
+                .uniqify(parameterNames.values)
+            parameterNames[path] = name
+            val spec = ParameterSpec.builder(name, typeName).build()
             ParameterInfo(spec, path, fieldInfo)
         }
         visitor.onBegin(parameters)
@@ -98,7 +101,7 @@ internal object Flattening {
                 val currentPath = path.subPath(0, i)
                 val field = getProtoFieldInfoForPath(context, path, requestType)
 
-                visitor.onTerminalParam(currentPath, field)
+                visitor.onTerminalParam(parameterNames[path]!!, currentPath, field)
             }
 
             // non terminal - ensure a builder exists
@@ -106,11 +109,24 @@ internal object Flattening {
                 val currentPath = path.subPath(0, i)
                 val fieldInfo = getProtoFieldInfoForPath(context, currentPath, requestType)
 
-                visitor.onNestedParam(currentPath, fieldInfo)
+                visitor.onNestedParam(parameterNames[path]!!, currentPath, fieldInfo)
             }
         }
 
         visitor.onEnd()
+    }
+
+    // add a numeric suffix to avoid name collisions
+    private fun String.uniqify(others: Collection<String>): String {
+        var name = this
+        var suffix = 0
+
+        while (others.contains(name)) {
+            suffix++
+            name = this + suffix
+        }
+
+        return name
     }
 }
 

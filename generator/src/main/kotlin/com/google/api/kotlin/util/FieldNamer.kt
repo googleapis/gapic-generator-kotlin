@@ -38,33 +38,30 @@ internal object FieldNamer {
         value: CodeBlock
     ): CodeBlock = when {
         fieldInfo.field.isMap(typeMap) -> {
-            val qualifier = getQualifier(fieldInfo.field.name, value)
             val name = getDslSetterMapName(fieldInfo.field.name)
             CodeBlock.of(
-                "$qualifier$name = %L",
+                "this.$name = %L",
                 value
             )
         }
         fieldInfo.field.isRepeated() -> {
-            val qualifier = getQualifier(fieldInfo.field.name, value)
             if (fieldInfo.index >= 0) {
                 log.warn { "Indexed setter operations currently ignore the specified index! (${fieldInfo.message.name}.${fieldInfo.field.name})" }
                 CodeBlock.of(
-                    "$qualifier${getDslSetterRepeatedNameAtIndex(fieldInfo.field.name)}(%L)",
+                    "this.${getDslSetterRepeatedNameAtIndex(fieldInfo.field.name)}(%L)",
                     value
                 )
             } else {
                 val name = getDslSetterRepeatedName(fieldInfo.field.name)
                 CodeBlock.of(
-                    "$qualifier$name = %L",
+                    "this.$name = %L",
                     value
                 )
             }
         }
         else -> { // normal fields
-            val qualifier = getQualifier(fieldInfo.field.name, value)
             val name = getFieldName(fieldInfo.field.name)
-            CodeBlock.of("$qualifier$name = %L", value)
+            CodeBlock.of("this.$name = %L", value)
         }
     }
 
@@ -122,15 +119,6 @@ internal object FieldNamer {
 
     fun getJavaBuilderAccessorName(protoFieldName: String): String =
         CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName).escapeIfReserved()
-
-    private fun getQualifier(protoFieldName: String, value: CodeBlock? = null): String {
-        val name = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
-        return if (name == value.toString()) {
-            "this."
-        } else {
-            ""
-        }
-    }
 
     // TODO: can remove this when Kotlin poet releases %M support
     private fun String.escapeIfReserved() = if (KEYWORDS.contains(this)) "`$this`" else this

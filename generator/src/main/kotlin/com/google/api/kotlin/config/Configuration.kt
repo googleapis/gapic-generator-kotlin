@@ -75,18 +75,13 @@ internal class AnnotationConfigurationFactory(
 ) : ConfigurationFactory {
 
     override fun fromProto(proto: DescriptorProtos.FileDescriptorProto): Configuration {
-        val metadata = proto.options.getExtensionOrNull(ClientProto.clientPackage)
-
+        // TODO: the spec for this keeps changing - ensure this is the latest (v0.1.0 api-common-protos)
         // parse package name
-        val packageName = if (metadata != null && metadata.namespaceCount > 0) {
-            metadata.namespaceList.joinToString(".")
-        } else {
-            proto.`package`!!
-        }.toLowerCase().replace("\\s".toRegex(), "")
+        val packageName = proto.`package`!!
 
         // parse branding (non-code) items
         val branding = BrandingOptions(
-            name = metadata?.productTitle ?: metadata?.title ?: "",
+            name = proto.name,
             url = "[TODO: URL was removed from the spec]"
         )
 
@@ -263,8 +258,7 @@ internal class SwappableConfigurationFactory(
         getFactory(proto).fromProto(proto)
 
     private fun getFactory(proto: DescriptorProtos.FileDescriptorProto): ConfigurationFactory {
-        val hasAnnotation = proto.serviceList.any { it.options.getExtensionOrNull(ClientProto.defaultHost) != null } ||
-            proto.options.getExtensionOrNull(ClientProto.clientPackage)?.title?.length ?: 0 > 0
+        val hasAnnotation = proto.serviceList.any { it.options.getExtensionOrNull(ClientProto.defaultHost) != null }
 
         return if (hasAnnotation) {
             log.debug { "Using annotation based config for ${proto.name}" }

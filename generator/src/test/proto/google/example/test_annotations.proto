@@ -24,13 +24,6 @@ import "google/longrunning/operations.proto";
 
 option java_multiple_files = true;
 
-option (google.api.client_package) = {
-  title: "Test"
-  version: "v12"
-  product_title: "The Test Product"
-  namespace: ["A", "Name", "space"]
-};
-
 // This a proto for testing the config annotations
 service AnnotationService {
 
