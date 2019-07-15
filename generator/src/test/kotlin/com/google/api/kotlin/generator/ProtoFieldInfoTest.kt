@@ -41,7 +41,7 @@ import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
 import kotlin.test.Test
 
-internal class ProtoFieldInfoTest : BaseClientGeneratorTest(GRPCGenerator()) {
+internal class ProtoFieldInfoTest : BaseClientGeneratorTest("test", "TestServiceClient") {
 
     @Test
     fun `can find service level comments`() {

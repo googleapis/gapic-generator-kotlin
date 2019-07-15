@@ -24,6 +24,8 @@ import com.google.api.kotlin.config.ProtobufExtensionRegistry
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.ServiceOptions
 import com.google.api.kotlin.config.asPropertyPath
+import com.google.api.kotlin.generator.DSLBuilderGenerator
+import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.compiler.PluginProtos
 import com.nhaarman.mockito_kotlin.any
@@ -32,10 +34,6 @@ import com.nhaarman.mockito_kotlin.mock
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 
-// namespaces of the test protos
-private const val TEST_NAMESPACE = "google.example"
-private val TEST_CLASSNAME = ClassName(TEST_NAMESPACE, "TheTest")
-
 /**
  * Base class for generator tests that includes common plumbing for reading the protos
  * that are used for mocking the context (see test/resources directory for protos).
@@ -43,32 +41,36 @@ private val TEST_CLASSNAME = ClassName(TEST_NAMESPACE, "TheTest")
  * Not all tests should inherit from this class (only tests that use the test protos).
  */
 internal abstract class BaseGeneratorTest(
+    protected val protoFileName: String,
+    protected val protoDirectory: String,
+    protected val namespace: String,
     protected val invocationOptions: ClientPluginOptions
 ) {
-    // accessors for the test protos
+    // accessors for the test protos (they are all in one descriptor)
     protected val generatorRequest = PluginProtos.CodeGeneratorRequest.parseFrom(
         javaClass.getResourceAsStream("/generated-test.data"),
         ProtobufExtensionRegistry.INSTANCE
     ) ?: throw RuntimeException("Unable to read test data (generated-test.data)")
 
     // the primary test proto (test.proto)
-    protected val proto = proto("google/example/test.proto")
+    protected val proto = generatorRequest.protoFileList.firstOrNull { p ->
+        p.name == "$protoDirectory/$protoFileName.proto"
+    } ?: throw RuntimeException("Unable to find proto: $protoDirectory/$protoFileName.proto")
     protected val services =
-        generatorRequest.protoFileList.first { p ->
-            p.name == "google/example/test.proto"
-        }.serviceList!!
+        generatorRequest.protoFileList.firstOrNull { p ->
+            p.name == "$protoDirectory/$protoFileName.proto"
+        }?.serviceList ?: throw RuntimeException("Unable to find services for proto: $protoDirectory/$protoFileName.proto")
     protected val typeMap = ProtobufTypeMapper.fromProtos(generatorRequest.protoFileList)
-
-    // extra test protos
-    protected val annotationsProto = proto("google/example/test_annotations.proto")
-
-    private fun proto(name: String) = generatorRequest.protoFileList.first { p -> p.name == name }!!
 }
 
 internal abstract class BaseClientGeneratorTest(
-    private val generator: ClientGenerator,
+    protoFileName: String,
+    private val clientClassName: String,
+    protoDirectory: String = "google/example",
+    namespace: String = "google.example",
+    private val generator: ClientGenerator = GRPCGenerator(),
     invocationOptions: ClientPluginOptions = ClientPluginOptions()
-) : BaseGeneratorTest(invocationOptions) {
+) : BaseGeneratorTest(protoFileName, protoDirectory, namespace, invocationOptions) {
 
     protected fun getMockedConfig(options: ServiceOptions): Configuration =
         mock {
@@ -86,7 +88,7 @@ internal abstract class BaseClientGeneratorTest(
             on { service } doReturn services.first()
             on { serviceOptions } doReturn options
             on { metadata } doReturn config
-            on { className } doReturn TEST_CLASSNAME
+            on { className } doReturn ClassName(namespace, clientClassName)
             on { typeMap } doReturn typeMap
             on { this.commandLineOptions } doReturn invocationOptions
         }
@@ -97,9 +99,12 @@ internal abstract class BaseClientGeneratorTest(
 }
 
 internal abstract class BaseBuilderGeneratorTest(
-    private val generator: BuilderGenerator,
+    protoFileName: String,
+    protoDirectory: String = "google/example",
+    namespace: String = "google.example",
+    private val generator: BuilderGenerator = DSLBuilderGenerator(),
     invocationOptions: ClientPluginOptions = ClientPluginOptions()
-) : BaseGeneratorTest(invocationOptions) {
+) : BaseGeneratorTest(protoFileName, protoDirectory, namespace, invocationOptions) {
     protected fun generate() = generator.generate(typeMap)
 }
 
@@ -130,21 +135,12 @@ internal fun List<GeneratedArtifact>.sources() = this
     .filter { it.kind == GeneratedSource.Kind.SOURCE }
     .toList()
 
+// TODO: add tests for generated unit tests?
 internal fun List<GeneratedArtifact>.unitTests() = this
     .asSequence()
     .mapNotNull { it as? GeneratedSource }
     .filter { it.kind == GeneratedSource.Kind.UNIT_TEST }
     .toList()
-
-internal fun List<GeneratedArtifact>.testServiceClient() =
-    this.sources().first { it.name == "TheTest" }.types.first()
-
-internal fun List<GeneratedArtifact>.testServiceClientStub() =
-    this.sources().first { it.name == "TheTestStub" }.types.first()
-
-internal fun List<GeneratedSource>.kotlinBuilders(packageName: String) =
-    this.filter { it.name == "KotlinBuilders" }
-        .filter { it.packageName.startsWith(packageName) }
 
 // misc. proto helpers
 

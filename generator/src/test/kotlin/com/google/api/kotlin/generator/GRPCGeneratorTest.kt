@@ -17,6 +17,8 @@
 package com.google.api.kotlin.generator
 
 import com.google.api.kotlin.BaseClientGeneratorTest
+import com.google.api.kotlin.ClientPluginOptions
+import com.google.api.kotlin.GeneratedArtifact
 import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.FlattenedMethod
 import com.google.api.kotlin.config.LongRunningResponse
@@ -26,7 +28,6 @@ import com.google.api.kotlin.config.ServiceOptions
 import com.google.api.kotlin.config.asPropertyPath
 import com.google.api.kotlin.props
 import com.google.api.kotlin.sources
-import com.google.api.kotlin.testServiceClient
 import com.google.api.kotlin.types.GrpcTypes
 import com.google.common.truth.Truth.assertThat
 import com.squareup.kotlinpoet.ClassName
@@ -36,7 +37,7 @@ import kotlin.test.Test
  * Tests for the [GRPCGenerator] using the test protos in the
  * `proto/google/example` resources directory.
  */
-internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
+internal class GRPCGeneratorTest : BaseClientGeneratorTest("test", "TestServiceClient") {
 
     @Test
     fun `Generates with class documentation`() {
@@ -58,7 +59,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |* Prepare for an API call by setting any desired options. For example:
             |*
             |* ```
-            |* val client = TheTest.create()
+            |* val client = TestServiceClient.create()
             |* val response = client.prepare {
             |*     withMetadata("my-custom-header", listOf("some", "thing"))
             |* }.test(request)
@@ -69,10 +70,10 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*/
             |fun prepare(
             |    init: com.google.api.kgax.grpc.ClientCallOptions.Builder.() -> kotlin.Unit
-            |): google.example.TheTest {
+            |): google.example.TestServiceClient {
             |    val optionsBuilder = com.google.api.kgax.grpc.ClientCallOptions.Builder(options)
             |    optionsBuilder.init()
-            |    return google.example.TheTest(channel, optionsBuilder.build())
+            |    return google.example.TestServiceClient(channel, optionsBuilder.build())
             |}
             |""".asNormalizedString()
         )
@@ -105,7 +106,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = TheTest.create()
+            |* val client = TestServiceClient.create()
             |* val result = client.test(
             |*     testRequest {
             |*     }
@@ -148,7 +149,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = TheTest.create()
+            |* val client = TestServiceClient.create()
             |* val result = client.operationTest(
             |*     testRequest {
             |*     }
@@ -185,7 +186,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | *
             | * For example:
             | * ```
-            | * val client = TheTest.create()
+            | * val client = TestServiceClient.create()
             | * val result = client.streamTest(
             | *     testRequest {
             | *     }
@@ -224,7 +225,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = TheTest.create()
+            |* val client = TestServiceClient.create()
             |* val result = client.streamTest(
             |*     query
             |* )
@@ -253,7 +254,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = TheTest.create()
+            |* val client = TestServiceClient.create()
             |* val result = client.streamTest(
             |*     query,
             |*     detail {
@@ -297,7 +298,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = TheTest.create()
+            |* val client = TestServiceClient.create()
             |* val result = client.streamClientTest(
             |*     testRequest {
             |*     }
@@ -327,7 +328,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = TheTest.create()
+            |* val client = TestServiceClient.create()
             |* val result = client.streamClientTest(
             |*     testRequest {
             |*     }
@@ -367,7 +368,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = TheTest.create()
+            |* val client = TestServiceClient.create()
             |* val result = client.streamServerTest(
             |*     moreDetail {
             |*         this.evenMore = evenMore
@@ -416,7 +417,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = TheTest.create()
+            |* val client = TestServiceClient.create()
             |* val result = client.streamServerTest(
             |*     moreDetail {
             |*         this.evenMore = evenMore
@@ -465,7 +466,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = TheTest.create()
+            |* val client = TestServiceClient.create()
             |* val result = client.testFlat(
             |*     testRequest {
             |*     }
@@ -490,7 +491,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = TheTest.create()
+            |* val client = TestServiceClient.create()
             |* val result = client.testFlat(
             |*     query
             |* )
@@ -516,7 +517,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = TheTest.create()
+            |* val client = TestServiceClient.create()
             |* val result = client.testFlat(
             |*     query,
             |*     detail {
@@ -568,7 +569,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
                 |*
                 |* For example:
                 |* ```
-                |* val client = TheTest.create()
+                |* val client = TestServiceClient.create()
                 |* val result = client.testFlatWithoutOriginal(
                 |*     detail {
                 |*         this.mainDetail = mainDetail
@@ -615,7 +616,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = TheTest.create()
+            |* val client = TestServiceClient.create()
             |* val result = client.nestedFlat(
             |*     moreDetail {
             |*         this.evenMore = evenMore
@@ -660,7 +661,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = TheTest.create()
+            |* val client = TestServiceClient.create()
             |* val result = client.nestedFlat(
             |*     detail {
             |*         this.moreDetails = moreDetails
@@ -707,7 +708,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | *
             | * For example:
             | * ```
-            | * val client = TheTest.create()
+            | * val client = TestServiceClient.create()
             | * val result = client.nestedFlat(
             | *     moreDetail {
             | *         this.evenMore = evenMore
@@ -753,7 +754,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |*
             |* For example:
             |* ```
-            |* val client = TheTest.create()
+            |* val client = TestServiceClient.create()
             |* val result = client.nestedFlatPrimitive(
             |*     mainDetail.useful
             |* )
@@ -800,7 +801,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | *
             | * For example:
             | * ```
-            | * val client = TheTest.create()
+            | * val client = TestServiceClient.create()
             | * val pager = client.pagedTest(
             | *     pagedRequest {
             | *     }
@@ -866,7 +867,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | *
             | * For example:
             | * ```
-            | * val client = TheTest.create()
+            | * val client = TestServiceClient.create()
             | * val pager = client.pagedTest(
             | *     flag,
             | *     pageSize
@@ -918,7 +919,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | *
             | * For example:
             | * ```
-            | * val client = TheTest.create()
+            | * val client = TestServiceClient.create()
             | * val result = client.pagedTest(
             | *     pagedRequest {
             | *     }
@@ -931,6 +932,26 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             |    stubs.api.execute(context = "pagedTest") { it.pagedTest(request) }
             |""".asNormalizedString()
         )
+    }
+
+    @Test
+    fun `skips the badly paged NotPagedTest method`() = skipsBadlyPagedMethod("NotPagedTest")
+
+    @Test
+    fun `skips the badly paged StillNotPagedTest method`() =
+        skipsBadlyPagedMethod("StillNotPagedTest")
+
+    @Test
+    fun `skips the badly paged NotPagedTest2 method`() = skipsBadlyPagedMethod("NotPagedTest2")
+
+    private fun skipsBadlyPagedMethod(methodName: String) {
+        val opts = ServiceOptions(
+            methods = listOf(MethodOptions(name = methodName))
+        )
+
+        val methods =
+            generate(opts).testServiceClient().funSpecs.filter { it.name == methodName }
+        assertThat(methods).isEmpty()
     }
 
     @Test
@@ -951,7 +972,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | *
             | * For example:
             | * ```
-            | * val client = TheTest.create()
+            | * val client = TestServiceClient.create()
             | * val result = client.empty(
             | *     testRequest {
             | *     }
@@ -984,7 +1005,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | *
             | * For example:
             | * ```
-            | * val client = TheTest.create()
+            | * val client = TestServiceClient.create()
             | * val result = client.stillEmpty()
             | * ```
             | *
@@ -1014,7 +1035,7 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
             | *
             | * For example:
             | * ```
-            | * val client = TheTest.create()
+            | * val client = TestServiceClient.create()
             | * val result = client.reallyEmpty()
             | * ```
             | *
@@ -1026,3 +1047,189 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest(GRPCGenerator()) {
         )
     }
 }
+
+// The lite/normal code is almost identical.
+// This base class is used to isolate the difference.
+internal abstract class StubsImplTestContent(
+    invocationOptions: ClientPluginOptions,
+    private val marshallerClassName: String
+) : BaseClientGeneratorTest("test", "TestServiceClient", invocationOptions = invocationOptions) {
+    private val opts = ServiceOptions(methods = listOf(MethodOptions(name = "Test")))
+
+    @Test
+    fun `is annotated`() {
+        val stub = generate(opts).testServiceClientStub()
+
+        assertThat(stub.annotationSpecs.first().toString()).isEqualTo(
+            "@javax.annotation.Generated(\"com.google.api.kotlin.generator.GRPCGenerator\")"
+        )
+    }
+
+    @Test
+    fun `has a unary testDescriptor`() {
+        val stub = generate(opts).testServiceClientStub()
+
+        val descriptor = stub.propertySpecs.first { it.name == "testDescriptor" }
+        assertThat(descriptor.toString().asNormalizedString()).isEqualTo(
+            """
+            |private val testDescriptor: io.grpc.MethodDescriptor<google.example.TestRequest, google.example.TestResponse> by lazy {
+            |    io.grpc.MethodDescriptor.newBuilder<google.example.TestRequest, google.example.TestResponse>()
+            |        .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
+            |        .setFullMethodName(generateFullMethodName("google.example.TestService", "Test"))
+            |        .setSampledToLocalTracing(true)
+            |        .setRequestMarshaller($marshallerClassName.marshaller(
+            |            google.example.TestRequest.getDefaultInstance()))
+            |        .setResponseMarshaller($marshallerClassName.marshaller(
+            |            google.example.TestResponse.getDefaultInstance()))
+            |        .build()
+            |    }
+            """.asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `has a unary test method`() {
+        val stub = generate(opts).testServiceClientStub()
+
+        val descriptor = stub.funSpecs.first { it.name == "test" }
+        assertThat(descriptor.toString().asNormalizedString()).isEqualTo(
+            """
+            |fun test(
+            |    request: google.example.TestRequest
+            |): com.google.common.util.concurrent.ListenableFuture<google.example.TestResponse> =
+            |    futureUnaryCall(channel.newCall(testDescriptor, callOptions), request)
+            """.asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `has a streaming streamTestDescriptor`() {
+        val stub = generate(opts).testServiceClientStub()
+
+        val descriptor = stub.propertySpecs.first { it.name == "streamTestDescriptor" }
+        assertThat(descriptor.toString().asNormalizedString()).isEqualTo(
+            """
+            |private val streamTestDescriptor: io.grpc.MethodDescriptor<google.example.TestRequest, google.example.TestResponse> by lazy {
+            |    io.grpc.MethodDescriptor.newBuilder<google.example.TestRequest, google.example.TestResponse>()
+            |        .setType(io.grpc.MethodDescriptor.MethodType.BIDI_STREAMING)
+            |        .setFullMethodName(generateFullMethodName("google.example.TestService", "StreamTest"))
+            |        .setSampledToLocalTracing(true)
+            |        .setRequestMarshaller($marshallerClassName.marshaller(
+            |            google.example.TestRequest.getDefaultInstance()
+            |        ))
+            |        .setResponseMarshaller($marshallerClassName.marshaller(
+            |            google.example.TestResponse.getDefaultInstance()
+            |        ))
+            |        .build()
+            |    }
+            """.asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `has a streaming streamTest method`() {
+        val stub = generate(opts).testServiceClientStub()
+
+        val descriptor = stub.funSpecs.first { it.name == "streamTest" }
+        assertThat(descriptor.toString().asNormalizedString()).isEqualTo(
+            """
+            |fun streamTest(
+            |    responseObserver: io.grpc.stub.StreamObserver<google.example.TestResponse>
+            |): io.grpc.stub.StreamObserver<google.example.TestRequest> =
+            |    asyncBidiStreamingCall(channel.newCall(streamTestDescriptor, callOptions), responseObserver)
+            """.asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `has a streaming streamClientTestDescriptor`() {
+        val stub = generate(opts).testServiceClientStub()
+
+        val descriptor = stub.propertySpecs.first { it.name == "streamClientTestDescriptor" }
+        assertThat(descriptor.toString().asNormalizedString()).isEqualTo(
+            """
+            |private val streamClientTestDescriptor: io.grpc.MethodDescriptor<google.example.TestRequest, google.example.TestResponse> by lazy {
+            |    io.grpc.MethodDescriptor.newBuilder<google.example.TestRequest, google.example.TestResponse>()
+            |        .setType(io.grpc.MethodDescriptor.MethodType.CLIENT_STREAMING)
+            |        .setFullMethodName(generateFullMethodName("google.example.TestService", "StreamClientTest"))
+            |        .setSampledToLocalTracing(true)
+            |        .setRequestMarshaller($marshallerClassName.marshaller(
+            |            google.example.TestRequest.getDefaultInstance()
+            |        ))
+            |        .setResponseMarshaller($marshallerClassName.marshaller(
+            |            google.example.TestResponse.getDefaultInstance()
+            |        ))
+            |        .build()
+            |    }
+            """.asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `has a streaming streamClientTest method`() {
+        val stub = generate(opts).testServiceClientStub()
+
+        val descriptor = stub.funSpecs.first { it.name == "streamClientTest" }
+        assertThat(descriptor.toString().asNormalizedString()).isEqualTo(
+            """
+            |fun streamClientTest(
+            |    responseObserver: io.grpc.stub.StreamObserver<google.example.TestResponse>
+            |): io.grpc.stub.StreamObserver<google.example.TestRequest> =
+            |    asyncClientStreamingCall(channel.newCall(streamClientTestDescriptor, callOptions), responseObserver)
+            """.asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `has a streaming streamServerTestDescriptor`() {
+        val stub = generate(opts).testServiceClientStub()
+
+        val descriptor = stub.propertySpecs.first { it.name == "streamServerTestDescriptor" }
+        assertThat(descriptor.toString().asNormalizedString()).isEqualTo(
+            """
+            |private val streamServerTestDescriptor: io.grpc.MethodDescriptor<google.example.TestRequest, google.example.TestResponse> by lazy {
+            |    io.grpc.MethodDescriptor.newBuilder<google.example.TestRequest, google.example.TestResponse>()
+            |        .setType(io.grpc.MethodDescriptor.MethodType.SERVER_STREAMING)
+            |        .setFullMethodName(generateFullMethodName("google.example.TestService", "StreamServerTest"))
+            |        .setSampledToLocalTracing(true)
+            |        .setRequestMarshaller($marshallerClassName.marshaller(
+            |            google.example.TestRequest.getDefaultInstance()
+            |        ))
+            |        .setResponseMarshaller($marshallerClassName.marshaller(
+            |            google.example.TestResponse.getDefaultInstance()
+            |        ))
+            |        .build()
+            |    }
+            """.asNormalizedString()
+        )
+    }
+
+    @Test
+    fun `has a streaming streamServerTest method`() {
+        val stub = generate(opts).testServiceClientStub()
+
+        val descriptor = stub.funSpecs.first { it.name == "streamServerTest" }
+        assertThat(descriptor.toString().asNormalizedString()).isEqualTo(
+            """
+            |fun streamServerTest(
+            |    request: google.example.TestRequest,
+            |    responseObserver: io.grpc.stub.StreamObserver<google.example.TestResponse>
+            |) = asyncServerStreamingCall(channel.newCall(streamServerTestDescriptor, callOptions), request, responseObserver)
+            """.asNormalizedString()
+        )
+    }
+}
+
+internal class FullStubsImplTest :
+    StubsImplTestContent(ClientPluginOptions(), "io.grpc.protobuf.ProtoUtils")
+
+internal class LiteStubsImplTest :
+    StubsImplTestContent(ClientPluginOptions(lite = true), "io.grpc.protobuf.lite.ProtoLiteUtils")
+
+private fun List<GeneratedArtifact>.testServiceClient() =
+    this.sources().firstOrNull { it.name == "TestServiceClient" }?.types?.first()
+        ?: throw RuntimeException("Could not find TestServiceClient in candidates: ${this.sources().map { it.name }}")
+
+private fun List<GeneratedArtifact>.testServiceClientStub() =
+    this.sources().firstOrNull { it.name == "TestServiceClientStub" }?.types?.first()
+        ?: throw RuntimeException("Could not find TestServiceClientStub in candidates: ${this.sources().map { it.name }}")

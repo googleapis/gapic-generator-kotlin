@@ -17,13 +17,12 @@
 package com.google.api.kotlin.config
 
 import com.google.api.kotlin.BaseClientGeneratorTest
-import com.google.api.kotlin.generator.GRPCGenerator
 import com.google.common.truth.Truth.assertThat
 import com.google.rpc.Code
 import kotlin.test.Test
 import kotlin.test.fail
 
-internal class ConfigurationTest : BaseClientGeneratorTest(GRPCGenerator()) {
+internal class ConfigurationTest : BaseClientGeneratorTest("test_annotations", "AnnotationServiceClient") {
 
     @Test
     fun `can use default for file level proto annotations`() {
@@ -37,49 +36,16 @@ internal class ConfigurationTest : BaseClientGeneratorTest(GRPCGenerator()) {
     @Test
     fun `can parse file level proto annotations`() {
         val factory = AnnotationConfigurationFactory(AuthOptions(), typeMap)
-        val config = factory.fromProto(annotationsProto)
+        val config = factory.fromProto(proto)
 
         // assertThat(config.branding.name).isEqualTo("The Test Product")
         assertThat(config.packageName).isEqualTo("google.example")
     }
 
     @Test
-    fun `can detect a paged method`() {
-        val factory = AnnotationConfigurationFactory(AuthOptions(), typeMap)
-        val config = factory.fromProto(proto)
-
-        val method = config["google.example.TestService"].methods.find { it.name == "PagedTest" }
-        val page = method?.pagedResponse ?: fail("page is null")
-
-        assertThat(page.pageSize).isEqualTo("page_size")
-        assertThat(page.responseList).isEqualTo("responses")
-        assertThat(page.requestPageToken).isEqualTo("page_token")
-        assertThat(page.responsePageToken).isEqualTo("next_page_token")
-    }
-
-    @Test
-    fun `skips the badly paged NotPagedTest method`() = skipsBadlyPagedMethod("NotPagedTest")
-
-    @Test
-    fun `skips the badly paged StillNotPagedTest method`() =
-        skipsBadlyPagedMethod("StillNotPagedTest")
-
-    @Test
-    fun `skips the badly paged NotPagedTest2 method`() = skipsBadlyPagedMethod("NotPagedTest2")
-
-    private fun skipsBadlyPagedMethod(methodName: String) {
-        val factory = AnnotationConfigurationFactory(AuthOptions(), typeMap)
-        val config = factory.fromProto(proto)
-
-        val method = config["google.example.TestService"].methods.first { it.name == methodName }
-
-        assertThat(method.pagedResponse).isNull()
-    }
-
-    @Test
     fun `can detected a long running method`() {
         val factory = AnnotationConfigurationFactory(AuthOptions(), typeMap)
-        val config = factory.fromProto(annotationsProto)
+        val config = factory.fromProto(proto)
 
         val method = config["google.example.AnnotationService"].methods.first { it.name == "AnnotationLongRunningTest" }
         val operation = method.longRunningResponse ?: fail("long running response is null")
@@ -91,7 +57,7 @@ internal class ConfigurationTest : BaseClientGeneratorTest(GRPCGenerator()) {
     @Test
     fun `can detect method signatures`() {
         val factory = AnnotationConfigurationFactory(AuthOptions(), typeMap)
-        val config = factory.fromProto(annotationsProto)
+        val config = factory.fromProto(proto)
 
         val method = config["google.example.AnnotationService"].methods.find { it.name == "AnnotationSignatureTest" }
         val signatures = method?.flattenedMethods ?: fail("method signatures not found")
@@ -110,7 +76,7 @@ internal class ConfigurationTest : BaseClientGeneratorTest(GRPCGenerator()) {
     @Test
     fun `does not make up method signatures`() {
         val factory = AnnotationConfigurationFactory(AuthOptions(), typeMap)
-        val config = factory.fromProto(annotationsProto)
+        val config = factory.fromProto(proto)
 
         val method = config["google.example.AnnotationService"].methods.find { it.name == "AnnotationTest" }
         val signatures = method?.flattenedMethods ?: fail("method signatures not found")
@@ -132,7 +98,7 @@ internal class ConfigurationTest : BaseClientGeneratorTest(GRPCGenerator()) {
     @Test
     fun `can detect default retry settings`() {
         val factory = AnnotationConfigurationFactory(AuthOptions(), typeMap)
-        val config = factory.fromProto(annotationsProto)
+        val config = factory.fromProto(proto)
 
         val method =
             config["google.example.AnnotationService"].methods.first { it.name == "AnnotationRetryDefaultTest" }
@@ -144,7 +110,7 @@ internal class ConfigurationTest : BaseClientGeneratorTest(GRPCGenerator()) {
     @Test
     fun `does not make up retry settings`() {
         val factory = AnnotationConfigurationFactory(AuthOptions(), typeMap)
-        val config = factory.fromProto(annotationsProto)
+        val config = factory.fromProto(proto)
 
         val method = config["google.example.AnnotationService"].methods.first { it.name == "AnnotationTest" }
         assertThat(method.retry).isNull()
