@@ -22,7 +22,6 @@ import com.google.api.kotlin.MockedProtoUtil
 import com.google.api.kotlin.asNormalizedString
 import com.google.api.kotlin.config.ProtobufTypeMapper
 import com.google.api.kotlin.config.TypeNamePair
-import com.google.api.kotlin.kotlinBuilders
 import com.google.common.truth.Truth.assertThat
 import com.google.protobuf.DescriptorProtos
 import com.nhaarman.mockito_kotlin.any
@@ -31,7 +30,7 @@ import com.nhaarman.mockito_kotlin.mock
 import com.squareup.kotlinpoet.ClassName
 import kotlin.test.Test
 
-internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerator()) {
+internal class BuilderGeneratorTest : BaseBuilderGeneratorTest("test") {
 
     @Test
     fun `generates builders`() {
@@ -380,7 +379,7 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
 
     @Test
     fun `generates getters and setters`() {
-        val builders = generate().kotlinBuilders("google.example")
+        val builders = generate().kotlinBuilders()
         assertThat(builders).hasSize(1)
 
         val builder = builders.first()
@@ -396,7 +395,7 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
 
     @Test
     fun `generates repeated getters and setters`() {
-        val builders = generate().kotlinBuilders("google.example")
+        val builders = generate().kotlinBuilders()
         assertThat(builders).hasSize(1)
 
         val builder = builders.first()
@@ -444,7 +443,7 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
 
     @Test
     fun `generates map getters and setters`() {
-        val builders = generate().kotlinBuilders("google.example")
+        val builders = generate().kotlinBuilders()
         assertThat(builders).hasSize(1)
 
         val builder = builders.first()
@@ -464,7 +463,7 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
 
     @Test
     fun `generates getters and setters with reserved names`() {
-        val builders = generate().kotlinBuilders("google.example")
+        val builders = generate().kotlinBuilders()
         assertThat(builders).hasSize(1)
 
         val builder = builders.first()
@@ -480,7 +479,7 @@ internal class BuilderGeneratorTest : BaseBuilderGeneratorTest(DSLBuilderGenerat
 
     @Test
     fun `generates the correct number of builder functions`() {
-        val builders = generate().kotlinBuilders("google.example")
+        val builders = generate().kotlinBuilders()
         assertThat(builders).hasSize(1)
 
         val builder = builders.first()
@@ -496,3 +495,7 @@ private fun GeneratedSource.builderTypeFun(name: String, method: String) =
 
 private fun GeneratedSource.builderTypeProp(name: String, property: String) =
     this.builderType(name).propertySpecs.first { it.name == property }.toString().asNormalizedString()
+
+private fun List<GeneratedSource>.kotlinBuilders() =
+    this.filter { it.name == "KotlinBuilders" }
+        .filter { it.packageName.startsWith("google.example") }
