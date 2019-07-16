@@ -156,11 +156,8 @@ internal class DocumentationImpl : Documentation {
                         context, type.message, type.kotlinType, listOf(p.last), sample
                     ).builder
                 } else {
-                    val prop = FieldNamer.getFieldName(
-                        sample?.parameters?.find { it.parameterPath == p.toString() }?.value
-                            ?: p.toString()
-                    )
-                    CodeBlock.of("%L", prop)
+                    val exampleValue = sample?.parameters?.find { it.parameterPath == p.toString() }?.value
+                    CodeBlock.of("%L", exampleValue ?: FieldNamer.getNestedFieldName(p))
                 }
             }
         } else {
@@ -192,7 +189,8 @@ internal class DocumentationImpl : Documentation {
                 """
                 |val result = client.%N()
                 """.trimMargin(),
-                name)
+                name
+            )
         } else {
             call.add(
                 """

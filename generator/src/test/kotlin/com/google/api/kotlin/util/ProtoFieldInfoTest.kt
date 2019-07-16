@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google LLC
+ * Copyright 2019 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,12 @@
  * limitations under the License.
  */
 
-package com.google.api.kotlin.generator
+package com.google.api.kotlin.util
 
 import com.google.api.kotlin.BaseClientGeneratorTest
 import com.google.api.kotlin.GeneratorContext
 import com.google.api.kotlin.config.PropertyPath
 import com.google.api.kotlin.config.ProtobufTypeMapper
-import com.google.api.kotlin.util.ProtoFieldInfo
-import com.google.api.kotlin.util.asClassName
-import com.google.api.kotlin.util.describeMap
-import com.google.api.kotlin.util.getMethodComments
-import com.google.api.kotlin.util.getParameterComments
-import com.google.api.kotlin.util.getProtoFieldInfoForPath
-import com.google.api.kotlin.util.isIntOrLong
-import com.google.api.kotlin.util.isLongRunningOperation
 import com.google.common.truth.Truth.assertThat
 import com.google.protobuf.ByteString
 import com.google.protobuf.DescriptorProtos

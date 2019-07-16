@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google LLC
+ * Copyright 2019 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@ import com.squareup.kotlinpoet.ClassName
 import kotlin.test.Test
 
 /**
- * Tests for the [GRPCGenerator] using the test protos in the
- * `proto/google/example` resources directory.
+ * Tests for the [GRPCGenerator] using the primary test proto
+ * `proto/google/example/test.proto` in the test resources directory.
  */
 internal class GRPCGeneratorTest : BaseClientGeneratorTest("test", "TestServiceClient") {
 
@@ -1048,6 +1048,109 @@ internal class GRPCGeneratorTest : BaseClientGeneratorTest("test", "TestServiceC
     }
 }
 
+// Additional tests for non-standard naming patterns
+internal class GRPCGeneratorNameTest : BaseClientGeneratorTest(
+    protoFileName = "test_names",
+    clientClassName = "SomeServiceClient",
+    protoDirectory = "names",
+    namespace = "names"
+) {
+
+    @Test
+    fun `generates the GetUser method`() {
+        val opts = ServiceOptions(
+            methods = listOf(
+                MethodOptions(
+                    name = "GetUser",
+                    keepOriginalMethod = false,
+                    flattenedMethods = listOf(
+                        FlattenedMethod(
+                            listOf(
+                                "_user.n_a_m_e".asPropertyPath()
+                            )
+                        ),
+                        FlattenedMethod(
+                            listOf(
+                                "an_int".asPropertyPath(),
+                                "aString".asPropertyPath(),
+                                "a_bool".asPropertyPath(),
+                                "_user".asPropertyPath()
+                            )
+                        )
+                    )
+                )
+            )
+        )
+
+        val methods =
+            generate(opts).someServiceClient().funSpecs.filter { it.name == "getUser" }
+        assertThat(methods).hasSize(2)
+
+        val firstMethod = methods.find { it.parameters.size == 1 }
+        assertThat(firstMethod.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            | *
+            | *
+            | * For example:
+            | * ```
+            | * val client = SomeServiceClient.create()
+            | * val result = client.getUser(
+            | *     user.name
+            | *)
+            | * ```
+            | *
+            | * @param name
+            | */
+            |suspend fun getUser(name: kotlin.String): names.User = stubs.api.execute(context = "getUser") { 
+            |    it.getUser(names.thing {
+            |        this.user = names.user { this.name = name }
+            |    })
+            |}
+            """.asNormalizedString()
+        )
+
+        val secondMethod = methods.find { it.parameters.size == 4 }
+        assertThat(secondMethod.toString().asNormalizedString()).isEqualTo(
+            """
+            |/**
+            | *
+            | *
+            | * For example:
+            | * ```
+            | * val client = SomeServiceClient.create()
+            | * val result = client.getUser(
+            | *     anInt,
+            | *     aString,
+            | *     aBool,
+            | *     user {
+            | *         this.user = user
+            | *     }
+            | *)
+            | * ```
+            | *
+            | * @param anInt
+            | *
+            | * @param aString
+            | *
+            | * @param aBool
+            | *
+            | * @param user
+            |*/
+            |suspend fun getUser(anInt: kotlin.Int, aString: kotlin.String, aBool: kotlin.Boolean, user: names.User): names.User = 
+            |    stubs.api.execute(context = "getUser") { 
+            |        it.getUser(names.thing {
+            |            this.anInt = anInt
+            |            this.aString = aString
+            |            this.aBool = aBool
+            |            this.user = user
+            |        })
+            |    }
+            """.asNormalizedString()
+        )
+    }
+}
+
 // The lite/normal code is almost identical.
 // This base class is used to isolate the difference.
 internal abstract class StubsImplTestContent(
@@ -1226,10 +1329,10 @@ internal class FullStubsImplTest :
 internal class LiteStubsImplTest :
     StubsImplTestContent(ClientPluginOptions(lite = true), "io.grpc.protobuf.lite.ProtoLiteUtils")
 
-private fun List<GeneratedArtifact>.testServiceClient() =
-    this.sources().firstOrNull { it.name == "TestServiceClient" }?.types?.first()
-        ?: throw RuntimeException("Could not find TestServiceClient in candidates: ${this.sources().map { it.name }}")
+private fun List<GeneratedArtifact>.testServiceClient() = findSource("TestServiceClient")
+private fun List<GeneratedArtifact>.testServiceClientStub() = findSource("TestServiceClientStub")
+private fun List<GeneratedArtifact>.someServiceClient() = findSource("SomeServiceClient")
 
-private fun List<GeneratedArtifact>.testServiceClientStub() =
-    this.sources().firstOrNull { it.name == "TestServiceClientStub" }?.types?.first()
-        ?: throw RuntimeException("Could not find TestServiceClientStub in candidates: ${this.sources().map { it.name }}")
+private fun List<GeneratedArtifact>.findSource(name: String) =
+    this.sources().firstOrNull { it.name == name }?.types?.first()
+        ?: throw RuntimeException("Could not find $name in candidates: ${this.sources().map { it.name }}")
