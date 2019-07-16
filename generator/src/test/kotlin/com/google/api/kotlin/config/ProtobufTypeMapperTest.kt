@@ -43,7 +43,9 @@ internal class ProtobufTypeMapperTest : BaseClientGeneratorTest("test", "TestSer
             "google.example.FooRequest",
             "google.example.BarResponse",
             "google.example.TheLongRunningResponse",
-            "google.example.TheLongRunningMetadata"
+            "google.example.TheLongRunningMetadata",
+            "names.Thing",
+            "names.User"
         )
         val kotlinMapTypes = listOf("google.example.Detail.TonsMoreEntry")
 

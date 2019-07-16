@@ -47,19 +47,21 @@ internal abstract class BaseGeneratorTest(
     protected val invocationOptions: ClientPluginOptions
 ) {
     // accessors for the test protos (they are all in one descriptor)
-    protected val generatorRequest = PluginProtos.CodeGeneratorRequest.parseFrom(
+    private val generatorRequest = PluginProtos.CodeGeneratorRequest.parseFrom(
         javaClass.getResourceAsStream("/generated-test.data"),
         ProtobufExtensionRegistry.INSTANCE
     ) ?: throw RuntimeException("Unable to read test data (generated-test.data)")
 
-    // the primary test proto (test.proto)
     protected val proto = generatorRequest.protoFileList.firstOrNull { p ->
         p.name == "$protoDirectory/$protoFileName.proto"
     } ?: throw RuntimeException("Unable to find proto: $protoDirectory/$protoFileName.proto")
+
     protected val services =
         generatorRequest.protoFileList.firstOrNull { p ->
             p.name == "$protoDirectory/$protoFileName.proto"
-        }?.serviceList ?: throw RuntimeException("Unable to find services for proto: $protoDirectory/$protoFileName.proto")
+        }?.serviceList
+            ?: throw RuntimeException("Unable to find services for proto: $protoDirectory/$protoFileName.proto")
+
     protected val typeMap = ProtobufTypeMapper.fromProtos(generatorRequest.protoFileList)
 }
 

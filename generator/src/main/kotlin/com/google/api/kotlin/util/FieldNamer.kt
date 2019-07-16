@@ -16,8 +16,8 @@
 
 package com.google.api.kotlin.util
 
+import com.google.api.kotlin.config.PropertyPath
 import com.google.api.kotlin.config.ProtobufTypeMapper
-import com.google.common.base.CaseFormat
 import com.squareup.kotlinpoet.CodeBlock
 import mu.KotlinLogging
 
@@ -87,38 +87,80 @@ internal object FieldNamer {
         return getJavaBuilderAccessorName(fieldInfo.field.name)
     }
 
+    fun getNestedFieldName(p: PropertyPath): String =
+        p.segments.map { it.asVarName() }.joinToString(".")
+
     fun getFieldName(protoFieldName: String): String =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)
+        protoFieldName.asVarName()
 
     private fun getDslSetterMapName(protoFieldName: String): String =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName).escapeIfReserved()
+        protoFieldName.asVarName().escapeIfReserved()
 
     private fun getDslSetterRepeatedName(protoFieldName: String): String =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName).escapeIfReserved()
+        protoFieldName.asVarName().escapeIfReserved()
 
     private fun getDslSetterRepeatedNameAtIndex(protoFieldName: String): String =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName).escapeIfReserved()
+        protoFieldName.asVarName().escapeIfReserved()
 
     fun getJavaBuilderSetterMapName(protoFieldName: String): String =
-        "putAll${CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)}".escapeIfReserved()
+        "putAll${protoFieldName.asVarName(false)}".escapeIfReserved()
 
     fun getJavaBuilderSetterRepeatedName(protoFieldName: String): String =
-        "addAll${CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)}".escapeIfReserved()
+        "addAll${protoFieldName.asVarName(false)}".escapeIfReserved()
 
     fun getJavaBuilderRawSetterName(protoFieldName: String): String =
-        "set${CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, protoFieldName)}".escapeIfReserved()
+        "set${protoFieldName.asVarName(false)}".escapeIfReserved()
 
     fun getJavaBuilderSyntheticSetterName(protoFieldName: String): String =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName).escapeIfReserved()
+        protoFieldName.asVarName().escapeIfReserved()
 
     fun getJavaBuilderAccessorMapName(protoFieldName: String): String =
-        "${CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)}Map".escapeIfReserved()
+        "${protoFieldName.asVarName()}Map".escapeIfReserved()
 
     fun getJavaBuilderAccessorRepeatedName(protoFieldName: String): String =
-        "${CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName)}List".escapeIfReserved()
+        "${protoFieldName.asVarName()}List".escapeIfReserved()
 
     fun getJavaBuilderAccessorName(protoFieldName: String): String =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, protoFieldName).escapeIfReserved()
+        protoFieldName.asVarName().escapeIfReserved()
+
+    private fun String.asVarName(isLower: Boolean = true): String =
+        this.underscoresToCamelCase(!isLower)
+
+    private val LEADING_UNDERSCORES = Regex("^(_)+")
+
+    // this is taken from the protobuf utility of the same name
+    // snapshot: https://github.com/protocolbuffers/protobuf/blob/61301f01552dd84d744a05c88af95833c600a1a7/src/google/protobuf/compiler/cpp/cpp_helpers.cc
+    private fun String.underscoresToCamelCase(capitalize: Boolean): String {
+        var cap = capitalize
+        val result = StringBuffer()
+
+        // addition to the protobuf rule to handle synthetic names
+        var str = this.replace(LEADING_UNDERSCORES, "")
+
+        for (char in str) {
+            if (char.isLetter() && char.isLowerCase()) {
+                result.append(if (cap) char.toUpperCase() else char)
+                cap = false
+            } else if (char.isLetter() && char.isUpperCase()) {
+                result.append(char)
+                cap = false
+            } else if (char.isDigit()) {
+                result.append(char)
+                cap = true
+            } else {
+                cap = true
+            }
+        }
+        str = result.toString()
+
+        // addition to the protobuf rule to handle synthetic names
+        if (!capitalize) {
+            if (str.matches(Regex("[a-z0-9][A-Z0-9]+"))) {
+                str = str.toLowerCase()
+            }
+        }
+        return str
+    }
 
     // TODO: can remove this when Kotlin poet releases %M support
     private fun String.escapeIfReserved() = if (KEYWORDS.contains(this)) "`$this`" else this

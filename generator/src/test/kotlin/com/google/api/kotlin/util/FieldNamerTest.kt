@@ -17,6 +17,7 @@
 package com.google.api.kotlin.util
 
 import com.google.api.kotlin.config.ProtobufTypeMapper
+import com.google.api.kotlin.config.asPropertyPath
 import com.google.common.truth.Truth.assertThat
 import com.google.protobuf.DescriptorProtos
 import com.nhaarman.mockito_kotlin.any
@@ -178,5 +179,14 @@ internal class FieldNamerTest {
         assertThat(FieldNamer.getJavaBuilderAccessorName("if")).isEqualTo("`if`")
         assertThat(FieldNamer.getJavaBuilderAccessorMapName("if")).isEqualTo("ifMap")
         assertThat(FieldNamer.getJavaBuilderAccessorRepeatedName("if")).isEqualTo("ifList")
+    }
+
+    @Test
+    fun `can generated nested field names`() {
+        assertThat(FieldNamer.getNestedFieldName("a.b.c.d".asPropertyPath())).isEqualTo("a.b.c.d")
+        assertThat(FieldNamer.getNestedFieldName("one.and_two".asPropertyPath())).isEqualTo("one.andTwo")
+        assertThat(FieldNamer.getNestedFieldName("a.b_c.dee".asPropertyPath())).isEqualTo("a.bc.dee")
+        assertThat(FieldNamer.getNestedFieldName("a.b_cee.dee".asPropertyPath())).isEqualTo("a.bCee.dee")
+        assertThat(FieldNamer.getNestedFieldName("x".asPropertyPath())).isEqualTo("x")
     }
 }
