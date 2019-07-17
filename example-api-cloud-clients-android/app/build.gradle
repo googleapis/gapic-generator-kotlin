@@ -77,7 +77,7 @@ dependencies {
     // implementation("com.github.googleapis.gax-kotlin:kgax-grpc-android:v0.6.0")
     //
     // but we use a local copy for development
-    implementation "com.google.api:kgax-grpc-android:0.6.0-SNAPSHOT"
+    implementation "com.google.api:kgax-grpc-android:0.6.0"
 
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.0"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.1.0"
