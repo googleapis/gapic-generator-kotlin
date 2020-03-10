@@ -21,8 +21,7 @@ Write your API using proto3 as described in the [Language Guide](https://develop
 To build the executable docker image locally run the following:
 
 ```bash
-$ cd generator
-$ ./gradlew build && docker build . -t kgen
+$ ./docker-build.sh
 ```
 
 Use the generator by mounting your input protocol buffers directory at `/proto` and mounting an 
