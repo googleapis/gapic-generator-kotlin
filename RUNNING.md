@@ -16,6 +16,14 @@ use to try it out in your projects.
 
 Write your API using proto3 as described in the [Language Guide](https://developers.google.com/protocol-buffers/docs/proto).
 
+### Git
+
+This project has submodules. Make sure you have cloned the entire repository.
+
+```bash
+$ git submodule update --init --recursive
+```
+
 ### Docker
 
 To build the executable docker image locally run the following:
