@@ -1,0 +1,20 @@
+rebaseMergeAllowed: true
+squashMergeAllowed: true
+mergeCommitAllowed: false
+branchProtectionRules:
+- pattern: master
+  isAdminEnforced: true
+  requiredStatusCheckContexts:
+    - 'ci/circleci: build'
+    - 'ci/circleci: build_cloud_android_examples'
+    - 'ci/circleci: build_cloud_examples'
+    - 'ci/circleci: dockerize'
+    - 'ci/circleci: test_example'
+    - 'ci/circleci: test_showcase'
+    - 'cla/google'
+  requiredApprovingReviewCount: 1
+  requiresCodeOwnerReviews: true
+  requiresStrictStatusChecks: true
+permissionRules:
+  - team: actools
+    permission: admin
