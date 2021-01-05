@@ -35,7 +35,7 @@ $ mkdir my-output
 $ docker run --rm \
              --mount type=bind,source="$(pwd)"/example-server/src/main/proto,target=/proto \
              --mount type=bind,source="$(pwd)"/my-output,target=/generated \
-         gcr.io/kotlin-gapic/kgen
+         gcr.io/gapic-images/gapic-generator-kotlin
 ```
 
 ### Gradle
