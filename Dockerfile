@@ -2,7 +2,7 @@
 # ktlint
 #########################################################################
 
-FROM openjdk:8-alpine as ktlint
+FROM openjdk:17-alpine as ktlint
 
 # install ktlint
 RUN apk add --no-cache curl gnupg
@@ -24,7 +24,7 @@ ENTRYPOINT ["/usr/local/bin/ktlint"]
 # google-java-format
 #########################################################################
 
-FROM openjdk:8-alpine as javaformatter
+FROM openjdk:17-alpine as javaformatter
 
 # install google-java-format
 RUN apk add --no-cache curl
