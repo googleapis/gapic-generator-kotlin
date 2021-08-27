@@ -2,7 +2,7 @@
 # ktlint
 #########################################################################
 
-FROM openjdk:8-alpine as ktlint
+FROM openjdk:18-alpine as ktlint
 
 # install ktlint
 RUN apk add --no-cache curl gnupg
@@ -24,7 +24,7 @@ ENTRYPOINT ["/usr/local/bin/ktlint"]
 # google-java-format
 #########################################################################
 
-FROM openjdk:8-alpine as javaformatter
+FROM openjdk:18-alpine as javaformatter
 
 # install google-java-format
 RUN apk add --no-cache curl
@@ -41,7 +41,7 @@ ENTRYPOINT exec java -jar /usr/google-java-format/formatter.jar --replace $(find
 # generator
 #########################################################################
 
-FROM openjdk:8 as generator
+FROM openjdk:18 as generator
 
 # copy formatters
 COPY --from=ktlint /usr/local/bin/ktlint /usr/local/bin/ktlint
