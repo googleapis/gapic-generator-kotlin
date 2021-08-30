@@ -32,7 +32,7 @@ plugins {
     jacoco
     kotlin("jvm") version "1.3.30"
     id("org.springframework.boot") version "2.1.3.RELEASE"
-    id("com.google.protobuf") version "0.8.8"
+    id("com.google.protobuf") version "0.8.17"
 }
 
 group = "com.google.api"

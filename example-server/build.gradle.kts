@@ -25,7 +25,7 @@ plugins {
     idea
     application
     kotlin("jvm") version "1.3.30"
-    id("com.google.protobuf") version "0.8.8"
+    id("com.google.protobuf") version "0.8.17"
 }
 
 buildscript {
