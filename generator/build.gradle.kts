@@ -78,7 +78,7 @@ dependencies {
 
     testImpl(kotlin("test"))
     testImpl(kotlin("test-junit"))
-    testImpl("junit:junit:4.12")
+    testImpl("junit:junit:4.13.2")
     testImpl("com.nhaarman:mockito-kotlin:1.6.0")
     // needed to unit test with suspend functions (can remove when the dependency above is updated most likely)
     testImpl("org.mockito:mockito-core:2.23.4")
