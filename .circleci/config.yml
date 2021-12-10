@@ -18,17 +18,17 @@ jobs:
           command: git submodule update --init --recursive
       - restore_cache:
           key: generator-v0-{{ checksum "build.gradle.kts" }}
-      - run: 
+      - run:
           name: Download dependencies
           command: ./gradlew dependencies
       - save_cache:
           paths:
             - ~/.gradle
           key: generator-v0-{{ checksum "build.gradle.kts" }}
-      - run: 
+      - run:
            name: Build and run checks
            command: ./gradlew build
-      - run: 
+      - run:
           name: Save test results
           command: |
             mkdir -p ~/junit/
@@ -38,7 +38,7 @@ jobs:
           path: ~/junit
       - store_artifacts:
           path: ~/junit
-      - run: 
+      - run:
           name: Codecov
           command: bash <(curl -s https://codecov.io/bash)
           when: always
@@ -84,7 +84,7 @@ jobs:
 
   # -------------------------------------------------------------------------------
   # Examples
-  # -------------------------------------------------------------------------------  
+  # -------------------------------------------------------------------------------
 
   build_cloud_examples:
     docker:
@@ -100,17 +100,17 @@ jobs:
           at: ./..
       - restore_cache:
           key: cloud-examples-v0-{{ checksum "build.gradle.kts" }}
-      - run: 
+      - run:
           name: Download dependencies
           command: ./gradlew dependencies
       - save_cache:
           paths:
             - ~/.gradle
           key: cloud-examples-v0-{{ checksum "build.gradle.kts" }}
-      - run: 
+      - run:
            name: Build and run checks
            command: ./gradlew build
-      - run: 
+      - run:
           name: Save test results
           command: |
             mkdir -p ~/junit/
@@ -177,7 +177,7 @@ jobs:
           at: ./..
       - restore_cache:
           key: showcase-v0-{{ checksum "build.gradle.kts" }}
-      - run: 
+      - run:
           name: Download dependencies
           command: ./gradlew dependencies
       - save_cache:
@@ -187,7 +187,7 @@ jobs:
       - run:
           name: Test showcase
           command: ./gradlew test
-      - run: 
+      - run:
           name: Save test results
           command: |
             mkdir -p ~/junit/
@@ -212,11 +212,11 @@ jobs:
           at: .
       - restore_cache:
           key: example-server-v0-{{ checksum "example-server/build.gradle.kts" }}-{{ checksum "example-client/build.gradle.kts" }}
-      - run: 
+      - run:
           name: Download dependencies
           command: ./gradlew dependencies
           working_directory: ~/gapic-generator-kotlin/example-server
-      - run: 
+      - run:
           name: Download dependencies
           command: ./gradlew dependencies
           working_directory: ~/gapic-generator-kotlin/example-client
@@ -259,10 +259,10 @@ jobs:
           at: ./..
       - restore_cache:
           key: cloud-examples-v0-{{ checksum "build.gradle.kts" }}
-      - run: 
+      - run:
           name: Download dependencies
           command: ./gradlew dependencies
-      - run: 
+      - run:
           name: Run all examples
           command: |
             echo $GCLOUD_SERVICE_KEY > /tmp/_key.json
@@ -309,12 +309,12 @@ jobs:
           command: |
             rm app/src/main/res/raw/sa.json
             rm app/src/main/res/raw/client_config.json
-          when: always          
+          when: always
 
   # -------------------------------------------------------------------------------
   # Deploy
   # -------------------------------------------------------------------------------
-      
+
   release_gcr_snapshot:
     docker:
       - image: google/cloud-sdk
@@ -407,15 +407,15 @@ workflows:
       - test_cloud_android_examples:
           requires:
             - build
-          filters: &master-filter
+          filters: &main-filter
             branches:
-              only: master
+              only: main
             tags:
               only: /.*/
       - test_cloud_examples:
           requires:
             - build
-          filters: *master-filter
+          filters: *main-filter
       - release_gcr_snapshot:
           requires:
             - build
@@ -426,7 +426,7 @@ workflows:
             - test_example
             - test_cloud_examples
             - test_cloud_android_examples
-          filters: *master-filter
+          filters: *main-filter
       - release:
           requires:
             - release_gcr_snapshot

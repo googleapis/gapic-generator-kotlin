@@ -2,10 +2,10 @@
 
 ## Getting Started
 
-Kgen can be used with docker, gradle, or as a protoc plugin. 
+Kgen can be used with docker, gradle, or as a protoc plugin.
 
 Docker is the simpliest option and works best if you plan to ship the generated code as
-part of a library. Gradle is a good choice when you want to use the generated code in a 
+part of a library. Gradle is a good choice when you want to use the generated code in a
 project, and protoc is for advanced use cases when you need more control over the process.
 
 *Note* This project is incubating and releases are not yet being published. This document
@@ -32,7 +32,7 @@ To build the executable docker image locally run the following:
 $ ./docker-build.sh
 ```
 
-Use the generator by mounting your input protocol buffers directory at `/proto` and mounting an 
+Use the generator by mounting your input protocol buffers directory at `/proto` and mounting an
 output directory at `/generated`. For example:
 
 ```bash
@@ -64,10 +64,10 @@ The docker images supports the following command line arguments:
 To use gradle put all of your `.proto` files in `app/src/main/proto` (Android) or `src/main/proto` (non-Android)
 and let the [Protobuf plugin for gradle](https://github.com/google/protobuf-gradle-plugin) take care
 of the rest.
-  
+
 Configure your application's `build.gradle` as shown below:
-  
-*Note* the following example is for an Android application, but the process is nearly 
+
+*Note* the following example is for an Android application, but the process is nearly
 identical for a standalone Kotlin application.
 
 ```groovy
@@ -82,10 +82,10 @@ apply plugin: 'kotlin-android-extensions'
 
 dependencies {
     // add the required runtime (includes gRPC and protobuf)
-    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:master-SNAPSHOT'
+    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:main-SNAPSHOT'
 
     // For android projects, use the android variant instead
-    //implementation 'com.github.googleapis.gax-kotlin:kgax-grpc-android:master-SNAPSHOT'
+    //implementation 'com.github.googleapis.gax-kotlin:kgax-grpc-android:main-SNAPSHOT'
 }
 
 // configure the protobuf gradle plugin
@@ -101,7 +101,7 @@ protobuf {
         //    artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0'
         //}
         client {
-            artifact = 'com.github.googleapis:gapic-generator-kotlin:master-SNAPSHOT:core@jar'
+            artifact = 'com.github.googleapis:gapic-generator-kotlin:main-SNAPSHOT:core@jar'
         }
     }
     // run the code generators
@@ -125,7 +125,7 @@ protobuf {
     }
 }
 ```
-      
+
 Build your application with gradle as usual:
 
 ```bash
@@ -151,7 +151,7 @@ See the [reference documentation](https://developers.google.com/protocol-buffers
 
 ## Dependencies
 
-You will need to add [one dependency](https://github.com/googleapis/gax-kotlin) to your build to 
+You will need to add [one dependency](https://github.com/googleapis/gax-kotlin) to your build to
 use the generated code. Until releases are published the easiest way to get the artifacts is via
 Jitpack:
 
@@ -162,15 +162,15 @@ repositories {
 }
 
 dependencies {
-    // pick the ONE dependency that is appropriate for your platform (server or Android) 
-    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:master-SNAPSHOT'
-    //implementation 'com.github.googleapis.gax-kotlin:kgax-grpc-android:master-SNAPSHOT'
+    // pick the ONE dependency that is appropriate for your platform (server or Android)
+    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:main-SNAPSHOT'
+    //implementation 'com.github.googleapis.gax-kotlin:kgax-grpc-android:main-SNAPSHOT'
 }
 ```
 
 ## Code Formatters
 
-This project uses [ktlint](https://ktlint.github.io/) and [Google Java Format](https://github.com/google/google-java-format). 
+This project uses [ktlint](https://ktlint.github.io/) and [Google Java Format](https://github.com/google/google-java-format).
 
 ### Building
 
@@ -183,7 +183,7 @@ Create standalone dockerized formatters using the `--target` flag:
 
 ### Usage
 
-Run the container and mount the directory that contains the source files that you want to 
+Run the container and mount the directory that contains the source files that you want to
 format to `/src` inside the container. For example, to format the files in the current directory use:
 
 ```

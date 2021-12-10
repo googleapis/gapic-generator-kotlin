@@ -4,16 +4,16 @@ Kgen creates idiomatic coroutine-based gRPC Kotlin client libraries from a [prot
 
 It supports full-stack Kotlin development on the server and in Android applications.
 
-[![CircleCI](https://circleci.com/gh/googleapis/gapic-generator-kotlin/tree/master.svg?style=svg)](https://circleci.com/gh/googleapis/gapic-generator-kotlin/tree/master)
-[![codecov](https://codecov.io/gh/googleapis/gapic-generator-kotlin/branch/master/graph/badge.svg)](https://codecov.io/gh/googleapis/gapic-generator-kotlin)
+[![CircleCI](https://circleci.com/gh/googleapis/gapic-generator-kotlin/tree/main.svg?style=svg)](https://circleci.com/gh/googleapis/gapic-generator-kotlin/tree/main)
+[![codecov](https://codecov.io/gh/googleapis/gapic-generator-kotlin/branch/main/graph/badge.svg)](https://codecov.io/gh/googleapis/gapic-generator-kotlin)
 [![Release](https://jitpack.io/v/googleapis/gapic-generator-kotlin.svg)](https://jitpack.io/#googleapis/gapic-generator-kotlin)
 
-*Note* This project is a preview. Please try it out and let us know what you think, but there 
+*Note* This project is a preview. Please try it out and let us know what you think, but there
 are currently no guarantees of any form of stability or support.
 
 ## Why Kgen?
 
-Protocol buffers and gRPC have great tool chains, but they do not have first class support for Kotlin and 
+Protocol buffers and gRPC have great tool chains, but they do not have first class support for Kotlin and
 they do not provide many configuration options for generated code. Kgen generates idiomatic Kotlin clients
 for protobuf APIs and introduces new configuration options to make the code even more enjoyable to use.
 
@@ -23,15 +23,15 @@ using client-side gRPC interceptors with with your API.
 
 ## Quick Start
 
-Kgen can be used with [docker](https://www.docker.com/), [gradle](https://gradle.org/), 
-or as a [protoc plugin](https://developers.google.com/protocol-buffers/). 
+Kgen can be used with [docker](https://www.docker.com/), [gradle](https://gradle.org/),
+or as a [protoc plugin](https://developers.google.com/protocol-buffers/).
 
 ### Docker
 
 To get started with docker, clone the project and run the following to generate a client for the [example service](example-server).
 
 ```bash
-$ mkdir my-output 
+$ mkdir my-output
 $ docker run --rm \
              --mount type=bind,source="$(pwd)"/example-server/src/main/proto,target=/proto \
              --mount type=bind,source="$(pwd)"/my-output,target=/generated \
@@ -55,9 +55,9 @@ plugins {
 }
 
 dependencies {
-    // pick the ONE dependency that is appropriate for your platform (server or Android) 
-    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:master-SNAPSHOT'
-    //implementation 'com.github.googleapis.gax-kotlin:kgax-grpc-android:master-SNAPSHOT'
+    // pick the ONE dependency that is appropriate for your platform (server or Android)
+    implementation 'com.github.googleapis.gax-kotlin:kgax-grpc:main-SNAPSHOT'
+    //implementation 'com.github.googleapis.gax-kotlin:kgax-grpc-android:main-SNAPSHOT'
 }
 
 protobuf {
@@ -104,7 +104,7 @@ A simple "hello world" style example is in the [example-server](example-server)
 and [example-client](example-client) directories. Here's how it works:
 
 First, describe the API like this ([complete proto file](example-server/src/main/proto/google/example/hello.proto)):
-    
+
 ```proto
 service HelloService {
   rpc HiThere (HiRequest) returns (HiResponse);
@@ -121,7 +121,7 @@ message HiResponse {
 
 Next, run Kgen on the proto files and it will produce Kotlin code that you can use to call
 the API, like this ([complete example](example-client/src/main/kotlin/example/Client.kt)):
-    
+
 ```kotlin
 fun main() = runBlocking<Unit> {
     // create a client with an insecure channel

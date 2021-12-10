@@ -97,7 +97,7 @@ protobuf {
         id("client") {
             // get the KGen code generator
             // this is normally done through the package manager, i.e.:
-            //   artifact = 'com.github.googleapis:gapic-generator-kotlin:master-SNAPSHOT:core@jar'
+            //   artifact = 'com.github.googleapis:gapic-generator-kotlin:main-SNAPSHOT:core@jar'
             // but these examples are used for testing so we'll use a local copy instead
             path = "$projectDir/../runLocalGenerator.sh"
         }

@@ -111,7 +111,7 @@ protobuf {
         client {
             // get the KGen code generator
             // this is normally done through the package manager, i.e.:
-            //   artifact = 'com.github.googleapis:gapic-generator-kotlin:master-SNAPSHOT:core@jar'
+            //   artifact = 'com.github.googleapis:gapic-generator-kotlin:main-SNAPSHOT:core@jar'
             // but these examples are used for testing so we'll use a local copy instead
             path = "${projectDir}/../../runLocalGenerator.sh"
         }
@@ -128,7 +128,7 @@ protobuf {
                     // this option will add generated unit tests for the client to the project
                     // be sure to add the directory to your test source set(s) as shown above
                     option "test-output=${project.buildDir}/generated/source/protoTest/debugUnitTest/client"
-                    
+
                     // this option is not typical. It is used here because the cloud API
                     // definitions used in this example use a legacy configuration format.
                     // This will be removed once they are updated.
