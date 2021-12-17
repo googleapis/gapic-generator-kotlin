@@ -64,12 +64,6 @@ jobs:
           environment:
             TAG: kgen
       - run:
-          name: Generate example-client with image
-          command: docker run --rm --volumes-from protos kgen
-      - run:
-          name: Generate example-client with image (Android)
-          command: docker run --rm --volumes-from protos kgen --android
-      - run:
           name: Save docker image
           command: docker save -o kgen.tar kgen
       - persist_to_workspace:
