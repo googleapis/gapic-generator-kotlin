@@ -64,7 +64,7 @@ dependencies {
     compile("com.google.api:kgax-grpc:0.7.0-SNAPSHOT")
 
     implementation("io.github.microutils:kotlin-logging:1.5.4")
-    implementation("org.slf4j:slf4j-api:1.7.25")
+    implementation("org.slf4j:slf4j-api:1.7.36")
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.16.0")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
 
