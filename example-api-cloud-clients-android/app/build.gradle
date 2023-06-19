@@ -91,7 +91,7 @@ dependencies {
     androidTestImplementation "com.android.support.test:runner:1.0.2"
     androidTestImplementation "com.android.support.test.espresso:espresso-core:3.0.2"
     androidTestImplementation "org.awaitility:awaitility:3.1.1"
-    androidTestImplementation "org.awaitility:awaitility-kotlin:3.1.1"
+    androidTestImplementation "org.awaitility:awaitility-kotlin:3.1.6"
 
     // needed to unit test with suspend functions (can remove when the dependency above is updated most likely)
     testImplementation("org.mockito:mockito-core:2.23.4")
