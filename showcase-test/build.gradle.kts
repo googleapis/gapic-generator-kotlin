@@ -55,7 +55,7 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
-    testImplementation("junit:junit:4.12")
+    testImplementation("junit:junit:4.13.2")
     testImplementation("com.google.truth:truth:0.41")
 
     ktlintImplementation("com.github.shyiko:ktlint:0.31.0")
