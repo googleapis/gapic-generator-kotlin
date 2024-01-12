@@ -51,7 +51,7 @@ defaultTasks = listOf("run")
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
 
-    implementation("io.grpc:grpc-netty-shaded:1.20.0")
+    implementation("io.grpc:grpc-netty-shaded:1.61.0")
     implementation("io.grpc:grpc-protobuf:1.20.0")
     implementation("io.grpc:grpc-stub:1.20.0")
     implementation("io.grpc:grpc-services:1.20.0")
