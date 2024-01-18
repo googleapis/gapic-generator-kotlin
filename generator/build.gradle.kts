@@ -68,7 +68,7 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.16.0")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
 
-    implementation("com.squareup:kotlinpoet:1.2.0")
+    implementation("com.squareup:kotlinpoet:1.16.0")
 
     implementation("org.yaml:snakeyaml:1.20")
     implementation("org.apache.commons:commons-io:1.3.2")
